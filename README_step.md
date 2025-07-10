@@ -9,7 +9,7 @@ T4T 的安装过程非常简单。请按照以下步骤操作：
 1. **克隆代码库**:
 
     ```bash
-    git clone https://github.com/your-repo/T4T.git
+    git clone https://github.com/johnnyzhao5619/T4T_T.git
     cd T4T
     ```
 
