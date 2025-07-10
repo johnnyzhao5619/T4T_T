@@ -1,0 +1,16 @@
+{
+    "_schedule_comment": "Defines the task's execution schedule. Use 'interval' for frequent tasks or 'cron' for traditional scheduling.",
+    "debug": true,
+    "enabled": true,
+    "module_type": "counter",
+    "name": "C1",
+    "schedule": {
+        "expression": "*/1 * * * *",
+        "trigger": "cron"
+    },
+    "settings": {
+        "current_count": 4,
+        "debug_message": "This is a debug message for the counter task.",
+        "increment_by": 1
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "_schedule_comment": "Defines the task's execution schedule. Use 'interval' for frequent tasks or 'cron' for traditional scheduling.",
+    "debug": true,
+    "enabled": false,
+    "module_type": "screen_protector",
+    "name": "S1",
+    "schedule": {
+        "seconds": 5,
+        "trigger": "interval"
+    },
+    "settings": {
+        "mouse_jiggle_range_max": 10000,
+        "mouse_jiggle_range_min": 5000
+    }
+}

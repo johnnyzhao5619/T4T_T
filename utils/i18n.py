@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Union
 from PyQt5.QtCore import QObject, pyqtSignal
 
 
@@ -64,7 +65,7 @@ class LanguageManager(QObject):
         """
         return self.translations.get(key, key)
 
-    def get_language_code(self, language_name: str) -> str | None:
+    def get_language_code(self, language_name: str) -> Union[str, None]:
         """
         Finds the language code corresponding to a given language name.
         """
