@@ -418,3 +418,255 @@
 2025-07-10 11:18:27,521 - INFO - view.detail_area_widget - Closed tab and released resources for: S1
 2025-07-10 11:18:33,733 - INFO - apscheduler.scheduler - Scheduler has been shut down
 2025-07-10 11:18:33,734 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 11:26:31,424 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 11:26:31,424 - INFO - root - Global exception hook has been set.
+2025-07-10 11:26:31,424 - INFO - __main__ - Application starting...
+2025-07-10 11:26:31,688 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 11:26:31,688 - INFO - core.task_manager - Loaded 0 tasks.
+2025-07-10 11:26:31,688 - INFO - core.task_manager - TaskManager initialized with tasks directory: tasks
+2025-07-10 11:26:31,700 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 11:26:32,166 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 11:26:32,167 - INFO - core.scheduler - scheduler_started
+2025-07-10 11:26:45,559 - INFO - core.task_manager - Task 'S2' created successfully from module 'screen_protector'.
+2025-07-10 11:26:45,559 - INFO - core.task_manager - Task 'S2' loaded.
+2025-07-10 11:26:45,559 - INFO - core.task_manager - Loaded 1 tasks.
+2025-07-10 11:26:45,560 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:26:47,390 - INFO - view.detail_area_widget - Closed tab and released resources for: new_task_tab
+2025-07-10 11:26:47,403 - WARNING - view.json_config_editor_widget - Could not load theme colors from themes/dark.json: [Errno 2] No such file or directory: 'themes/dark.json'. Using defaults.
+2025-07-10 11:26:47,407 - CRITICAL - GlobalExceptionHandler - An unhandled exception occurred! Application may be unstable.
+Traceback (most recent call last):
+  File "/Users/weijiazhao/Dev/T4T_T/view/json_config_editor_widget.py", line 132, in update_editor_style
+    with open(theme_file, 'r') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'themes/dark.json'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/weijiazhao/Dev/T4T_T/view/detail_area_widget.py", line 121, in on_new_task_created
+    self.open_task_tab(task_name)
+  File "/Users/weijiazhao/Dev/T4T_T/view/detail_area_widget.py", line 79, in open_task_tab
+    self.open_widget_as_tab(
+  File "/Users/weijiazhao/Dev/T4T_T/view/detail_area_widget.py", line 139, in open_widget_as_tab
+    widget = widget_class(*constructor_args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/Dev/T4T_T/view/task_detail_tab_widget.py", line 29, in __init__
+    self.init_ui()
+  File "/Users/weijiazhao/Dev/T4T_T/view/task_detail_tab_widget.py", line 63, in init_ui
+    self.json_editor_widget = JsonConfigEditorWidget(
+                              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/Dev/T4T_T/view/json_config_editor_widget.py", line 107, in __init__
+    self.init_ui()
+  File "/Users/weijiazhao/Dev/T4T_T/view/json_config_editor_widget.py", line 119, in init_ui
+    self.update_editor_style()
+  File "/Users/weijiazhao/Dev/T4T_T/view/json_config_editor_widget.py", line 138, in update_editor_style
+    logger.warning(
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1551, in warning
+    self._log(WARNING, msg, args, **kwargs)
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1684, in _log
+    self.handle(record)
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1700, in handle
+    self.callHandlers(record)
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1762, in callHandlers
+    hdlr.handle(record)
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1028, in handle
+    self.emit(record)
+  File "/Users/weijiazhao/Dev/T4T_T/utils/logger.py", line 24, in emit
+    log_message = self.format(record)
+                  ^^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 999, in format
+    return fmt.format(record)
+           ^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 703, in format
+    record.message = record.getMessage()
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 392, in getMessage
+    msg = msg % self.args
+          ~~~~^~~~~~~~~~~
+TypeError: not all arguments converted during string formatting
+2025-07-10 11:31:38,621 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 11:31:38,625 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 11:32:28,145 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 11:32:28,145 - INFO - root - Global exception hook has been set.
+2025-07-10 11:32:28,145 - INFO - __main__ - Application starting...
+2025-07-10 11:32:28,358 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 11:32:28,359 - INFO - core.task_manager - Task 'S2' loaded.
+2025-07-10 11:32:28,359 - INFO - core.task_manager - Loaded 1 tasks.
+2025-07-10 11:32:28,359 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 11:32:28,372 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:32:28,608 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 11:32:28,608 - INFO - core.scheduler - scheduler_started
+2025-07-10 11:32:30,595 - WARNING - view.json_config_editor_widget - Could not load theme colors from /Users/weijiazhao/Dev/T4T_T/themes/dark.json: [Errno 2] No such file or directory: '/Users/weijiazhao/Dev/T4T_T/themes/dark.json'. Using defaults.
+2025-07-10 11:32:30,601 - CRITICAL - GlobalExceptionHandler - An unhandled exception occurred! Application may be unstable.
+Traceback (most recent call last):
+  File "/Users/weijiazhao/Dev/T4T_T/view/json_config_editor_widget.py", line 132, in update_editor_style
+    with open(theme_file, 'r') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/weijiazhao/Dev/T4T_T/themes/dark.json'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/weijiazhao/Dev/T4T_T/view/main_window.py", line 235, in on_task_selection_changed
+    self.detail_area_widget.update_details(task_name, status)
+  File "/Users/weijiazhao/Dev/T4T_T/view/detail_area_widget.py", line 198, in update_details
+    self.open_task_tab(task_name)
+  File "/Users/weijiazhao/Dev/T4T_T/view/detail_area_widget.py", line 79, in open_task_tab
+    self.open_widget_as_tab(
+  File "/Users/weijiazhao/Dev/T4T_T/view/detail_area_widget.py", line 139, in open_widget_as_tab
+    widget = widget_class(*constructor_args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/Dev/T4T_T/view/task_detail_tab_widget.py", line 29, in __init__
+    self.init_ui()
+  File "/Users/weijiazhao/Dev/T4T_T/view/task_detail_tab_widget.py", line 63, in init_ui
+    self.json_editor_widget = JsonConfigEditorWidget(
+                              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/Dev/T4T_T/view/json_config_editor_widget.py", line 107, in __init__
+    self.init_ui()
+  File "/Users/weijiazhao/Dev/T4T_T/view/json_config_editor_widget.py", line 119, in init_ui
+    self.update_editor_style()
+  File "/Users/weijiazhao/Dev/T4T_T/view/json_config_editor_widget.py", line 138, in update_editor_style
+    logger.warning(
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1551, in warning
+    self._log(WARNING, msg, args, **kwargs)
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1684, in _log
+    self.handle(record)
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1700, in handle
+    self.callHandlers(record)
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1762, in callHandlers
+    hdlr.handle(record)
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 1028, in handle
+    self.emit(record)
+  File "/Users/weijiazhao/Dev/T4T_T/utils/logger.py", line 24, in emit
+    log_message = self.format(record)
+                  ^^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 999, in format
+    return fmt.format(record)
+           ^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 703, in format
+    record.message = record.getMessage()
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/Users/weijiazhao/.pyenv/versions/3.12.9/lib/python3.12/logging/__init__.py", line 392, in getMessage
+    msg = msg % self.args
+          ~~~~^~~~~~~~~~~
+TypeError: not all arguments converted during string formatting
+2025-07-10 11:32:34,784 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 11:32:34,785 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 11:34:32,290 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 11:34:32,290 - INFO - root - Global exception hook has been set.
+2025-07-10 11:34:32,290 - INFO - __main__ - Application starting...
+2025-07-10 11:34:32,525 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 11:34:32,525 - INFO - core.task_manager - Task 'S2' loaded.
+2025-07-10 11:34:32,525 - INFO - core.task_manager - Loaded 1 tasks.
+2025-07-10 11:34:32,525 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 11:34:32,537 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:34:32,762 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 11:34:32,762 - INFO - core.scheduler - scheduler_started
+2025-07-10 11:34:42,758 - INFO - view.main_window - Theme changed to light.
+2025-07-10 11:34:44,893 - INFO - view.main_window - Theme changed to dark.
+2025-07-10 11:34:54,509 - INFO - core.task_manager - Task 'S2' is type 'screen_protector', scheduling for main thread execution via signal.
+2025-07-10 11:34:54,510 - INFO - core.scheduler - Adding task 'S2' with trigger type: interval
+2025-07-10 11:34:54,516 - INFO - apscheduler.scheduler - Added job "TaskManager.start_task.<locals>.<lambda>" to job store "default"
+2025-07-10 11:34:54,516 - INFO - core.scheduler - Task 'S2' added with interval: {'seconds': 5}
+2025-07-10 11:34:54,517 - INFO - core.task_manager - Task 'S2' configuration updated.
+2025-07-10 11:34:54,517 - INFO - core.task_manager - Task 'S2' started successfully.
+2025-07-10 11:34:54,517 - INFO - view.task_list_widget - Slot triggered: Task 'S2' status changed to 'running'.
+2025-07-10 11:34:54,518 - INFO - view.main_window - Task S2 started or resumed.
+2025-07-10 11:34:59,522 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:35:04 EDT)" (scheduled at 2025-07-10 11:34:59.515932-04:00)
+2025-07-10 11:34:59,525 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:35:04 EDT)" executed successfully
+2025-07-10 11:34:59,527 - ERROR - core.task_manager - Failed to load task module from '/Users/weijiazhao/Dev/T4T_T/tasks/S2/main.py': No module named 'pyautogui'
+2025-07-10 11:35:04,521 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:35:09 EDT)" (scheduled at 2025-07-10 11:35:04.515932-04:00)
+2025-07-10 11:35:04,524 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:35:09 EDT)" executed successfully
+2025-07-10 11:35:04,525 - ERROR - core.task_manager - Failed to load task module from '/Users/weijiazhao/Dev/T4T_T/tasks/S2/main.py': No module named 'pyautogui'
+2025-07-10 11:35:09,153 - INFO - apscheduler.scheduler - Removed job S2
+2025-07-10 11:35:09,154 - INFO - core.scheduler - task_removed
+2025-07-10 11:35:09,154 - INFO - core.task_manager - Task 'S2' configuration updated.
+2025-07-10 11:35:09,154 - INFO - core.task_manager - Task S2 stopped and removed from scheduler.
+2025-07-10 11:35:09,154 - INFO - view.task_list_widget - Slot triggered: Task 'S2' status changed to 'stopped'.
+2025-07-10 11:35:09,155 - INFO - view.main_window - Task S2 stopped.
+2025-07-10 11:35:10,633 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 11:35:10,633 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 11:35:51,113 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 11:35:51,113 - INFO - root - Global exception hook has been set.
+2025-07-10 11:35:51,113 - INFO - __main__ - Application starting...
+2025-07-10 11:35:51,327 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 11:35:51,327 - INFO - core.task_manager - Task 'S2' loaded.
+2025-07-10 11:35:51,327 - INFO - core.task_manager - Loaded 1 tasks.
+2025-07-10 11:35:51,327 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 11:35:51,339 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:35:51,567 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 11:35:51,567 - INFO - core.scheduler - scheduler_started
+2025-07-10 11:35:54,786 - INFO - core.task_manager - Task 'S2' is type 'screen_protector', scheduling for main thread execution via signal.
+2025-07-10 11:35:54,787 - INFO - core.scheduler - Adding task 'S2' with trigger type: interval
+2025-07-10 11:35:54,788 - INFO - apscheduler.scheduler - Added job "TaskManager.start_task.<locals>.<lambda>" to job store "default"
+2025-07-10 11:35:54,788 - INFO - core.scheduler - Task 'S2' added with interval: {'seconds': 5}
+2025-07-10 11:35:54,789 - INFO - core.task_manager - Task 'S2' configuration updated.
+2025-07-10 11:35:54,789 - INFO - core.task_manager - Task 'S2' started successfully.
+2025-07-10 11:35:54,789 - INFO - view.task_list_widget - Slot triggered: Task 'S2' status changed to 'running'.
+2025-07-10 11:35:54,789 - INFO - view.main_window - Task S2 started or resumed.
+2025-07-10 11:35:59,796 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:35:59 EDT)" (scheduled at 2025-07-10 11:35:59.788468-04:00)
+2025-07-10 11:35:59,799 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:04 EDT)" executed successfully
+2025-07-10 11:36:04,792 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:09 EDT)" (scheduled at 2025-07-10 11:36:04.788468-04:00)
+2025-07-10 11:36:04,794 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:09 EDT)" executed successfully
+2025-07-10 11:36:04,936 - INFO - task_module - System idle, moved mouse from [195, 207] to [806, -687].
+2025-07-10 11:36:09,794 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:14 EDT)" (scheduled at 2025-07-10 11:36:09.788468-04:00)
+2025-07-10 11:36:09,798 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:14 EDT)" executed successfully
+2025-07-10 11:36:09,913 - INFO - task_module - System idle, moved mouse from [806, -687] to [1391, -1475].
+2025-07-10 11:36:14,796 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:19 EDT)" (scheduled at 2025-07-10 11:36:14.788468-04:00)
+2025-07-10 11:36:14,798 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:19 EDT)" executed successfully
+2025-07-10 11:36:14,916 - INFO - task_module - System idle, moved mouse from [1391, -1475] to [2028, -2097].
+2025-07-10 11:36:19,793 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:24 EDT)" (scheduled at 2025-07-10 11:36:19.788468-04:00)
+2025-07-10 11:36:19,795 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:24 EDT)" executed successfully
+2025-07-10 11:36:19,909 - INFO - task_module - System idle, moved mouse from [2028, -2097] to [2945, -2812].
+2025-07-10 11:36:24,793 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:29 EDT)" (scheduled at 2025-07-10 11:36:24.788468-04:00)
+2025-07-10 11:36:24,795 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:29 EDT)" executed successfully
+2025-07-10 11:36:24,910 - INFO - task_module - System idle, moved mouse from [2945, -2812] to [3720, -1964].
+2025-07-10 11:36:29,791 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:34 EDT)" (scheduled at 2025-07-10 11:36:29.788468-04:00)
+2025-07-10 11:36:29,793 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:34 EDT)" executed successfully
+2025-07-10 11:36:29,908 - INFO - task_module - System idle, moved mouse from [3720, -1964] to [2749, -986].
+2025-07-10 11:36:34,794 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:39 EDT)" (scheduled at 2025-07-10 11:36:34.788468-04:00)
+2025-07-10 11:36:34,796 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:39 EDT)" executed successfully
+2025-07-10 11:36:34,914 - INFO - task_module - System idle, moved mouse from [2749, -986] to [3489, -216].
+2025-07-10 11:36:39,793 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:44 EDT)" (scheduled at 2025-07-10 11:36:39.788468-04:00)
+2025-07-10 11:36:39,796 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:44 EDT)" executed successfully
+2025-07-10 11:36:39,912 - INFO - task_module - System idle, moved mouse from [3489, -216] to [4293, -996].
+2025-07-10 11:36:44,798 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:49 EDT)" (scheduled at 2025-07-10 11:36:44.788468-04:00)
+2025-07-10 11:36:44,799 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:49 EDT)" executed successfully
+2025-07-10 11:36:49,792 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:54 EDT)" (scheduled at 2025-07-10 11:36:49.788468-04:00)
+2025-07-10 11:36:49,794 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:54 EDT)" executed successfully
+2025-07-10 11:36:54,793 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:59 EDT)" (scheduled at 2025-07-10 11:36:54.788468-04:00)
+2025-07-10 11:36:54,794 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:36:59 EDT)" executed successfully
+2025-07-10 11:36:59,796 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:04 EDT)" (scheduled at 2025-07-10 11:36:59.788468-04:00)
+2025-07-10 11:36:59,797 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:04 EDT)" executed successfully
+2025-07-10 11:37:04,793 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:09 EDT)" (scheduled at 2025-07-10 11:37:04.788468-04:00)
+2025-07-10 11:37:04,799 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:09 EDT)" executed successfully
+2025-07-10 11:37:09,792 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:14 EDT)" (scheduled at 2025-07-10 11:37:09.788468-04:00)
+2025-07-10 11:37:09,796 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:14 EDT)" executed successfully
+2025-07-10 11:37:14,792 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:19 EDT)" (scheduled at 2025-07-10 11:37:14.788468-04:00)
+2025-07-10 11:37:14,793 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:19 EDT)" executed successfully
+2025-07-10 11:37:19,795 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:24 EDT)" (scheduled at 2025-07-10 11:37:19.788468-04:00)
+2025-07-10 11:37:19,797 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:37:24 EDT)" executed successfully
+2025-07-10 11:37:24,532 - INFO - apscheduler.scheduler - Removed job S2
+2025-07-10 11:37:24,533 - INFO - core.scheduler - task_removed
+2025-07-10 11:37:24,534 - INFO - core.task_manager - Task 'S2' configuration updated.
+2025-07-10 11:37:24,534 - INFO - core.task_manager - Task S2 stopped and removed from scheduler.
+2025-07-10 11:37:24,534 - INFO - view.task_list_widget - Slot triggered: Task 'S2' status changed to 'stopped'.
+2025-07-10 11:37:24,534 - INFO - view.main_window - Task S2 stopped.
+2025-07-10 11:37:27,348 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 11:37:27,348 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 11:41:43,607 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 11:41:43,608 - INFO - root - Global exception hook has been set.
+2025-07-10 11:41:43,608 - INFO - __main__ - Application starting...
+2025-07-10 11:41:43,831 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 11:41:43,831 - INFO - core.task_manager - Task 'S2' loaded.
+2025-07-10 11:41:43,831 - INFO - core.task_manager - Loaded 1 tasks.
+2025-07-10 11:41:43,831 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 11:41:43,846 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:41:44,066 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 11:41:44,066 - INFO - core.scheduler - scheduler_started
+2025-07-10 11:41:47,360 - INFO - core.task_manager - Task S2 deleted.
+2025-07-10 11:41:47,361 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 11:41:47,361 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 11:41:47,361 - INFO - view.main_window - Task S2 deleted.
+2025-07-10 11:41:49,819 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 11:41:49,821 - INFO - core.scheduler - scheduler_shutdown

@@ -13,7 +13,12 @@ class ThemeManager(QObject):
 
     def __init__(self, theme_dir='themes'):
         super().__init__()
-        self.theme_dir = theme_dir
+        # Get the absolute path to the directory of the current script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to the project root from 'utils'
+        project_root = os.path.dirname(script_dir)
+        # Construct the absolute path to the themes directory
+        self.theme_dir = os.path.join(project_root, theme_dir)
         self.current_theme_name = 'light'  # Default theme
         self.current_stylesheet = ""
         self.load_stylesheet(

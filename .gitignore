@@ -9,12 +9,15 @@ dist/
 
 # Ignore Python bytecode files
 __pycache__/
+utils/__pycache__/
 *.pyc
 *.pyo
 *.pyd
 
 # Ignore log files
 *.log
+logs/*.txt
 
 # Ignore Documentation files
 T4T_Requirements.markdown
+

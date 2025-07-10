@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QMessageBox, QPlainTextEdit)
-from PyQt5.QtCore import Qt, QRegExp
+from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
 from utils.signals import a_signal
 from utils.theme import theme_manager
@@ -43,8 +43,8 @@ class JsonSyntaxHighlighter(QSyntaxHighlighter):
                     colors.update(theme_data["editor"]["syntax"])
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.warning(
-                f"Could not load theme colors from {theme_file}: {e}."
-                " Using defaults.")
+                "Could not load theme colors from %s: %s. Using defaults.",
+                theme_file, e)
 
         self.highlighting_rules = []
 
@@ -136,15 +136,18 @@ class JsonConfigEditorWidget(QWidget):
                     fg_color = theme_data["editor"].get("foreground", fg_color)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.warning(
-                f"Could not load editor styles from {theme_file}: {e}.",
-                "Using defaults.")
+                "Could not load editor styles from %s: %s. Using defaults.",
+                theme_file, e)
 
+        border_color = theme_data.get("colors", {}).get(
+            "editorWidget.border", "#3c3c3c")
         self.editor.setStyleSheet(f"""
             QPlainTextEdit {{
                 background-color: {bg_color};
                 color: {fg_color};
-                border: 1px solid {theme_data.get("colors", {}).get("editorWidget.border", "#3c3c3c")};
-                font-family: 'Courier New', 'Lucida Console', 'Monaco', monospace;
+                border: 1px solid {border_color};
+                font-family: 'Courier New', 'Lucida Console', 
+                             'Monaco', monospace;
                 font-size: 10pt;
             }}
         """)

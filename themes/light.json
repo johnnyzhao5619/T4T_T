@@ -1,0 +1,16 @@
+{
+    "editor": {
+        "background": "#FFFFFF",
+        "foreground": "#000000",
+        "syntax": {
+            "key": "#0451A5",
+            "string": "#A31515",
+            "number": "#098658",
+            "boolean": "#0000FF",
+            "null": "#0000FF"
+        }
+    },
+    "colors": {
+        "editorWidget.border": "#CCCCCC"
+    }
+}

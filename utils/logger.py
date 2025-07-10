@@ -34,7 +34,12 @@ class LoggerManager:
     """
 
     def __init__(self, log_dir="logs"):
-        self.log_dir = log_dir
+        # Get the absolute path to the directory of the current script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to the project root from 'utils'
+        project_root = os.path.dirname(script_dir)
+        # Construct the absolute path to the logs directory
+        self.log_dir = os.path.join(project_root, log_dir)
         self.setup_logging()
 
     def setup_logging(self):

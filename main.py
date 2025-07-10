@@ -1,4 +1,5 @@
 import sys
+import os
 import qtawesome
 from PyQt5.QtWidgets import QApplication
 from core.scheduler import SchedulerManager
@@ -28,11 +29,16 @@ def main():
     # Initialize icon font
     qtawesome.icon('fa5s.star', color='black')
 
-    # Initialize core components
-    config_manager = ConfigManager()
+    # --- Path Setup ---
+    # Get the absolute path to the directory of the current script (main.py)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # These paths are now absolute, ensuring they work regardless of CWD
+    CONFIG_DIR = os.path.join(script_dir, 'config')
+    MODULES_DIR = os.path.join(script_dir, 'modules')
+    TASKS_DIR = os.path.join(script_dir, 'tasks')
 
-    MODULES_DIR = config_manager.get('paths', 'modules', fallback='modules')
-    TASKS_DIR = config_manager.get('paths', 'tasks', fallback='tasks')
+    # Initialize core components
+    config_manager = ConfigManager(config_dir=CONFIG_DIR)
 
     scheduler = SchedulerManager(config_manager)
     task_manager = TaskManager(tasks_dir=TASKS_DIR, modules_dir=MODULES_DIR)

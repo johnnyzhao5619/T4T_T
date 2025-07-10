@@ -4,36 +4,31 @@ import configparser
 
 class ConfigManager:
     """A class responsible for managing application configuration settings."""
-    
-    def __init__(self, config_file='config/config.ini'):
+
+    def __init__(self, config_dir='config'):
         """
-        Initialize the ConfigManager with a path to the configuration file.
-        
+        Initialize the ConfigManager.
         Args:
-            config_file (str): Path to the configuration file. Defaults to 
-                'config/config.ini'.
+            config_dir (str): The absolute path to the configuration directory.
         """
-        self.config_file = config_file
+        # Construct the absolute path to the config.ini file
+        self.config_file = os.path.join(config_dir, 'config.ini')
         self.config = configparser.ConfigParser()
         self.load_config()
-        self.create_directories()
         # TODO: Implement configuration validation logic here in a future phase.
 
     def load_config(self):
-        if os.path.exists(self.config_file):  # noqa
+        """
+        Loads the configuration from the .ini file.
+        If the file doesn't exist, it raises a FileNotFoundError.
+        """
+        if os.path.exists(self.config_file):
             self.config.read(self.config_file)
         else:
+            # This provides a clearer error message if the config is missing
             raise FileNotFoundError(
-                f"Configuration file {self.config_file} not found."
-            )
-    
-    def create_directories(self):
-        """Create necessary application directories if they do not exist."""
-        directories = ['modules', 'tasks', 'logs', 'themes', 'i18n']
-        for directory in directories:
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-    
+                f"Configuration file not found at: {self.config_file}")
+
     def get(self, section, key, fallback=None):
         """
         Retrieve a configuration value for a given section and key.
@@ -49,7 +44,7 @@ class ConfigManager:
                 the fallback value.
         """
         return self.config.get(section, key, fallback=fallback)
-    
+
     def set(self, section, key, value):
         """
         Set a configuration value for a given section and key.
@@ -63,7 +58,7 @@ class ConfigManager:
             self.config[section] = {}
         self.config[section][key] = value
         self.save_config()
-    
+
     def save_config(self):
         """Save the current configuration to the config file."""
         with open(self.config_file, 'w') as configfile:
