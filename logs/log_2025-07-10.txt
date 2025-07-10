@@ -158,3 +158,263 @@
 2025-07-10 10:46:10,733 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:15 EDT)" executed successfully
 2025-07-10 10:46:15,734 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:20 EDT)" (scheduled at 2025-07-10 10:46:15.726356-04:00)
 2025-07-10 10:46:15,735 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:20 EDT)" executed successfully
+2025-07-10 10:46:20,735 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:25 EDT)" (scheduled at 2025-07-10 10:46:20.726356-04:00)
+2025-07-10 10:46:20,736 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:25 EDT)" executed successfully
+2025-07-10 10:46:25,730 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:30 EDT)" (scheduled at 2025-07-10 10:46:25.726356-04:00)
+2025-07-10 10:46:25,731 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:30 EDT)" executed successfully
+2025-07-10 10:46:30,740 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:35 EDT)" (scheduled at 2025-07-10 10:46:30.726356-04:00)
+2025-07-10 10:46:30,741 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:35 EDT)" executed successfully
+2025-07-10 10:46:35,736 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:40 EDT)" (scheduled at 2025-07-10 10:46:35.726356-04:00)
+2025-07-10 10:46:35,737 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:40 EDT)" executed successfully
+2025-07-10 10:46:40,728 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:45 EDT)" (scheduled at 2025-07-10 10:46:40.726356-04:00)
+2025-07-10 10:46:40,728 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:45 EDT)" executed successfully
+2025-07-10 10:46:45,741 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:50 EDT)" (scheduled at 2025-07-10 10:46:45.726356-04:00)
+2025-07-10 10:46:45,741 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:50 EDT)" executed successfully
+2025-07-10 10:46:50,739 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:55 EDT)" (scheduled at 2025-07-10 10:46:50.726356-04:00)
+2025-07-10 10:46:50,740 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:46:55 EDT)" executed successfully
+2025-07-10 10:46:55,728 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:00 EDT)" (scheduled at 2025-07-10 10:46:55.726356-04:00)
+2025-07-10 10:46:55,730 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:00 EDT)" executed successfully
+2025-07-10 10:47:00,008 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:48:00 EDT)" (scheduled at 2025-07-10 10:47:00-04:00)
+2025-07-10 10:47:00,009 - INFO - task_module - Task 'C1' is running.
+2025-07-10 10:47:00,012 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:48:00 EDT)" executed successfully
+2025-07-10 10:47:00,741 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:05 EDT)" (scheduled at 2025-07-10 10:47:00.726356-04:00)
+2025-07-10 10:47:00,743 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:05 EDT)" executed successfully
+2025-07-10 10:47:05,734 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:10 EDT)" (scheduled at 2025-07-10 10:47:05.726356-04:00)
+2025-07-10 10:47:05,734 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:10 EDT)" executed successfully
+2025-07-10 10:47:10,738 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:15 EDT)" (scheduled at 2025-07-10 10:47:10.726356-04:00)
+2025-07-10 10:47:10,739 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:15 EDT)" executed successfully
+2025-07-10 10:47:15,737 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:20 EDT)" (scheduled at 2025-07-10 10:47:15.726356-04:00)
+2025-07-10 10:47:15,738 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:20 EDT)" executed successfully
+2025-07-10 10:47:20,742 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:25 EDT)" (scheduled at 2025-07-10 10:47:20.726356-04:00)
+2025-07-10 10:47:20,743 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:25 EDT)" executed successfully
+2025-07-10 10:47:25,739 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:30 EDT)" (scheduled at 2025-07-10 10:47:25.726356-04:00)
+2025-07-10 10:47:25,739 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:30 EDT)" executed successfully
+2025-07-10 10:47:30,730 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:35 EDT)" (scheduled at 2025-07-10 10:47:30.726356-04:00)
+2025-07-10 10:47:30,730 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:35 EDT)" executed successfully
+2025-07-10 10:47:35,741 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:40 EDT)" (scheduled at 2025-07-10 10:47:35.726356-04:00)
+2025-07-10 10:47:35,742 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:40 EDT)" executed successfully
+2025-07-10 10:47:40,740 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:45 EDT)" (scheduled at 2025-07-10 10:47:40.726356-04:00)
+2025-07-10 10:47:40,742 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:45 EDT)" executed successfully
+2025-07-10 10:47:45,736 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:50 EDT)" (scheduled at 2025-07-10 10:47:45.726356-04:00)
+2025-07-10 10:47:45,736 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:50 EDT)" executed successfully
+2025-07-10 10:47:50,736 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:55 EDT)" (scheduled at 2025-07-10 10:47:50.726356-04:00)
+2025-07-10 10:47:50,736 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:47:55 EDT)" executed successfully
+2025-07-10 10:47:55,735 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:00 EDT)" (scheduled at 2025-07-10 10:47:55.726356-04:00)
+2025-07-10 10:47:55,736 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:00 EDT)" executed successfully
+2025-07-10 10:48:00,010 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:49:00 EDT)" (scheduled at 2025-07-10 10:48:00-04:00)
+2025-07-10 10:48:00,010 - INFO - task_module - Task 'C1' is running.
+2025-07-10 10:48:00,014 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:49:00 EDT)" executed successfully
+2025-07-10 10:48:00,732 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:05 EDT)" (scheduled at 2025-07-10 10:48:00.726356-04:00)
+2025-07-10 10:48:00,734 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:05 EDT)" executed successfully
+2025-07-10 10:48:05,731 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:10 EDT)" (scheduled at 2025-07-10 10:48:05.726356-04:00)
+2025-07-10 10:48:05,732 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:10 EDT)" executed successfully
+2025-07-10 10:48:10,737 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:15 EDT)" (scheduled at 2025-07-10 10:48:10.726356-04:00)
+2025-07-10 10:48:10,738 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:15 EDT)" executed successfully
+2025-07-10 10:48:15,741 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:20 EDT)" (scheduled at 2025-07-10 10:48:15.726356-04:00)
+2025-07-10 10:48:15,742 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:20 EDT)" executed successfully
+2025-07-10 10:48:20,741 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:25 EDT)" (scheduled at 2025-07-10 10:48:20.726356-04:00)
+2025-07-10 10:48:20,742 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:25 EDT)" executed successfully
+2025-07-10 10:48:25,739 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:30 EDT)" (scheduled at 2025-07-10 10:48:25.726356-04:00)
+2025-07-10 10:48:25,740 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:30 EDT)" executed successfully
+2025-07-10 10:48:30,729 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:35 EDT)" (scheduled at 2025-07-10 10:48:30.726356-04:00)
+2025-07-10 10:48:30,729 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:35 EDT)" executed successfully
+2025-07-10 10:48:35,735 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:40 EDT)" (scheduled at 2025-07-10 10:48:35.726356-04:00)
+2025-07-10 10:48:35,735 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:40 EDT)" executed successfully
+2025-07-10 10:48:40,731 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:45 EDT)" (scheduled at 2025-07-10 10:48:40.726356-04:00)
+2025-07-10 10:48:40,732 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:45 EDT)" executed successfully
+2025-07-10 10:48:45,735 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:50 EDT)" (scheduled at 2025-07-10 10:48:45.726356-04:00)
+2025-07-10 10:48:45,736 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:50 EDT)" executed successfully
+2025-07-10 10:48:50,737 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:55 EDT)" (scheduled at 2025-07-10 10:48:50.726356-04:00)
+2025-07-10 10:48:50,738 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:48:55 EDT)" executed successfully
+2025-07-10 10:48:55,731 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:00 EDT)" (scheduled at 2025-07-10 10:48:55.726356-04:00)
+2025-07-10 10:48:55,733 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:00 EDT)" executed successfully
+2025-07-10 10:49:00,014 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:50:00 EDT)" (scheduled at 2025-07-10 10:49:00-04:00)
+2025-07-10 10:49:00,016 - INFO - task_module - Task 'C1' is running.
+2025-07-10 10:49:00,018 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:50:00 EDT)" executed successfully
+2025-07-10 10:49:00,738 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:05 EDT)" (scheduled at 2025-07-10 10:49:00.726356-04:00)
+2025-07-10 10:49:00,740 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:05 EDT)" executed successfully
+2025-07-10 10:49:05,737 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:10 EDT)" (scheduled at 2025-07-10 10:49:05.726356-04:00)
+2025-07-10 10:49:05,738 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:10 EDT)" executed successfully
+2025-07-10 10:49:10,734 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:15 EDT)" (scheduled at 2025-07-10 10:49:10.726356-04:00)
+2025-07-10 10:49:10,736 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:15 EDT)" executed successfully
+2025-07-10 10:49:15,734 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:20 EDT)" (scheduled at 2025-07-10 10:49:15.726356-04:00)
+2025-07-10 10:49:15,734 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:20 EDT)" executed successfully
+2025-07-10 10:49:20,732 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:25 EDT)" (scheduled at 2025-07-10 10:49:20.726356-04:00)
+2025-07-10 10:49:20,733 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:25 EDT)" executed successfully
+2025-07-10 10:49:25,729 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:30 EDT)" (scheduled at 2025-07-10 10:49:25.726356-04:00)
+2025-07-10 10:49:25,729 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:30 EDT)" executed successfully
+2025-07-10 10:49:30,740 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:35 EDT)" (scheduled at 2025-07-10 10:49:30.726356-04:00)
+2025-07-10 10:49:30,740 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:35 EDT)" executed successfully
+2025-07-10 10:49:35,742 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:40 EDT)" (scheduled at 2025-07-10 10:49:35.726356-04:00)
+2025-07-10 10:49:35,742 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:40 EDT)" executed successfully
+2025-07-10 10:49:40,726 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:45 EDT)" (scheduled at 2025-07-10 10:49:40.726356-04:00)
+2025-07-10 10:49:40,726 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:45 EDT)" executed successfully
+2025-07-10 10:49:45,733 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:50 EDT)" (scheduled at 2025-07-10 10:49:45.726356-04:00)
+2025-07-10 10:49:45,734 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:50 EDT)" executed successfully
+2025-07-10 10:49:50,732 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:55 EDT)" (scheduled at 2025-07-10 10:49:50.726356-04:00)
+2025-07-10 10:49:50,733 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:49:55 EDT)" executed successfully
+2025-07-10 10:49:55,731 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:00 EDT)" (scheduled at 2025-07-10 10:49:55.726356-04:00)
+2025-07-10 10:49:55,732 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:00 EDT)" executed successfully
+2025-07-10 10:50:00,008 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:51:00 EDT)" (scheduled at 2025-07-10 10:50:00-04:00)
+2025-07-10 10:50:00,010 - INFO - task_module - Task 'C1' is running.
+2025-07-10 10:50:00,013 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:51:00 EDT)" executed successfully
+2025-07-10 10:50:00,736 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:05 EDT)" (scheduled at 2025-07-10 10:50:00.726356-04:00)
+2025-07-10 10:50:00,736 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:05 EDT)" executed successfully
+2025-07-10 10:50:05,729 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:10 EDT)" (scheduled at 2025-07-10 10:50:05.726356-04:00)
+2025-07-10 10:50:05,729 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:10 EDT)" executed successfully
+2025-07-10 10:50:10,739 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:15 EDT)" (scheduled at 2025-07-10 10:50:10.726356-04:00)
+2025-07-10 10:50:10,741 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:15 EDT)" executed successfully
+2025-07-10 10:50:15,739 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:20 EDT)" (scheduled at 2025-07-10 10:50:15.726356-04:00)
+2025-07-10 10:50:15,740 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:20 EDT)" executed successfully
+2025-07-10 10:50:20,738 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:25 EDT)" (scheduled at 2025-07-10 10:50:20.726356-04:00)
+2025-07-10 10:50:20,739 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:25 EDT)" executed successfully
+2025-07-10 10:50:25,733 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:30 EDT)" (scheduled at 2025-07-10 10:50:25.726356-04:00)
+2025-07-10 10:50:25,734 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:30 EDT)" executed successfully
+2025-07-10 10:50:30,732 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:35 EDT)" (scheduled at 2025-07-10 10:50:30.726356-04:00)
+2025-07-10 10:50:30,732 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:35 EDT)" executed successfully
+2025-07-10 10:50:35,730 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:40 EDT)" (scheduled at 2025-07-10 10:50:35.726356-04:00)
+2025-07-10 10:50:35,730 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:40 EDT)" executed successfully
+2025-07-10 10:50:40,728 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:45 EDT)" (scheduled at 2025-07-10 10:50:40.726356-04:00)
+2025-07-10 10:50:40,728 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:45 EDT)" executed successfully
+2025-07-10 10:50:45,742 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:50 EDT)" (scheduled at 2025-07-10 10:50:45.726356-04:00)
+2025-07-10 10:50:45,743 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:50 EDT)" executed successfully
+2025-07-10 10:50:50,733 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:55 EDT)" (scheduled at 2025-07-10 10:50:50.726356-04:00)
+2025-07-10 10:50:50,735 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:50:55 EDT)" executed successfully
+2025-07-10 10:50:55,737 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:00 EDT)" (scheduled at 2025-07-10 10:50:55.726356-04:00)
+2025-07-10 10:50:55,737 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:00 EDT)" executed successfully
+2025-07-10 10:51:00,010 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:52:00 EDT)" (scheduled at 2025-07-10 10:51:00-04:00)
+2025-07-10 10:51:00,010 - INFO - task_module - Task 'C1' is running.
+2025-07-10 10:51:00,015 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:52:00 EDT)" executed successfully
+2025-07-10 10:51:00,729 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:05 EDT)" (scheduled at 2025-07-10 10:51:00.726356-04:00)
+2025-07-10 10:51:00,729 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:05 EDT)" executed successfully
+2025-07-10 10:51:05,736 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:10 EDT)" (scheduled at 2025-07-10 10:51:05.726356-04:00)
+2025-07-10 10:51:05,736 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:10 EDT)" executed successfully
+2025-07-10 10:51:10,739 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:15 EDT)" (scheduled at 2025-07-10 10:51:10.726356-04:00)
+2025-07-10 10:51:10,739 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:15 EDT)" executed successfully
+2025-07-10 10:51:15,737 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:20 EDT)" (scheduled at 2025-07-10 10:51:15.726356-04:00)
+2025-07-10 10:51:15,737 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:20 EDT)" executed successfully
+2025-07-10 10:51:20,741 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:25 EDT)" (scheduled at 2025-07-10 10:51:20.726356-04:00)
+2025-07-10 10:51:20,741 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:25 EDT)" executed successfully
+2025-07-10 10:51:25,737 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:30 EDT)" (scheduled at 2025-07-10 10:51:25.726356-04:00)
+2025-07-10 10:51:25,737 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:30 EDT)" executed successfully
+2025-07-10 10:51:30,729 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:35 EDT)" (scheduled at 2025-07-10 10:51:30.726356-04:00)
+2025-07-10 10:51:30,729 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:35 EDT)" executed successfully
+2025-07-10 10:51:35,738 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:40 EDT)" (scheduled at 2025-07-10 10:51:35.726356-04:00)
+2025-07-10 10:51:35,738 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:40 EDT)" executed successfully
+2025-07-10 10:51:40,732 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:45 EDT)" (scheduled at 2025-07-10 10:51:40.726356-04:00)
+2025-07-10 10:51:40,734 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:45 EDT)" executed successfully
+2025-07-10 10:51:45,739 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:50 EDT)" (scheduled at 2025-07-10 10:51:45.726356-04:00)
+2025-07-10 10:51:45,740 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:50 EDT)" executed successfully
+2025-07-10 10:51:50,731 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:55 EDT)" (scheduled at 2025-07-10 10:51:50.726356-04:00)
+2025-07-10 10:51:50,731 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:51:55 EDT)" executed successfully
+2025-07-10 10:51:55,731 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:00 EDT)" (scheduled at 2025-07-10 10:51:55.726356-04:00)
+2025-07-10 10:51:55,731 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:00 EDT)" executed successfully
+2025-07-10 10:52:00,016 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:53:00 EDT)" (scheduled at 2025-07-10 10:52:00-04:00)
+2025-07-10 10:52:00,017 - INFO - task_module - Task 'C1' is running.
+2025-07-10 10:52:00,017 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 10:53:00 EDT)" executed successfully
+2025-07-10 10:52:00,738 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:05 EDT)" (scheduled at 2025-07-10 10:52:00.726356-04:00)
+2025-07-10 10:52:00,738 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:05 EDT)" executed successfully
+2025-07-10 10:52:05,731 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:10 EDT)" (scheduled at 2025-07-10 10:52:05.726356-04:00)
+2025-07-10 10:52:05,731 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:10 EDT)" executed successfully
+2025-07-10 10:52:10,730 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:15 EDT)" (scheduled at 2025-07-10 10:52:10.726356-04:00)
+2025-07-10 10:52:10,730 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:15 EDT)" executed successfully
+2025-07-10 10:52:15,729 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:20 EDT)" (scheduled at 2025-07-10 10:52:15.726356-04:00)
+2025-07-10 10:52:15,729 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:20 EDT)" executed successfully
+2025-07-10 10:52:20,741 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:25 EDT)" (scheduled at 2025-07-10 10:52:20.726356-04:00)
+2025-07-10 10:52:20,741 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 10:52:25 EDT)" executed successfully
+2025-07-10 10:52:25,387 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 10:52:25,393 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 11:16:04,464 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 11:16:04,464 - INFO - root - Global exception hook has been set.
+2025-07-10 11:16:04,465 - INFO - __main__ - Application starting...
+2025-07-10 11:16:04,607 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 11:16:04,608 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 11:16:04,609 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 11:16:04,609 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 11:16:04,609 - INFO - core.task_manager - TaskManager initialized with tasks directory: tasks
+2025-07-10 11:16:04,614 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 11:16:04,984 - INFO - core.scheduler - Adding task 'C1' with trigger type: cron
+2025-07-10 11:16:04,987 - INFO - apscheduler.scheduler - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-10 11:16:04,987 - INFO - core.scheduler - Task 'C1' added with cron: */1 * * * *
+2025-07-10 11:16:04,988 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 11:16:04,988 - INFO - core.task_manager - Task 'C1' started successfully.
+2025-07-10 11:16:04,990 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'running'.
+2025-07-10 11:16:05,181 - INFO - apscheduler.scheduler - Added job "partial" to job store "default"
+2025-07-10 11:16:05,182 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 11:16:05,183 - INFO - core.scheduler - scheduler_started
+2025-07-10 11:16:14,444 - INFO - core.task_manager - Task S1 deleted.
+2025-07-10 11:16:14,445 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:16:14,456 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:16:14,465 - INFO - view.main_window - Task S1 deleted.
+2025-07-10 11:16:23,234 - INFO - core.task_manager - Task 'S1' created successfully from module 'screen_protector'.
+2025-07-10 11:16:23,236 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 11:16:23,237 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 11:16:23,237 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 11:16:23,238 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 11:16:24,610 - INFO - view.detail_area_widget - Closed tab and released resources for: new_task_tab
+2025-07-10 11:16:54,911 - INFO - core.task_manager - Task 'S1' is type 'screen_protector', scheduling for main thread execution via signal.
+2025-07-10 11:16:54,912 - INFO - core.scheduler - Adding task 'S1' with trigger type: interval
+2025-07-10 11:16:54,914 - INFO - apscheduler.scheduler - Added job "TaskManager.start_task.<locals>.<lambda>" to job store "default"
+2025-07-10 11:16:54,915 - INFO - core.scheduler - Task 'S1' added with interval: {'seconds': 5}
+2025-07-10 11:16:54,916 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 11:16:54,916 - INFO - core.task_manager - Task 'S1' started successfully.
+2025-07-10 11:16:54,916 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'running'.
+2025-07-10 11:16:54,917 - INFO - view.main_window - Task S1 started or resumed.
+2025-07-10 11:16:59,927 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:04 EDT)" (scheduled at 2025-07-10 11:16:59.914332-04:00)
+2025-07-10 11:16:59,928 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:04 EDT)" executed successfully
+2025-07-10 11:17:00,005 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 11:18:00 EDT)" (scheduled at 2025-07-10 11:17:00-04:00)
+2025-07-10 11:17:00,006 - INFO - task_module - Task 'C1' is running.
+2025-07-10 11:17:00,007 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 11:18:00 EDT)" executed successfully
+2025-07-10 11:17:04,918 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:09 EDT)" (scheduled at 2025-07-10 11:17:04.914332-04:00)
+2025-07-10 11:17:04,919 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:09 EDT)" executed successfully
+2025-07-10 11:17:05,028 - INFO - task_module - System idle, moved mouse from [1787, 1176] to [2403, 618].
+2025-07-10 11:17:09,915 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:14 EDT)" (scheduled at 2025-07-10 11:17:09.914332-04:00)
+2025-07-10 11:17:09,916 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:14 EDT)" executed successfully
+2025-07-10 11:17:10,027 - INFO - task_module - System idle, moved mouse from [2403, 618] to [2935, 0].
+2025-07-10 11:17:14,925 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:19 EDT)" (scheduled at 2025-07-10 11:17:14.914332-04:00)
+2025-07-10 11:17:14,926 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:19 EDT)" executed successfully
+2025-07-10 11:17:19,922 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:24 EDT)" (scheduled at 2025-07-10 11:17:19.914332-04:00)
+2025-07-10 11:17:19,922 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:24 EDT)" executed successfully
+2025-07-10 11:17:24,930 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:29 EDT)" (scheduled at 2025-07-10 11:17:24.914332-04:00)
+2025-07-10 11:17:24,931 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:29 EDT)" executed successfully
+2025-07-10 11:17:25,039 - INFO - task_module - System idle, moved mouse from [2190, 1235] to [2727, 368].
+2025-07-10 11:17:29,919 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:34 EDT)" (scheduled at 2025-07-10 11:17:29.914332-04:00)
+2025-07-10 11:17:29,920 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:34 EDT)" executed successfully
+2025-07-10 11:17:30,029 - INFO - task_module - System idle, moved mouse from [2727, 368] to [3378, 0].
+2025-07-10 11:17:34,922 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:39 EDT)" (scheduled at 2025-07-10 11:17:34.914332-04:00)
+2025-07-10 11:17:34,923 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:39 EDT)" executed successfully
+2025-07-10 11:17:39,922 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:44 EDT)" (scheduled at 2025-07-10 11:17:39.914332-04:00)
+2025-07-10 11:17:39,923 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:44 EDT)" executed successfully
+2025-07-10 11:17:44,916 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:49 EDT)" (scheduled at 2025-07-10 11:17:44.914332-04:00)
+2025-07-10 11:17:44,918 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:49 EDT)" executed successfully
+2025-07-10 11:17:45,027 - INFO - task_module - System idle, moved mouse from [1909, 1344] to [935, 359].
+2025-07-10 11:17:46,604 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 11:17:49,925 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:54 EDT)" (scheduled at 2025-07-10 11:17:49.914332-04:00)
+2025-07-10 11:17:49,926 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.<lambda> (trigger: interval[0:00:05], next run at: 2025-07-10 11:17:54 EDT)" executed successfully
+2025-07-10 11:17:52,833 - INFO - apscheduler.scheduler - Removed job S1
+2025-07-10 11:17:52,834 - INFO - core.scheduler - task_removed
+2025-07-10 11:17:52,835 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 11:17:52,835 - INFO - core.task_manager - Task S1 stopped and removed from scheduler.
+2025-07-10 11:17:52,835 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'stopped'.
+2025-07-10 11:17:52,837 - INFO - view.main_window - Task S1 stopped.
+2025-07-10 11:18:00,008 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 11:19:00 EDT)" (scheduled at 2025-07-10 11:18:00-04:00)
+2025-07-10 11:18:00,009 - INFO - task_module - Task 'C1' is running.
+2025-07-10 11:18:00,011 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 11:19:00 EDT)" executed successfully
+2025-07-10 11:18:00,256 - INFO - view.detail_area_widget - Closed tab and released resources for: C1
+2025-07-10 11:18:10,077 - INFO - apscheduler.scheduler - Removed job C1
+2025-07-10 11:18:10,078 - INFO - core.scheduler - task_removed
+2025-07-10 11:18:10,079 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 11:18:10,079 - INFO - core.task_manager - Task C1 stopped and removed from scheduler.
+2025-07-10 11:18:10,080 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'stopped'.
+2025-07-10 11:18:10,080 - INFO - view.main_window - Task C1 stopped.
+2025-07-10 11:18:13,274 - INFO - core.task_manager - Task C1 deleted.
+2025-07-10 11:18:13,275 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:18:13,284 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 11:18:13,292 - INFO - view.main_window - Task C1 deleted.
+2025-07-10 11:18:15,632 - INFO - core.task_manager - Task S1 deleted.
+2025-07-10 11:18:15,632 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 11:18:15,641 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 11:18:15,649 - INFO - view.main_window - Task S1 deleted.
+2025-07-10 11:18:27,521 - INFO - view.detail_area_widget - Closed tab and released resources for: S1
+2025-07-10 11:18:33,733 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 11:18:33,734 - INFO - core.scheduler - scheduler_shutdown
