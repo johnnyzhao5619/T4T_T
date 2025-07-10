@@ -1,0 +1,33 @@
+{
+  "language": "French",
+  "code": "fr",
+  "translations": {
+    "app_title": "T4T - Plateforme de gestion des tâches",
+    "file": "Fichier",
+    "edit": "Éditer",
+    "view": "Voir",
+    "help": "Aide",
+    "settings": "Paramètres",
+    "logs": "Journaux",
+    "status": "Statut",
+    "tasks": "Tâches",
+    "add_task": "Ajouter une tâche",
+    "delete_task": "Supprimer la tâche",
+    "start_task": "Démarrer la tâche",
+    "stop_task": "Arrêter la tâche",
+    "configure_task": "Configurer la tâche",
+    "rename_task": "Renommer la tâche",
+    "overview": "Aperçu",
+    "configuration": "Configuration",
+    "task_name": "Nom de la tâche",
+    "task_type": "Type de tâche",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "error": "Erreur",
+    "warning": "Avertissement",
+    "success": "Succès",
+    "running": "En cours",
+    "paused": "En pause",
+    "stopped": "Arrêté"
+  }
+}

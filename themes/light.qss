@@ -1,0 +1,150 @@
+/* Light Theme for T4T Application */
+
+QMainWindow, QDialog {
+    background-color: #ecf0f1;
+    color: #2c3e50;
+}
+
+QWidget {
+    background-color: #ecf0f1;
+    color: #2c3e50;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+}
+
+QMenuBar {
+    background-color: #e1e5e6;
+    color: #2c3e50;
+    border-bottom: 1px solid #d5dbdb;
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    padding: 5px 10px;
+}
+
+QMenuBar::item:selected {
+    background-color: #bdc3c7;
+}
+
+QMenu {
+    background-color: #e1e5e6;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+}
+
+QMenu::item {
+    padding: 5px 20px;
+}
+
+QMenu::item:selected {
+    background-color: #bdc3c7;
+}
+
+QPushButton {
+    background-color: #3498db;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+QPushButton:hover {
+    background-color: #4eaadd;
+}
+
+QPushButton:pressed {
+    background-color: #2980b9;
+}
+
+QPushButton:disabled {
+    background-color: #bdc3c7;
+    color: #7f8c8d;
+}
+
+QLabel {
+    background-color: transparent;
+    color: #2c3e50;
+    padding: 2px;
+}
+
+QComboBox {
+    background-color: #ffffff;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    padding: 5px;
+}
+
+QComboBox:hover {
+    border: 1px solid #3498db;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left-width: 1px;
+    border-left-color: #bdc3c7;
+    border-left-style: solid;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+    selection-background-color: #3498db;
+    selection-color: #ffffff;
+}
+
+QToolBar {
+    background-color: #e1e5e6;
+    border-bottom: 1px solid #d5dbdb;
+    padding: 2px;
+}
+
+QStatusBar {
+    background-color: #e1e5e6;
+    color: #34495e;
+}
+
+QSplitter::handle {
+    background-color: #d5dbdb;
+}
+
+QSplitter::handle:horizontal {
+    width: 1px;
+}
+
+QSplitter::handle:vertical {
+    height: 1px;
+}
+
+QListView {
+    background-color: #ffffff;
+    border: 1px solid #d5dbdb;
+    color: #2c3e50;
+}
+
+QListView::item:selected {
+    background-color: #3498db;
+    color: #ffffff;
+}
+
+QTabWidget::pane {
+    border: 1px solid #d5dbdb;
+}
+
+QTabBar::tab {
+    background: #e1e5e6;
+    color: #2c3e50;
+    padding: 8px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+QTabBar::tab:selected {
+    background: #bdc3c7;
+}

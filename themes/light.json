@@ -1,0 +1,11 @@
+{
+  "name": "Light Theme",
+  "background": "#FFFFFF",
+  "foreground": "#000000",
+  "primary": "#007BFF",
+  "secondary": "#6C757D",
+  "accent": "#28A745",
+  "error": "#DC3545",
+  "font": "Arial, sans-serif",
+  "border_radius": 5
+}
