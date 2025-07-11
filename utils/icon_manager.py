@@ -1,6 +1,6 @@
 # utils/icon_manager.py
 import qtawesome as qta
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtGui import QColor
 
 # Define icon color schemes for different themes
 ICON_COLORS = {

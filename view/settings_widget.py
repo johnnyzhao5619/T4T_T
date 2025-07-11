@@ -41,13 +41,18 @@ class SettingsWidget(QWidget):
         appearance_group = QGroupBox(_("appearance_language_group_title"))
         appearance_group.setObjectName("appearance_language_group_title")
         form_layout = QFormLayout(appearance_group)
+        form_layout.setLabelAlignment(Qt.AlignLeft)
+        form_layout.setFormAlignment(Qt.AlignLeft)
+        form_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         form_layout.setSpacing(10)
 
         self.theme_combo = QComboBox()
-        form_layout.addRow(_("theme_label"), self.theme_combo)
+        self.theme_label = QLabel(_("theme_label"))
+        form_layout.addRow(self.theme_label, self.theme_combo)
 
         self.language_combo = QComboBox()
-        form_layout.addRow(_("language_label"), self.language_combo)
+        self.language_label = QLabel(_("language_label"))
+        form_layout.addRow(self.language_label, self.language_combo)
 
         container_layout.addWidget(appearance_group)
 
@@ -174,6 +179,10 @@ class SettingsWidget(QWidget):
             _("appearance_language_group_title"))
         self.findChild(QGroupBox, "module_management_group_title").setTitle(
             _("module_management_group_title"))
+
+        self.theme_label.setText(_("theme_label"))
+        self.language_label.setText(_("language_label"))
+
         self.import_module_button.setText(_("import_module_button"))
         self.populate_modules()
 

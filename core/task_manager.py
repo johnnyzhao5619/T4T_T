@@ -66,9 +66,8 @@ class TaskManager:
                     except Exception as e:
                         logger.error(f"Failed to load task '{task_name}': {e}")
                 else:
-                    logger.warning(
-                        f"Task '{task_name}' is missing main.py or config.json."
-                    )
+                    logger.warning(f"Task '{task_name}' is missing main.py or "
+                                   "config.json.")
         logger.info(f"Loaded {len(self.tasks)} tasks.")
 
     def get_task_list(self):
@@ -165,8 +164,9 @@ class TaskManager:
 
             # Special handling for 'DataSync' module type
             if module_type == "DataSync":
-                # These files should exist in a predefined location, e.g., 'templates/auth'
-                # For now, we'll assume they are in the module directory for simplicity
+                # These files should exist in a predefined location, e.g.,
+                # 'templates/auth', For now, we'll assume they are in the
+                # module directory for simplicity
                 module_dir = os.path.dirname(templates['py_template'])
                 creds_src = os.path.join(module_dir, "credentials.json")
                 token_src = os.path.join(module_dir, "token.json")
@@ -177,9 +177,8 @@ class TaskManager:
                     shutil.copy(token_src,
                                 os.path.join(task_path, "token.json"))
 
-            logger.info(
-                f"Task '{task_name}' created successfully from module '{module_type}'."
-            )
+            logger.info(f"Task '{task_name}' created successfully"
+                        f" from module '{module_type}'.")
             self.load_tasks()  # Refresh task list
             a_signal.task_manager_updated.emit()
             return True
@@ -364,9 +363,8 @@ class TaskManager:
                     getattr(task_module, 'run')):
                 return getattr(task_module, 'run')
             else:
-                logger.error(
-                    f"Script '{script_path}' does not have a callable 'run' function."
-                )
+                logger.error(f"Script '{script_path}' does not have a callable"
+                             " 'run' function.")
                 return None
         except Exception as e:
             logger.error(
@@ -400,22 +398,24 @@ class TaskManager:
         module_type = config_data.get('module_type')
 
         if module_type == 'screen_protector':
-            # For pynput on macOS, all related code must run on the main thread.
-            # We schedule a simple lambda that only emits a signal with the
-            # task name. The main window handles all loading and execution.
-            job_to_schedule = lambda: a_signal.execute_in_main_thread.emit(
-                task_name)
+            # For pynput on macOS, all related code must run on the main
+            # thread. We schedule a simple lambda that only emits a signal
+            #  with the task name. The main window handles all loading and
+            # execution.
+            def job_to_schedule():
+                return a_signal.execute_in_main_thread.emit(task_name)
+
             logger.info(
-                f"Task '{task_name}' is type '{module_type}', scheduling for main thread execution via signal."
-            )
+                f"Task '{task_name}' is type '{module_type}', scheduling for"
+                " main thread execution via signal.")
         else:
             # For standard tasks, load the executable and schedule it directly
             # to run in a background thread.
             executable_func = self._load_task_executable(script_path)
             if not executable_func:
                 logger.error(
-                    f"Could not start task '{task_name}' due to loading failure."
-                )
+                    f"Could not start task '{task_name}' due to loading "
+                    "failure.")
                 return False
 
             log_emitter = partial(a_signal.log_message.emit, task_name)
@@ -495,6 +495,57 @@ class TaskManager:
             logger.error(f"Failed to resume task {task_name}: {str(e)}")
             return False
 
+    def pause_task(self, task_name, scheduler: SchedulerManager):
+        """
+        Pause a task by removing it from the scheduler.
+
+        Args:
+            task_name (str): Name of the task to pause.
+            scheduler (SchedulerManager): Scheduler instance managing the task.
+
+        Returns:
+            bool: True if task was paused successfully, False otherwise.
+        """
+        if task_name not in self.tasks:
+            logger.error(f"Task {task_name} not found.")
+            return False
+
+        try:
+            success = scheduler.pause_task(task_name)
+            if success:
+                self.tasks[task_name]['status'] = 'paused'
+                logger.info(f"Task {task_name} paused.")
+                a_signal.task_status_changed.emit(task_name, 'paused')
+            return success
+        except Exception as e:
+            logger.error(f"Failed to pause task {task_name}: {str(e)}")
+            return False
+
+    def start_all_tasks(self, scheduler: SchedulerManager):
+        """
+        Starts all tasks that are not currently running.
+        """
+        for task_name in self.tasks:
+            if self.get_task_status(task_name, scheduler) != 'running':
+                self.start_task(task_name, scheduler)
+
+    def pause_all_tasks(self, scheduler: SchedulerManager):
+        """
+        Pauses all currently running tasks.
+        """
+        for task_name in self.tasks:
+            if self.get_task_status(task_name, scheduler) == 'running':
+                self.pause_task(task_name, scheduler)
+
+    def stop_all_tasks(self, scheduler: SchedulerManager):
+        """
+        Stops all currently running tasks.
+        """
+        for task_name in self.tasks:
+            if self.get_task_status(
+                    task_name, scheduler) in ['running', 'paused']:
+                self.stop_task(task_name, scheduler)
+
     def get_task_status(self, task_name, scheduler: SchedulerManager):
         """
         Get the current status of a task.
@@ -522,5 +573,6 @@ class TaskManager:
         self.load_tasks()
 
 
-# TODO: Add support for data sync tasks with Google Sheet templates and authorization files
+# TODO: Add support for data sync tasks with Google Sheet templates and
+# authorization files
 # TODO: Implement task execution logic with error handling and retry options

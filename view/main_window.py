@@ -1,5 +1,8 @@
 import logging
 import psutil
+import os
+import shutil
+import json
 from functools import partial
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -11,6 +14,10 @@ from PyQt5.QtWidgets import (
     QToolBar,
     QAction,
     QSplitter,
+    QMessageBox,
+    QInputDialog,
+    QTextBrowser,
+    QPushButton,
 )
 from PyQt5.QtCore import Qt, QTimer
 from view.task_list_widget import TaskListWidget
@@ -21,6 +28,96 @@ from utils.icon_manager import get_icon, set_theme as set_icon_theme
 from utils.signals import a_signal
 
 logger = logging.getLogger(__name__)
+
+
+class DevGuideWidget(QWidget):
+    """A widget to display the development guide."""
+
+    def __init__(self, module_manager, parent=None):
+        super().__init__(parent)
+        self.module_manager = module_manager
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+
+        # Add a button to create a new module from the template
+        self.create_module_button = QPushButton(
+            get_icon('fa5s.plus-square', color_key='success'),
+            _("create_new_module"))
+        self.create_module_button.clicked.connect(self.create_new_module)
+        layout.addWidget(self.create_module_button)
+
+        # Text browser to display the guide
+        self.text_browser = QTextBrowser()
+        layout.addWidget(self.text_browser)
+
+        self.load_guide()
+
+    def load_guide(self):
+        try:
+            with open('docs/development_guide.md', 'r', encoding='utf-8') as f:
+                content = f.read()
+            self.text_browser.setMarkdown(content)
+        except FileNotFoundError:
+            self.text_browser.setText(_("dev_guide_not_found"))
+
+    def create_new_module(self):
+        module_name, ok = QInputDialog.getText(self, _("create_new_module"),
+                                               _("enter_module_name"))
+        if ok and module_name:
+            try:
+                # Sanitize module name to be a valid directory name
+                safe_module_name = "".join(c for c in module_name
+                                           if c.isalnum() or c in ('_', '-'))
+                safe_module_name = safe_module_name.rstrip()
+                if not safe_module_name:
+                    QMessageBox.warning(self, _("invalid_name"),
+                                        _("module_name_invalid_chars"))
+                    return
+
+                src_dir = 'modules/template'
+                dest_dir = f'modules/{safe_module_name}'
+
+                if os.path.exists(dest_dir):
+                    QMessageBox.warning(
+                        self, _("module_exists"),
+                        _("module_already_exists").format(
+                            name=safe_module_name))
+                    return
+
+                # Copy the template directory
+                shutil.copytree(src_dir, dest_dir)
+
+                # Rename the files
+                py_path = os.path.join(dest_dir, 'template_template.py')
+                new_py_path = os.path.join(dest_dir,
+                                           f'{safe_module_name}_template.py')
+                os.rename(py_path, new_py_path)
+
+                json_path = os.path.join(dest_dir, 'template_template.json')
+                new_json_path = os.path.join(
+                    dest_dir, f'{safe_module_name}_template.json')
+                os.rename(json_path, new_json_path)
+
+                # Update the module_type in the new json file
+                with open(new_json_path, 'r+', encoding='utf-8') as f:
+                    data = json.load(f)
+                    data['module_type'] = safe_module_name
+                    data['name'] = module_name
+                    f.seek(0)
+                    json.dump(data, f, indent=4)
+                    f.truncate()
+
+                QMessageBox.information(
+                    self, _("success"),
+                    _("module_created_successfully").format(
+                        name=safe_module_name))
+                self.module_manager.discover_modules()  # Refresh modules
+            except Exception as e:
+                QMessageBox.critical(
+                    self, _("error"),
+                    _("module_creation_failed").format(error=e))
 
 
 class T4TMainWindow(QMainWindow):
@@ -82,20 +179,19 @@ class T4TMainWindow(QMainWindow):
             task_config = task_info.get('config_data', {})
 
             # Re-create the final callable function within the main thread
-            task_callable = partial(
-                executable_func,
-                config=task_config,
-                log_emitter=log_emitter,
-                debug=task_config.get('debug', False),
-                config_path=task_info['config'])
+            task_callable = partial(executable_func,
+                                    config=task_config,
+                                    log_emitter=log_emitter,
+                                    debug=task_config.get('debug', False),
+                                    config_path=task_info['config'])
 
             # Execute the task
             task_callable()
 
         except Exception as e:
             logger.error(
-                f"An error occurred while executing task '{task_name}' in main thread: {e}"
-            )
+                f"An error occurred while executing task '{task_name}'"
+                f" in main thread: {e}")
 
     def autostart_enabled_tasks(self):
         """
@@ -163,11 +259,28 @@ class T4TMainWindow(QMainWindow):
         self.add_task_action = QAction("", self)
         self.add_task_action.triggered.connect(self.add_task)
 
+        self.start_action = QAction("", self)
+        self.start_action.triggered.connect(self.start_task)
+        self.pause_action = QAction("", self)
+        self.pause_action.triggered.connect(self.pause_task)
+        self.stop_action = QAction("", self)
+        self.stop_action.triggered.connect(self.stop_task)
+
+        self.start_all_action = QAction("", self)
+        self.start_all_action.triggered.connect(self.start_all_tasks)
+        self.pause_all_action = QAction("", self)
+        self.pause_all_action.triggered.connect(self.pause_all_tasks)
+        self.stop_all_action = QAction("", self)
+        self.stop_all_action.triggered.connect(self.stop_all_tasks)
+
         self.toolbar.addSeparator()
 
         self.logs_action = QAction("", self)
-        self.status_action = QAction("", self)
+        self.logs_action.triggered.connect(self.open_logs_tab)
+        self.dev_guide_action = QAction("", self)
+        self.dev_guide_action.triggered.connect(self.open_dev_guide_tab)
         self.help_action = QAction("", self)
+        self.help_action.triggered.connect(self.open_help_tab)
 
         self.toolbar.addSeparator()
 
@@ -175,12 +288,23 @@ class T4TMainWindow(QMainWindow):
         self.settings_action.triggered.connect(self.open_settings_tab)
 
         self.toolbar.addAction(self.add_task_action)
+        self.toolbar.addAction(self.start_action)
+        self.toolbar.addAction(self.pause_action)
+        self.toolbar.addAction(self.stop_action)
+        self.toolbar.addAction(self.start_all_action)
+        self.toolbar.addAction(self.pause_all_action)
+        self.toolbar.addAction(self.stop_all_action)
         self.toolbar.addAction(self.logs_action)
-        self.toolbar.addAction(self.status_action)
+        self.toolbar.addAction(self.dev_guide_action)
         self.toolbar.addAction(self.help_action)
         self.toolbar.addAction(self.settings_action)
 
         self.setup_toolbar_icons()
+
+        # Initial state for task-specific actions
+        self.start_action.setEnabled(False)
+        self.pause_action.setEnabled(False)
+        self.stop_action.setEnabled(False)
 
         # Status bar at the bottom
         status_bar = QStatusBar()
@@ -190,9 +314,17 @@ class T4TMainWindow(QMainWindow):
         """Set icons for all toolbar actions."""
         self.add_task_action.setIcon(get_icon('fa5s.plus',
                                               color_key='success'))
+        self.start_action.setIcon(get_icon('fa5s.play', color_key='success'))
+        self.pause_action.setIcon(get_icon('fa5s.pause', color_key='warning'))
+        self.stop_action.setIcon(get_icon('fa5s.stop', color_key='danger'))
+        self.start_all_action.setIcon(
+            get_icon('fa5s.play-circle', color_key='success'))
+        self.pause_all_action.setIcon(
+            get_icon('fa5s.pause-circle', color_key='warning'))
+        self.stop_all_action.setIcon(
+            get_icon('fa5s.stop-circle', color_key='danger'))
         self.logs_action.setIcon(get_icon('fa5s.file-alt', color_key='info'))
-        self.status_action.setIcon(
-            get_icon('fa5s.info-circle', color_key='info'))
+        self.dev_guide_action.setIcon(get_icon('fa5s.book', color_key='info'))
         self.help_action.setIcon(
             get_icon('fa5s.question-circle', color_key='info'))
         self.settings_action.setIcon(get_icon('fa5s.cogs'))
@@ -209,8 +341,14 @@ class T4TMainWindow(QMainWindow):
         self.toolbar.setWindowTitle(_("main_toolbar_title"))
         self.task_list_title.setText(_("task_list_title"))
         self.add_task_action.setText(_("add_task_action"))
+        self.start_action.setText(_("start_action"))
+        self.pause_action.setText(_("pause_action"))
+        self.start_all_action.setText(_("start_all_action"))
+        self.pause_all_action.setText(_("pause_all_action"))
+        self.stop_action.setText(_("stop_action"))
+        self.stop_all_action.setText(_("stop_all_action"))
         self.logs_action.setText(_("logs_action"))
-        self.status_action.setText(_("status_action"))
+        self.dev_guide_action.setText(_("dev_guide_title"))
         self.help_action.setText(_("help_action"))
         self.settings_action.setText(_("settings_action"))
         # Also retranslate child widgets if they don't handle it themselves
@@ -233,8 +371,14 @@ class T4TMainWindow(QMainWindow):
             status = self.task_manager.get_task_status(task_name,
                                                        self.scheduler)
             self.detail_area_widget.update_details(task_name, status)
+            self.start_action.setEnabled(True)
+            self.pause_action.setEnabled(True)
+            self.stop_action.setEnabled(True)
         else:
             self.detail_area_widget.clear_details()
+            self.start_action.setEnabled(False)
+            self.pause_action.setEnabled(False)
+            self.stop_action.setEnabled(False)
 
     def update_status_bar(self):
         """
@@ -282,6 +426,34 @@ class T4TMainWindow(QMainWindow):
         else:
             logger.warning("No task selected to start.")
 
+    def pause_task(self):
+        selected_items = self.task_list_widget.selectedItems()
+        if selected_items:
+            task_name = selected_items[0].text()
+            success = self.task_manager.pause_task(task_name, self.scheduler)
+            if success:
+                self.on_task_selection_changed()
+                logger.info(f"Task {task_name} paused.")
+            else:
+                logger.error(f"Failed to pause task {task_name}.")
+        else:
+            logger.warning("No task selected to pause.")
+
+    def start_all_tasks(self):
+        self.task_manager.start_all_tasks(self.scheduler)
+        self.on_task_selection_changed()
+        logger.info("Attempted to start all tasks.")
+
+    def pause_all_tasks(self):
+        self.task_manager.pause_all_tasks(self.scheduler)
+        self.on_task_selection_changed()
+        logger.info("Attempted to pause all tasks.")
+
+    def stop_all_tasks(self):
+        self.task_manager.stop_all_tasks(self.scheduler)
+        self.on_task_selection_changed()
+        logger.info("Attempted to stop all tasks.")
+
     def stop_task(self):
         selected_items = self.task_list_widget.selectedItems()
         if selected_items:
@@ -314,3 +486,26 @@ class T4TMainWindow(QMainWindow):
         Opens the settings widget in a new tab.
         """
         self.detail_area_widget.open_settings_tab()
+
+    def open_logs_tab(self):
+        """
+        Opens the log viewer widget in a new tab.
+        """
+        self.detail_area_widget.open_log_viewer_tab()
+
+    def open_help_tab(self):
+        """
+        Opens the help widget in a new tab.
+        """
+        self.detail_area_widget.open_help_tab()
+
+    def open_dev_guide_tab(self):
+        """
+        Opens the development guide widget in a new tab.
+        """
+        self.detail_area_widget.open_widget_as_tab(
+            widget_id="dev_guide_tab",
+            widget_class=DevGuideWidget,
+            title=_("dev_guide_title"),
+            icon_name='fa5s.book',
+            constructor_args=[self.module_manager])

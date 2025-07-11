@@ -1,6 +1,6 @@
 import logging
-from PyQt5.QtWidgets import (QListWidget, QListWidgetItem, QMenu, QAction,
-                             QInputDialog, QMessageBox, QLineEdit)
+from PyQt5.QtWidgets import (QListWidget, QListWidgetItem, QMenu, QInputDialog,
+                             QMessageBox, QLineEdit)
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt, QSize
 from utils.signals import a_signal
@@ -12,15 +12,15 @@ logger = logging.getLogger(__name__)
 
 class TaskListWidget(QListWidget):
     """
-    A custom widget to display and manage the list of tasks with status indicators
-    and a context menu for quick actions.
+    A custom widget to display and manage the list of tasks with status
+    indicators and a context menu for quick actions.
     """
 
     def __init__(self, task_manager, scheduler, main_window, parent=None):
         super().__init__(parent)
         self.task_manager = task_manager
         self.scheduler = scheduler
-        self.main_window = main_window  # Reference to the main window for actions
+        self.main_window = main_window
         self.setMinimumWidth(200)
         self.setMaximumWidth(400)
         self.setIconSize(QSize(16, 16))

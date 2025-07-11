@@ -1,13 +1,9 @@
 import logging
-import json
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QLineEdit,
-                             QCheckBox, QPushButton, QLabel, QScrollArea,
-                             QComboBox, QSpinBox, QHBoxLayout, QToolTip,
-                             QFileDialog, QMessageBox, QStyle, QFrame)
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLineEdit, QCheckBox,
+                             QLabel, QScrollArea, QComboBox, QSpinBox,
+                             QHBoxLayout, QStyle, QFrame)
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIcon, QCursor
 from utils.i18n import _
-from utils.icon_manager import get_icon
 
 logger = logging.getLogger(__name__)
 
@@ -87,15 +83,18 @@ class TaskConfigWidget(QWidget):
                 group_box = QFrame()
                 group_box.setObjectName(f"group_{key}")
                 group_box.setFrameShape(QFrame.StyledPanel)
-                
+
                 group_layout = QVBoxLayout(group_box)
                 group_layout.setContentsMargins(10, 10, 10, 10)
-                
-                label_text = param_schema.get("label", key.replace("_", " ").title())
+
+                label_text = param_schema.get("label",
+                                              key.replace("_", " ").title())
                 group_label = QLabel(f"<h3>{label_text}</h3>")
                 group_layout.addWidget(group_label)
 
-                self._recursive_populate(group_layout, value, param_schema.get("properties", {}), full_key)
+                self._recursive_populate(group_layout, value,
+                                         param_schema.get("properties", {}),
+                                         full_key)
                 layout.addWidget(group_box)
             else:
                 row_widget = QWidget()
@@ -106,14 +105,16 @@ class TaskConfigWidget(QWidget):
                 label_container = QWidget()
                 label_layout = QHBoxLayout(label_container)
                 label_layout.setContentsMargins(0, 0, 0, 0)
-                label_text = param_schema.get("label", key.replace("_", " ").title())
+                label_text = param_schema.get("label",
+                                              key.replace("_", " ").title())
                 label_widget = QLabel(f"<b>{label_text}</b>")
                 label_layout.addWidget(label_widget)
 
                 description = param_schema.get("description", "")
                 if description:
                     help_icon = QLabel()
-                    icon = self.style().standardIcon(QStyle.SP_MessageBoxQuestion)
+                    icon = self.style().standardIcon(
+                        QStyle.SP_MessageBoxQuestion)
                     help_icon.setPixmap(icon.pixmap(14, 14))
                     help_icon.setToolTip(description)
                     label_layout.addWidget(help_icon)
@@ -121,8 +122,9 @@ class TaskConfigWidget(QWidget):
                 row_layout.addWidget(label_container)
 
                 input_type = param_schema.get("type", self._infer_type(value))
-                widget = self._create_input_widget(full_key, value, input_type, param_schema)
-                
+                widget = self._create_input_widget(full_key, value, input_type,
+                                                   param_schema)
+
                 row_layout.addWidget(widget)
                 layout.addWidget(row_widget)
                 self.widgets[full_key] = widget
@@ -195,7 +197,7 @@ class TaskConfigWidget(QWidget):
             current_level = config_data
             for i, key in enumerate(keys[:-1]):
                 current_level = current_level.setdefault(key, {})
-            
+
             last_key = keys[-1]
             value = None
             if isinstance(widget, QCheckBox):
@@ -205,17 +207,20 @@ class TaskConfigWidget(QWidget):
             elif isinstance(widget, QComboBox):
                 value = widget.currentText()
             elif isinstance(widget, QLineEdit):
-                # For line edits, we return a string. The JSON dump will handle it.
+                # For line edits, we return a string. The JSON dump will
+                # handle it.
                 # If a numeric type is desired, the user should use a QSpinBox
                 # or a validator, which is a more robust approach.
                 value = widget.text()
-            
+
             current_level[last_key] = value
-            
+
         return config_data
 
     def set_config(self, config_data):
-        """Public method to update the form from external data (e.g., import)."""
+        """
+        Public method to update the form from external data (e.g., import).
+        """
         schema = self.task_manager.get_task_schema(self.task_name)
         self._populate_form(config_data, schema)
         # Mark all as changed to allow saving
@@ -257,9 +262,8 @@ class TaskConfigWidget(QWidget):
         if new_task_name and self.task_name != new_task_name:
             old_task_name = self.task_name
             self.task_name = new_task_name
-            logger.info(
-                f"Task '{old_task_name}' has been renamed to '{self.task_name}'."
-            )
+            logger.info(f"Task '{old_task_name}' has been"
+                        f" renamed to '{self.task_name}'.")
             self.config_reloaded.emit(self.task_name)
 
         self.changed_widgets.clear()

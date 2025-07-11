@@ -61,6 +61,12 @@ class ThemeManager(QObject):
                 app.setStyleSheet(self.current_stylesheet)
                 self.theme_changed.emit(self.current_stylesheet)
 
+                # Force style refresh for all top-level widgets
+                for widget in app.topLevelWidgets():
+                    style = widget.style()
+                    style.unpolish(widget)
+                    style.polish(widget)
+
 
 # --- Global Instance ---
 theme_manager = ThemeManager()

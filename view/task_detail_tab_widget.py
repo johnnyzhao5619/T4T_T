@@ -154,8 +154,8 @@ class TaskDetailTabWidget(QWidget):
                 self.task_config_widget.set_config(config_data)
         except Exception as e:
             logger.warning(
-                f"Could not sync config editors for task '{self.task_name}': {e}"
-            )
+                f"Could not sync config editors for task '{self.task_name}':"
+                f" {e}")
 
     def on_config_changed(self):
         self.save_button.setEnabled(True)

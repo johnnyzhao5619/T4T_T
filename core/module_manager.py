@@ -1,5 +1,4 @@
 import os
-import json
 import shutil
 import zipfile
 from typing import Dict, Optional, List
@@ -20,7 +19,7 @@ class ModuleManager:
     def __init__(self, module_path: str = 'modules/'):
         """
         Initializes the ModuleManager, discovers and registers modules.
-        
+
         Args:
             module_path (str): The path to the directory containing modules.
         """
@@ -62,13 +61,11 @@ class ModuleManager:
                         'json_template': json_template_path,
                         'path': module_dir
                     }
-                    print(
-                        f"  -> Discovered and registered module: '{module_name}'"
-                    )
+                    print("  -> Discovered and registered module:"
+                          f" '{module_name}'")
                 else:
-                    print(
-                        f"  -> Skipping directory '{module_name}': missing required template files."
-                    )
+                    print(f"  -> Skipping directory '{module_name}':"
+                          " missing required template files.")
         print("Module discovery complete.")
         a_signal.modules_updated.emit()
 
@@ -90,8 +87,8 @@ class ModuleManager:
             module_name (str): The name of the module.
 
         Returns:
-            Optional[Dict[str, str]]: A dictionary with 'py_template' and 'json_template' paths,
-                                      or None if the module is not found.
+            Optional[Dict[str, str]]: A dictionary with 'py_template'
+            and 'json_template' paths, or None if the module is not found.
         """
         return self.modules.get(module_name)
 
@@ -122,7 +119,8 @@ class ModuleManager:
                 source_module_dir = os.path.join(temp_extract_dir, module_name)
 
                 if not os.path.isdir(source_module_dir):
-                    # If the zip file does not contain a subdirectory, use the zip file name as the module name
+                    # If the zip file does not contain a subdirectory,
+                    # use the zip file name as the module name
                     module_name = os.path.splitext(
                         os.path.basename(zip_path))[0]
                     source_module_dir = temp_extract_dir

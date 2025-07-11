@@ -58,14 +58,16 @@ class SchedulerManager:
 
     def add_task(self, task_id: str, func, schedule_config: dict):
         """
-        Adds a new task to the scheduler based on a schedule configuration object.
+        Adds a new task to the scheduler based on a schedule configuration 
+        object.
 
         Args:
             task_id (str): A unique identifier for the task.
-            func (callable): The function to execute when the task is triggered.
+            func (callable): The function to execute when the task is
+            triggered.
             schedule_config (dict): A dictionary defining the schedule.
-                Example for cron: {'trigger': 'cron', 'expression': '0 * * * *'}
-                Example for interval: {'trigger': 'interval', 'seconds': 30}
+            Example for cron: {'trigger': 'cron', 'expression': '0 * * * *'}
+            Example for interval: {'trigger': 'interval', 'seconds': 30}
 
         Returns:
             bool: True if the task was added successfully, False otherwise.
@@ -84,11 +86,12 @@ class SchedulerManager:
                 }
                 if not interval_kwargs:
                     self.logger.error(
-                        f"Task '{task_id}' has no interval parameters (e.g., seconds, minutes)."
-                    )
+                        f"Task '{task_id}' has no interval parameters "
+                        "(e.g., seconds, minutes).")
                     return False
                 trigger = IntervalTrigger(**interval_kwargs)
-                log_msg = f"Task '{task_id}' added with interval: {interval_kwargs}"
+                log_msg = (f"Task '{task_id}' added with interval: "
+                           f"{interval_kwargs}")
 
             elif trigger_type == 'cron':
                 # For cron-based scheduling
@@ -98,18 +101,19 @@ class SchedulerManager:
                         f"Task '{task_id}' is missing cron 'expression'.")
                     return False
                 trigger = CronTrigger.from_crontab(cron_expression)
-                log_msg = f"Task '{task_id}' added with cron: {cron_expression}"
+                log_msg = (f"Task '{task_id}' added with cron: "
+                           f"{cron_expression}")
 
             else:
-                self.logger.error(
-                    f"Unsupported trigger type '{trigger_type}' for task '{task_id}'."
-                )
+                self.logger.error(f"Unsupported trigger type '{trigger_type}'"
+                                  f" for task '{task_id}'.")
                 return False
 
             self.scheduler.add_job(func,
                                    trigger=trigger,
                                    id=task_id,
-                                   misfire_grace_time=60)
+                                   misfire_grace_time=60,
+                                   replace_existing=True)
             self.logger.info(log_msg)
             return True
 
@@ -191,9 +195,10 @@ class SchedulerManager:
         if job is None:
             return 'stopped'
 
-        # A more robust check for paused status due to observed API inconsistencies.
-        # Directly accessing job.next_run_time caused an AttributeError.
-        # The string representation of a paused job typically contains '(paused)'.
+        # A more robust check for paused status due to observed API
+        # inconsistencies. Directly accessing job.next_run_time caused an
+        # AttributeError. The string representation of a paused job
+        # typically contains '(paused)'.
         if '(paused)' in str(job):
             return 'paused'
         else:

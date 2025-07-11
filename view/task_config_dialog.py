@@ -1,7 +1,6 @@
 import logging
-import json
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QTextEdit, QPushButton,
-                             QLabel, QComboBox, QFormLayout, QLineEdit)
+from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QPushButton, QLabel,
+                             QComboBox, QFormLayout, QLineEdit)
 from core.module_manager import module_manager
 
 logger = logging.getLogger(__name__)

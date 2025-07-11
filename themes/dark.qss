@@ -138,7 +138,6 @@ QTabWidget::pane {
 
 QTabBar::tab {
     background: #34495e;
-    color: #ecf0f1;
     padding: 8px;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
@@ -146,4 +145,10 @@ QTabBar::tab {
 
 QTabBar::tab:selected {
     background: #4e6a85;
+    color: #ffffff;
+}
+
+QTabBar::tab:!selected {
+    background: #2c3e50;
+    color: #bdc3c7;
 }

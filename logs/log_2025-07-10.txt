@@ -670,3 +670,284 @@ TypeError: not all arguments converted during string formatting
 2025-07-10 11:41:47,361 - INFO - view.main_window - Task S2 deleted.
 2025-07-10 11:41:49,819 - INFO - apscheduler.scheduler - Scheduler has been shut down
 2025-07-10 11:41:49,821 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 21:58:26,200 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 21:58:26,200 - INFO - root - Global exception hook has been set.
+2025-07-10 21:58:26,200 - INFO - __main__ - Application starting...
+2025-07-10 21:58:26,506 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 21:58:26,506 - INFO - core.task_manager - Loaded 0 tasks.
+2025-07-10 21:58:26,506 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 21:58:26,519 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 21:58:26,840 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 21:58:26,840 - INFO - core.scheduler - scheduler_started
+2025-07-10 22:02:53,304 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 22:02:53,306 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 22:05:33,222 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 22:05:33,222 - INFO - root - Global exception hook has been set.
+2025-07-10 22:05:33,222 - INFO - __main__ - Application starting...
+2025-07-10 22:05:33,508 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 22:05:33,508 - INFO - core.task_manager - Loaded 0 tasks.
+2025-07-10 22:05:33,508 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 22:05:33,524 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 22:05:33,855 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 22:05:33,855 - INFO - core.scheduler - scheduler_started
+2025-07-10 22:05:52,057 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 22:05:52,058 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 22:08:54,702 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 22:08:54,703 - INFO - root - Global exception hook has been set.
+2025-07-10 22:08:54,703 - INFO - __main__ - Application starting...
+2025-07-10 22:08:54,973 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 22:08:54,974 - INFO - core.task_manager - Loaded 0 tasks.
+2025-07-10 22:08:54,974 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 22:08:54,987 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 22:08:55,270 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 22:08:55,270 - INFO - core.scheduler - scheduler_started
+2025-07-10 22:09:01,042 - INFO - view.main_window - Attempted to start all tasks.
+2025-07-10 22:09:02,734 - INFO - view.main_window - Attempted to pause all tasks.
+2025-07-10 22:09:11,679 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 22:09:11,680 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 22:16:53,535 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 22:16:53,536 - INFO - root - Global exception hook has been set.
+2025-07-10 22:16:53,536 - INFO - __main__ - Application starting...
+2025-07-10 22:16:53,794 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 22:16:53,795 - INFO - core.task_manager - Loaded 0 tasks.
+2025-07-10 22:16:53,795 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 22:16:53,807 - INFO - view.task_list_widget - No tasks found to populate the list.
+2025-07-10 22:16:54,074 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 22:16:54,082 - INFO - core.scheduler - scheduler_started
+2025-07-10 22:16:56,917 - INFO - view.main_window - Attempted to start all tasks.
+2025-07-10 22:16:57,376 - INFO - view.main_window - Attempted to pause all tasks.
+2025-07-10 22:19:51,678 - INFO - core.task_manager - Task 'S1' created successfully from module 'screen_protector'.
+2025-07-10 22:19:51,679 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 22:19:51,679 - INFO - core.task_manager - Loaded 1 tasks.
+2025-07-10 22:19:51,679 - INFO - view.task_list_widget - Task list populated with 1 tasks.
+2025-07-10 22:19:53,037 - INFO - view.detail_area_widget - Closed tab and released resources for: new_task_tab
+2025-07-10 22:20:00,794 - INFO - core.task_manager - Task 'C1' created successfully from module 'counter'.
+2025-07-10 22:20:00,795 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 22:20:00,795 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 22:20:00,795 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 22:20:00,795 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 22:20:02,067 - INFO - view.detail_area_widget - Closed tab and released resources for: new_task_tab
+2025-07-10 22:20:08,148 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 22:20:28,443 - INFO - core.scheduler - Adding task 'C1' with trigger type: cron
+2025-07-10 22:20:28,450 - INFO - apscheduler.scheduler - Added job "partial" to job store "default"
+2025-07-10 22:20:28,451 - INFO - core.scheduler - Task 'C1' added with cron: */1 * * * *
+2025-07-10 22:20:28,451 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 22:20:28,451 - INFO - core.task_manager - Task 'C1' started successfully.
+2025-07-10 22:20:28,452 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'running'.
+2025-07-10 22:20:28,453 - INFO - core.task_manager - Task 'S1' is type 'screen_protector', scheduling for main thread execution via signal.
+2025-07-10 22:20:28,453 - INFO - core.scheduler - Adding task 'S1' with trigger type: interval
+2025-07-10 22:20:28,453 - INFO - apscheduler.scheduler - Added job "TaskManager.start_task.<locals>.job_to_schedule" to job store "default"
+2025-07-10 22:20:28,453 - INFO - core.scheduler - Task 'S1' added with interval: {'seconds': 5}
+2025-07-10 22:20:28,454 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 22:20:28,454 - INFO - core.task_manager - Task 'S1' started successfully.
+2025-07-10 22:20:28,454 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'running'.
+2025-07-10 22:20:28,455 - INFO - view.main_window - Attempted to start all tasks.
+2025-07-10 22:20:32,365 - INFO - core.scheduler - task_paused
+2025-07-10 22:20:32,366 - INFO - core.task_manager - Task C1 paused.
+2025-07-10 22:20:32,366 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'paused'.
+2025-07-10 22:20:32,367 - INFO - core.scheduler - task_paused
+2025-07-10 22:20:32,367 - INFO - core.task_manager - Task S1 paused.
+2025-07-10 22:20:32,367 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'paused'.
+2025-07-10 22:20:32,368 - INFO - view.main_window - Attempted to pause all tasks.
+2025-07-10 22:20:38,372 - INFO - core.scheduler - Adding task 'C1' with trigger type: cron
+2025-07-10 22:20:38,373 - ERROR - core.scheduler - task_add_failed
+2025-07-10 22:20:38,373 - ERROR - view.main_window - Failed to start or resume task C1.
+2025-07-10 22:20:46,462 - INFO - core.scheduler - Adding task 'C1' with trigger type: cron
+2025-07-10 22:20:46,465 - ERROR - core.scheduler - task_add_failed
+2025-07-10 22:20:46,466 - ERROR - view.main_window - Failed to start or resume task C1.
+2025-07-10 22:28:46,631 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 22:28:46,632 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 22:28:47,026 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 22:28:47,027 - INFO - root - Global exception hook has been set.
+2025-07-10 22:28:47,027 - INFO - __main__ - Application starting...
+2025-07-10 22:28:47,276 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 22:28:47,276 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 22:28:47,277 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 22:28:47,277 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 22:28:47,277 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 22:28:47,279 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 22:28:47,506 - INFO - core.scheduler - Adding task 'C1' with trigger type: cron
+2025-07-10 22:28:47,508 - INFO - apscheduler.scheduler - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-10 22:28:47,508 - INFO - core.scheduler - Task 'C1' added with cron: */1 * * * *
+2025-07-10 22:28:47,508 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 22:28:47,508 - INFO - core.task_manager - Task 'C1' started successfully.
+2025-07-10 22:28:47,508 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'running'.
+2025-07-10 22:28:47,509 - INFO - core.task_manager - Task 'S1' is type 'screen_protector', scheduling for main thread execution via signal.
+2025-07-10 22:28:47,509 - INFO - core.scheduler - Adding task 'S1' with trigger type: interval
+2025-07-10 22:28:47,509 - INFO - apscheduler.scheduler - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-10 22:28:47,509 - INFO - core.scheduler - Task 'S1' added with interval: {'seconds': 5}
+2025-07-10 22:28:47,509 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 22:28:47,509 - INFO - core.task_manager - Task 'S1' started successfully.
+2025-07-10 22:28:47,509 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'running'.
+2025-07-10 22:28:47,545 - INFO - apscheduler.scheduler - Added job "partial" to job store "default"
+2025-07-10 22:28:47,545 - INFO - apscheduler.scheduler - Added job "TaskManager.start_task.<locals>.job_to_schedule" to job store "default"
+2025-07-10 22:28:47,545 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 22:28:47,546 - INFO - core.scheduler - scheduler_started
+2025-07-10 22:28:52,510 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:28:52 EDT)" (scheduled at 2025-07-10 22:28:52.509299-04:00)
+2025-07-10 22:28:52,511 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:28:57 EDT)" executed successfully
+2025-07-10 22:28:53,946 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 22:28:53,946 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 22:28:56,219 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 22:28:56,219 - INFO - root - Global exception hook has been set.
+2025-07-10 22:28:56,220 - INFO - __main__ - Application starting...
+2025-07-10 22:28:56,477 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 22:28:56,477 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 22:28:56,477 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 22:28:56,477 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 22:28:56,477 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 22:28:56,480 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 22:28:56,674 - INFO - core.scheduler - Adding task 'C1' with trigger type: cron
+2025-07-10 22:28:56,676 - INFO - apscheduler.scheduler - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-10 22:28:56,676 - INFO - core.scheduler - Task 'C1' added with cron: */1 * * * *
+2025-07-10 22:28:56,677 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 22:28:56,677 - INFO - core.task_manager - Task 'C1' started successfully.
+2025-07-10 22:28:56,677 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'running'.
+2025-07-10 22:28:56,677 - INFO - core.task_manager - Task 'S1' is type 'screen_protector', scheduling for main thread execution via signal.
+2025-07-10 22:28:56,677 - INFO - core.scheduler - Adding task 'S1' with trigger type: interval
+2025-07-10 22:28:56,677 - INFO - apscheduler.scheduler - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-10 22:28:56,677 - INFO - core.scheduler - Task 'S1' added with interval: {'seconds': 5}
+2025-07-10 22:28:56,677 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 22:28:56,677 - INFO - core.task_manager - Task 'S1' started successfully.
+2025-07-10 22:28:56,678 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'running'.
+2025-07-10 22:28:56,715 - INFO - apscheduler.scheduler - Added job "partial" to job store "default"
+2025-07-10 22:28:56,715 - INFO - apscheduler.scheduler - Added job "TaskManager.start_task.<locals>.job_to_schedule" to job store "default"
+2025-07-10 22:28:56,715 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 22:28:56,715 - INFO - core.scheduler - scheduler_started
+2025-07-10 22:29:00,004 - INFO - apscheduler.executors.default - Running job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 22:29:00 EDT)" (scheduled at 2025-07-10 22:29:00-04:00)
+2025-07-10 22:29:00,006 - INFO - task_module - Task 'C1' is running.
+2025-07-10 22:29:00,007 - INFO - apscheduler.executors.default - Job "partial (trigger: cron[month='*', day='*', day_of_week='*', hour='*', minute='*/1'], next run at: 2025-07-10 22:30:00 EDT)" executed successfully
+2025-07-10 22:29:01,681 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:06 EDT)" (scheduled at 2025-07-10 22:29:01.677625-04:00)
+2025-07-10 22:29:01,682 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:06 EDT)" executed successfully
+2025-07-10 22:29:06,681 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:11 EDT)" (scheduled at 2025-07-10 22:29:06.677625-04:00)
+2025-07-10 22:29:06,682 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:11 EDT)" executed successfully
+2025-07-10 22:29:11,679 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:16 EDT)" (scheduled at 2025-07-10 22:29:11.677625-04:00)
+2025-07-10 22:29:11,681 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:16 EDT)" executed successfully
+2025-07-10 22:29:16,682 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:21 EDT)" (scheduled at 2025-07-10 22:29:16.677625-04:00)
+2025-07-10 22:29:16,683 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:21 EDT)" executed successfully
+2025-07-10 22:29:20,104 - INFO - apscheduler.scheduler - Removed job C1
+2025-07-10 22:29:20,105 - INFO - core.scheduler - task_removed
+2025-07-10 22:29:20,105 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 22:29:20,106 - INFO - core.task_manager - Task C1 stopped and removed from scheduler.
+2025-07-10 22:29:20,106 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'stopped'.
+2025-07-10 22:29:20,106 - INFO - view.main_window - Task C1 stopped.
+2025-07-10 22:29:21,679 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:26 EDT)" (scheduled at 2025-07-10 22:29:21.677625-04:00)
+2025-07-10 22:29:21,680 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:26 EDT)" executed successfully
+2025-07-10 22:29:26,678 - INFO - apscheduler.executors.default - Running job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:31 EDT)" (scheduled at 2025-07-10 22:29:26.677625-04:00)
+2025-07-10 22:29:26,679 - INFO - apscheduler.executors.default - Job "TaskManager.start_task.<locals>.job_to_schedule (trigger: interval[0:00:05], next run at: 2025-07-10 22:29:31 EDT)" executed successfully
+2025-07-10 22:29:28,295 - ERROR - core.scheduler - task_pause_failed
+2025-07-10 22:29:28,295 - ERROR - view.main_window - Failed to pause task C1.
+2025-07-10 22:29:29,746 - INFO - core.scheduler - task_paused
+2025-07-10 22:29:29,746 - INFO - core.task_manager - Task S1 paused.
+2025-07-10 22:29:29,747 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'paused'.
+2025-07-10 22:29:29,747 - INFO - view.main_window - Task S1 paused.
+2025-07-10 22:29:30,284 - INFO - apscheduler.scheduler - Removed job S1
+2025-07-10 22:29:30,284 - INFO - core.scheduler - task_removed
+2025-07-10 22:29:30,284 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 22:29:30,284 - INFO - core.task_manager - Task S1 stopped and removed from scheduler.
+2025-07-10 22:29:30,284 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'stopped'.
+2025-07-10 22:29:30,285 - INFO - view.main_window - Task S1 stopped.
+2025-07-10 22:29:30,880 - ERROR - core.scheduler - task_remove_failed
+2025-07-10 22:29:30,880 - ERROR - view.main_window - Failed to stop task S1.
+2025-07-10 22:29:31,095 - ERROR - core.scheduler - task_remove_failed
+2025-07-10 22:29:31,095 - ERROR - view.main_window - Failed to stop task S1.
+2025-07-10 22:29:34,033 - INFO - view.main_window - Attempted to stop all tasks.
+2025-07-10 22:29:35,775 - INFO - core.scheduler - Adding task 'C1' with trigger type: cron
+2025-07-10 22:29:35,779 - INFO - apscheduler.scheduler - Added job "partial" to job store "default"
+2025-07-10 22:29:35,780 - INFO - core.scheduler - Task 'C1' added with cron: */1 * * * *
+2025-07-10 22:29:35,780 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 22:29:35,780 - INFO - core.task_manager - Task 'C1' started successfully.
+2025-07-10 22:29:35,781 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'running'.
+2025-07-10 22:29:35,781 - INFO - core.task_manager - Task 'S1' is type 'screen_protector', scheduling for main thread execution via signal.
+2025-07-10 22:29:35,781 - INFO - core.scheduler - Adding task 'S1' with trigger type: interval
+2025-07-10 22:29:35,781 - INFO - apscheduler.scheduler - Added job "TaskManager.start_task.<locals>.job_to_schedule" to job store "default"
+2025-07-10 22:29:35,781 - INFO - core.scheduler - Task 'S1' added with interval: {'seconds': 5}
+2025-07-10 22:29:35,781 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 22:29:35,781 - INFO - core.task_manager - Task 'S1' started successfully.
+2025-07-10 22:29:35,781 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'running'.
+2025-07-10 22:29:35,781 - INFO - view.main_window - Attempted to start all tasks.
+2025-07-10 22:29:37,010 - INFO - apscheduler.scheduler - Removed job C1
+2025-07-10 22:29:37,010 - INFO - core.scheduler - task_removed
+2025-07-10 22:29:37,011 - INFO - core.task_manager - Task 'C1' configuration updated.
+2025-07-10 22:29:37,011 - INFO - core.task_manager - Task C1 stopped and removed from scheduler.
+2025-07-10 22:29:37,011 - INFO - view.task_list_widget - Slot triggered: Task 'C1' status changed to 'stopped'.
+2025-07-10 22:29:37,011 - INFO - apscheduler.scheduler - Removed job S1
+2025-07-10 22:29:37,011 - INFO - core.scheduler - task_removed
+2025-07-10 22:29:37,011 - INFO - core.task_manager - Task 'S1' configuration updated.
+2025-07-10 22:29:37,011 - INFO - core.task_manager - Task S1 stopped and removed from scheduler.
+2025-07-10 22:29:37,011 - INFO - view.task_list_widget - Slot triggered: Task 'S1' status changed to 'stopped'.
+2025-07-10 22:29:37,012 - INFO - view.main_window - Attempted to stop all tasks.
+2025-07-10 22:32:37,003 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 22:32:37,006 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 22:40:55,851 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 22:40:55,851 - INFO - root - Global exception hook has been set.
+2025-07-10 22:40:55,851 - INFO - __main__ - Application starting...
+2025-07-10 22:40:56,196 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 22:40:56,197 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 22:40:56,197 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 22:40:56,197 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 22:40:56,197 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 22:40:56,208 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 22:40:56,485 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 22:40:56,485 - INFO - core.scheduler - scheduler_started
+2025-07-10 22:44:16,108 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 22:44:16,110 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 22:44:18,559 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 22:44:18,559 - INFO - root - Global exception hook has been set.
+2025-07-10 22:44:18,560 - INFO - __main__ - Application starting...
+2025-07-10 22:44:18,797 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 22:44:18,798 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 22:44:18,798 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 22:44:18,798 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 22:44:18,798 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 22:44:18,802 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 22:44:19,045 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 22:44:19,046 - INFO - core.scheduler - scheduler_started
+2025-07-10 22:45:15,203 - INFO - view.detail_area_widget - Closed tab and released resources for: log_viewer_tab
+2025-07-10 23:00:44,121 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 23:00:44,122 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 23:08:52,484 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 23:08:52,485 - INFO - root - Global exception hook has been set.
+2025-07-10 23:08:52,485 - INFO - __main__ - Application starting...
+2025-07-10 23:08:52,909 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 23:08:52,909 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 23:08:52,909 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 23:08:52,909 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 23:08:52,909 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 23:08:52,930 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 23:08:53,255 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 23:08:53,255 - INFO - core.scheduler - scheduler_started
+2025-07-10 23:09:13,651 - INFO - view.detail_area_widget - Closed tab and released resources for: help_tab
+2025-07-10 23:43:44,406 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 23:43:44,410 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 23:43:46,777 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 23:43:46,778 - INFO - root - Global exception hook has been set.
+2025-07-10 23:43:46,778 - INFO - __main__ - Application starting...
+2025-07-10 23:43:47,090 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 23:43:47,091 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 23:43:47,091 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 23:43:47,091 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 23:43:47,091 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 23:43:47,098 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 23:43:47,365 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 23:43:47,365 - INFO - core.scheduler - scheduler_started
+2025-07-10 23:43:49,030 - CRITICAL - GlobalExceptionHandler - An unhandled exception occurred! Application may be unstable.
+Traceback (most recent call last):
+  File "/Users/weijiazhao/Dev/T4T_T/view/main_window.py", line 507, in open_dev_guide_tab
+    self.detail_area_widget.add_tab(dev_guide_widget, _("dev_guide_title"))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DetailAreaWidget' object has no attribute 'add_tab'. Did you mean: 'addTab'?
+2025-07-10 23:44:52,818 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-10 23:44:52,820 - INFO - core.scheduler - scheduler_shutdown
+2025-07-10 23:44:54,702 - INFO - root - LoggerManager initialized and logging is configured.
+2025-07-10 23:44:54,703 - INFO - root - Global exception hook has been set.
+2025-07-10 23:44:54,703 - INFO - __main__ - Application starting...
+2025-07-10 23:44:54,898 - INFO - core.scheduler - scheduler_initialized
+2025-07-10 23:44:54,898 - INFO - core.task_manager - Task 'C1' loaded.
+2025-07-10 23:44:54,898 - INFO - core.task_manager - Task 'S1' loaded.
+2025-07-10 23:44:54,898 - INFO - core.task_manager - Loaded 2 tasks.
+2025-07-10 23:44:54,899 - INFO - core.task_manager - TaskManager initialized with tasks directory: /Users/weijiazhao/Dev/T4T_T/tasks
+2025-07-10 23:44:54,901 - INFO - view.task_list_widget - Task list populated with 2 tasks.
+2025-07-10 23:44:55,110 - INFO - apscheduler.scheduler - Scheduler started
+2025-07-10 23:44:55,110 - INFO - core.scheduler - scheduler_started
+2025-07-11 00:05:24,074 - INFO - apscheduler.scheduler - Scheduler has been shut down
+2025-07-11 00:05:24,076 - INFO - core.scheduler - scheduler_shutdown

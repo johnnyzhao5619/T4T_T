@@ -7,6 +7,8 @@ from core.task_manager import TaskManager
 from view.task_detail_tab_widget import TaskDetailTabWidget
 from view.settings_widget import SettingsWidget
 from view.new_task_widget import NewTaskWidget
+from view.log_viewer_widget import LogViewerWidget
+from view.help_widget import HelpWidget
 from utils.signals import a_signal
 
 logger = logging.getLogger(__name__)
@@ -49,27 +51,8 @@ class DetailAreaWidget(QTabWidget):
         self.tabCloseRequested.connect(self.close_task_tab)
         a_signal.task_renamed.connect(self.on_task_renamed)
 
-        # Apply VS Code-like styling for tabs
-        self.setStyleSheet("""
-            QTabBar::tab {
-                padding: 8px 15px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-                border: 1px solid #333;
-                border-bottom: none;
-                background-color: #2d2d2d;
-            }
-            QTabBar::tab:selected {
-                background-color: #1e1e1e;
-                border-color: #555;
-            }
-            QTabBar::tab:!selected:hover {
-                background-color: #3c3c3c;
-            }
-            QTabWidget::tab-bar {
-                alignment: left;
-            }
-        """)
+        # Set tab bar alignment to the left
+        self.setStyleSheet("QTabWidget::tab-bar { alignment: left; }")
 
         self.welcome_widget = WelcomeWidget(self)
         self.addTab(self.welcome_widget, _("welcome_tab_title"))
@@ -88,6 +71,18 @@ class DetailAreaWidget(QTabWidget):
                                 widget_class=SettingsWidget,
                                 title=_("settings_action"),
                                 icon_name='fa5s.cog')
+
+    def open_log_viewer_tab(self):
+        self.open_widget_as_tab(widget_id="log_viewer_tab",
+                                widget_class=LogViewerWidget,
+                                title=_("logs_action"),
+                                icon_name='fa5s.file-alt')
+
+    def open_help_tab(self):
+        self.open_widget_as_tab(widget_id="help_tab",
+                                widget_class=HelpWidget,
+                                title=_("help_action"),
+                                icon_name='fa5s.question-circle')
 
     def open_new_task_tab(self):
         widget_id = "new_task_tab"
@@ -201,5 +196,30 @@ class DetailAreaWidget(QTabWidget):
         pass
 
     def retranslate_ui(self):
-        if self.count() == 1 and self.widget(0) == self.welcome_widget:
-            self.setTabText(0, _("welcome_tab_title"))
+        # Define a mapping from widget_id to its translatable title key
+        title_keys = {
+            "settings_tab": "settings_action",
+            "log_viewer_tab": "logs_action",
+            "help_tab": "help_action",
+            "new_task_tab": "add_task_action",
+        }
+
+        for i in range(self.count()):
+            widget = self.widget(i)
+            # Find the widget_id for the current tab index
+            widget_id = None
+            for w_id, w_index in self.open_tabs.items():
+                if w_index == i:
+                    widget_id = w_id
+                    break
+
+            # Retranslate tab titles for known, non-task tabs
+            if widget_id and widget_id in title_keys:
+                self.setTabText(i, _(title_keys[widget_id]))
+            # Special case for the welcome widget
+            elif widget == self.welcome_widget:
+                self.setTabText(i, _("welcome_tab_title"))
+
+            # Retranslate the content of the widget itself if possible
+            if hasattr(widget, 'retranslate_ui'):
+                widget.retranslate_ui()
