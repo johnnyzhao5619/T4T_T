@@ -1,0 +1,511 @@
+# 项目 V2 版本升级详细需求与实施方案 (架构师审查版)
+
+---
+
+## 1. V2 版本核心目标
+
+V2 版本的核心目标是打破当前单一的、基于频率的任务触发模式，引入多样化的触发机制，并建立任务间的数据通信能力。这将使系统从一个简单的调度器演变为一个灵活的、事件驱动的自动化平台。
+
+**核心升级点:**
+1.  **多触发器支持:** 支持按周期、指定时间点、外部事件（如消息队列）触发任务。
+2.  **任务间通信:** 引入轻量级消息总线（首选 MQTT），实现任务解耦和数据流转。
+3.  **标准化接口:** 重新定义任务的配置“契约”和执行接口，使其适应新的触发和通信机制。
+
+---
+
+## 2. 详细设计方案
+
+### 2.1. 消息总线 (Message Bus)
+
+**设计原则:**
+*   **抽象化与解耦:** 采用**策略模式**，定义一个统一的 `MessageBusInterface`，将核心业务逻辑与具体的消息中间件（MQTT, Kafka等）实现解耦。
+*   **配置驱动:** 消息总线的类型和连接参数在 `config.ini` 中配置。
+*   **健壮性:** 必须包含明确的状态管理和带退避策略的自动重连机制。
+
+**接口定义 (`utils/message_bus.py`):**
+```python
+# 抽象基类
+from abc import ABC, abstractmethod
+from typing import Callable
+
+class MessageBusInterface(ABC):
+    @abstractmethod
+    def connect(self): pass
+    @abstractmethod
+    def disconnect(self): pass
+    @abstractmethod
+    def publish(self, topic: str, payload: str, qos: int = 1): pass
+    @abstractmethod
+    def subscribe(self, topic: str, callback: Callable): pass
+
+# MQTT 实现
+class MqttBus(MessageBusInterface):
+    # ... 具体实现，包含状态管理和自动重连逻辑 ...
+```
+
+**配置方案 (`config/config.ini`):**
+```ini
+[MessageBus]
+type = mqtt
+auto_connect = true
+
+[MQTT]
+host = localhost
+port = 1883
+username = 
+password = 
+client_id = t4t_client_v2
+keepalive = 60
+```
+
+### 2.2. 任务配置契约 (`config.json`)
+
+**设计原则:**
+*   **结构化与清晰化:** 重新组织 `config.json`，将触发相关的配置聚合到 `trigger` 对象中，并明确定义 `inputs` 和 `outputs`，使任务的意图一目了然。
+*   **版本化:** 引入 `schema_version` 字段，为未来的配置格式迁移提供支持。
+
+**V2 标准结构 (细化):**
+```json
+{
+  "schema_version": "2.0",
+  "name": "任务名称",
+  "module_type": "模块类型",
+  "enabled": true,
+  "trigger": {
+    "type": "event",  // "interval", "cron", "date", "event"
+    "config": {
+      // type='event': { "topic": "some/mqtt/topic" }
+      // type='interval': { "seconds": 30 }
+      // type='cron': { "hour": 8, "minute": 0 }
+      // type='date': { "run_date": "2025-12-25 09:00:00" }
+      // ...
+    }
+  },
+  "inputs": [
+    {
+      "name": "parameter_name",
+      "type": "string",
+      "description": "参数说明",
+      "required": true 
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_data_name",
+      "type": "json",
+      "description": "输出数据说明",
+      "target": {
+        "type": "mqtt", // 输出目标类型
+        "topic": "another/mqtt/topic"
+      }
+    }
+  ]
+}
+```
+*   **补充:** `inputs` 数组中的对象增加 `required` (boolean, optional) 字段，用于启用可选的输入数据验证。
+
+### 2.3. 任务执行上下文与并发模型
+
+**设计原则:**
+*   **依赖注入:** 通过向 `run` 函数注入 `TaskContext` 对象提供服务。
+*   **执行与接收分离:** 任务的实际执行必须从消息接收线程中分离，以防止阻塞。
+
+**`TaskContext` 对象详解:**
+`TaskManager` 在执行任务时，会创建并注入一个 `TaskContext` 对象，它包含：
+*   `logger`: 一个预先配置了任务上下文（如任务名）的 `logging.Logger` **实例**。开发者可以直接调用 `context.logger.info("message")`，输出的日志会自动包含任务名等上下文信息，无需手动添加。
+*   `message_bus`: 全局消息总线客户端的实例，用于发布消息。
+*   `config`: 当前任务实例的完整配置字典，只读。
+*   `config_path`: 当前任务实例 `config.json` 文件的绝对路径，用于状态持久化。
+
+**执行接口定义 (`tasks/.../main.py`):**
+```python
+def run(context, **inputs):
+    """
+    V2 标准任务执行函数
+    :param context: TaskContext 对象，包含 logger, message_bus, config, config_path 等实例
+    :param inputs: 一个字典，包含从触发事件中解析出的输入参数
+    """
+    # 示例:
+    # context.logger.info("任务开始执行")
+    # data = inputs.get("some_input")
+    # ... 业务逻辑 ...
+    # result = {"status": "ok"}
+    # context.message_bus.publish("output/topic", json.dumps(result))
+```
+
+**并发模型:**
+1.  `paho-mqtt` 在其专用线程接收到消息。
+2.  `MessageBusManager` 调用 `TaskManager` 注册的中间回调。
+3.  该回调将任务的 `run` 函数和解析后的 `inputs` **提交到全局线程池** (`SchedulerManager`管理的`ThreadPoolExecutor`)。
+4.  任务在后台线程中安全执行，不影响消息接收和 UI。
+
+### 2.4. 高级架构考量 (新增章节)
+
+#### 2.4.1. 系统生命周期管理：优雅停机 (Graceful Shutdown)
+*   **问题:** 强制关闭应用可能导致正在执行的任务中断、数据丢失或状态不一致。
+*   **解决方案:** 应用在主窗口关闭时，必须触发一个明确的、有序的停机序列：
+    1.  **UI冻结:** 禁用所有任务操作按钮（启动、停止等）。
+    2.  **停止调度:** `TaskManager` 指示 `SchedulerManager` 停止所有**周期性**任务的调度，不再安排新的执行。
+    3.  **停止监听:** `TaskManager` 指示 `MessageBusManager` 取消所有主题的订阅，不再接收新事件。
+    4.  **等待任务完成:** `SchedulerManager` 等待当前正在线程池中运行的任务执行完毕，并设置一个合理的超时时间（例如30秒）。若超时，则强制终止。
+    5.  **断开连接:** `MessageBusManager` 断开与 Broker 的连接。
+    6.  **安全退出:** 所有清理工作完成后，应用进程安全退出。
+
+#### 2.4.2. 数据契约与验证 (Data Contract & Validation)
+*   **问题:** 任务脚本的健壮性依赖于开发者对输入数据的防御性编程。一个格式错误的输入消息可能导致任务静默失败。
+*   **解决方案:** 引入可选的、由框架提供的输入验证层。
+    *   **实现:** 在 `TaskManager` 的包装器中，执行 `run` 函数前，检查 `config.json` 中 `inputs` 数组。对于每一个被标记为 `"required": true` 的输入项，验证其是否存在于传入的消息负载中。
+    *   **失败处理:** 如果验证失败，任务将不会被执行，并会在其任务日志中记录一条明确的 `ERROR` 消息，指出哪个必填字段缺失。
+
+#### 2.4.3. 安全与风险规避 (Security & Risk Mitigation)
+*   **配置安全:**
+    *   **问题:** `config.ini` 中可能包含明文密码。
+    *   **缓解措施:** 在文档中明确警告，`config.ini` 不应用于生产环境的敏感凭据。为未来版本规划，建议引入对**环境变量**或**加密配置文件**的支持。
+*   **事件风暴与无限循环预防:**
+    *   **问题:** 事件驱动系统容易因配置不当产生无限循环（例如，任务A的输出是任务B的输入，任务B的输出又是任务A的输入）。
+    *   **解决方案:** 引入一个简单的循环检测机制。`MessageBusManager` 在发布消息时，可以在消息头（对于MQTT 5.0）或 payload 中注入一个“追踪ID”和递增的“跳数（hop count）”。`TaskManager` 在接收到事件时，可以检查这个计数，如果超过一个合理的阈值（例如10），则会拒绝执行并记录错误，从而打破潜在的无限循环。
+
+---
+
+## 3. 精细化实施步骤 (架构师审查版 - 补充细节)
+
+### **通用指令 (前置)**
+
+在开始每个步骤之前，请遵循以下通用编码准则：
+1.  **代码风格:** 遵循 PEP 8 规范。
+2.  **类型提示:** 为所有函数签名和关键变量添加明确的 Python 类型提示。
+3.  **文档字符串:** 为所有模块、类和函数编写清晰的 Google 风格文档字符串 (Docstrings)。
+4.  **日志记录:** 使用 Python 内置的 `logging` 模块，而不是 `print()` 语句进行状态输出和调试。
+5.  **原子性:** 每个提示词对应一个独立的、可测试的开发步骤。请专注于当前提示词的任务，不要超前实现。
+
+---
+
+### **阶段一: 后端基础建设 (Foundation & Backend)**
+
+#### **提示词 1.1: 配置模块升级**
+
+**角色:** 你是一位资深的 Python 后端工程师。
+
+**任务:** 修改 `utils/config.py` 文件，扩展现有的配置解析能力，使其能够安全地处理 `[MessageBus]` 和 `[MQTT]` 配置段。
+
+**具体实现要求:**
+
+1.  **定位文件:** `utils/config.py`。
+2.  **扩展 `ConfigManager` 类 (或类似功能的类/函数):**
+    *   添加用于解析 `[MessageBus]` 段的逻辑。该段包含一个键 `type`，默认值为 `'MQTT'`。
+    *   添加用于解析 `[MQTT]` 段的逻辑。该段包含以下键，并为每个键提供健壮的默认值：
+        *   `host`: (字符串) 默认值 `'localhost'`。
+        *   `port`: (整数) 默认值 `1883`。
+        *   `username`: (字符串) 默认值 `''` (空字符串)。
+        *   `password`: (字符串) 默认值 `''` (空字符串)。
+        *   `client_id`: (字符串) 默认值 `''` (空字符串，让库自动生成)。
+        *   `reconnect_interval_max_seconds`: (整数) 默认值 `60`。
+        *   `tls_enabled`: (布尔值) 默认值 `False`。
+3.  **健壮性处理:**
+    *   当配置文件完全缺失或特定段落/键值缺失时，你的代码必须能无缝回退到预设的默认值，不能抛出 `KeyError` 或 `NoSectionError`。
+    *   当 `port` 或 `reconnect_interval_max_seconds` 的值在配置文件中不是有效的整数时，应捕获异常、记录一条警告日志，并使用默认值。
+
+**验收标准 (单元测试):**
+
+*   创建一个新的测试文件 `tests/test_config.py`。
+*   使用 `unittest.mock` 和 `pytest` 编写单元测试，覆盖以下场景：
+    1.  **正常情况:** 提供一个包含所有新配置的 `config.ini` 文件，断言所有值被正确读取。
+    2.  **部分缺失:** 提供一个仅有 `[MQTT]` 段但缺少 `username` 的配置文件，断言 `username` 返回了其默认值 `''`。
+    3.  **段落缺失:** 提供一个完全没有 `[MQTT]` 段的配置文件，断言所有 MQTT 相关配置项均返回其默认值。
+    4.  **格式错误:** 提供一个 `port` 值为 `'not-a-number'` 的配置文件，断言 `port` 返回其默认值 `1883`，并验证是否记录了警告日志。
+
+---
+
+#### **提示词 1.2: 消息总线抽象与实现**
+
+**角色:** 你是一位精通并发编程和网络协议的 Python 专家。
+
+**任务:** 创建一个新的 `utils/message_bus.py` 文件，在其中定义消息总线的抽象接口和基于 `paho-mqtt` 库的具体实现。
+
+**具体实现要求:**
+
+1.  **文件创建:** `utils/message_bus.py`。
+2.  **定义抽象基类 (ABC):**
+    *   创建一个名为 `MessageBusInterface` 的抽象基类。
+    *   定义以下抽象方法: `connect()`, `disconnect()`, `publish(topic: str, payload: dict)`, `subscribe(topic: str, callback: callable)`。
+3.  **定义连接状态枚举:**
+    *   在文件顶部，使用 `enum.Enum` 创建一个名为 `BusConnectionState` 的枚举，包含以下成员: `DISCONNECTED`, `CONNECTING`, `CONNECTED`, `RECONNECTING`。
+4.  **实现 `MqttBus` 类:**
+    *   创建 `MqttBus` 类，继承自 `MessageBusInterface`。
+    *   **状态机:** 内部维护一个 `_state` 属性，其值为 `BusConnectionState` 的成员。在连接、断开、重连的各个阶段正确更新此状态。
+    *   **构造函数 `__init__`:** 接收 MQTT 配置（主机、端口等）和对一个 logger 实例的引用。初始化 `paho.mqtt.client`。
+    *   **自动重连逻辑:**
+        *   在 `on_disconnect` 回调中，实现带**指数退避 (Exponential Backoff)** 的自动重连。
+        *   初始重连延迟为 1 秒，每次失败后延迟加倍，直到达到配置中的 `reconnect_interval_max_seconds` 上限。
+        *   在每次尝试重连前，将状态设置为 `RECONNECTING`。
+        *   必须在日志中详细记录每一次重连尝试及其延迟时间，例如: `INFO: MQTT disconnected. Reconnecting in 5 seconds...`
+    *   **连接/断开方法:**
+        *   `connect()`: 启动一个非阻塞的连接过程 (`client.connect_async`)。设置 `on_connect`, `on_disconnect`, `on_message` 回调。
+        *   `disconnect()`: 优雅地断开连接。
+    *   **发布逻辑与循环检测:**
+        *   在 `publish(topic: str, payload: dict)` 方法中：
+            *   检查 `payload` 中是否存在 `__hops` 键。
+            *   如果存在，将其值加 1。
+            *   如果不存在，创建该键并设置其值为 `1`。
+            *   将更新后的 `payload` 序列化为 JSON 字符串后发布。
+
+**设计原则:** `MqttBus` 的所有复杂性（如线程、回调、重连循环）都应被封装在内部。对外部调用者而言，只需调用 `connect()`, `publish()` 等简单方法。
+
+---
+
+#### **提示词 1.3: 全局消息总线管理器**
+
+**角色:** 你是一位擅长设计模式的 Python 架构师。
+
+**任务:** 在 `utils/message_bus.py` 文件中，创建一个单例模式的 `MessageBusManager`，用于在整个应用中统一管理消息总线的生命周期，并通过全局信号系统通知状态变化。
+
+**具体实现要求:**
+
+1.  **定位文件:** `utils/message_bus.py` (在之前创建的文件中追加)。
+2.  **定义全局信号:**
+    *   假设在 `utils/signals.py` 中存在一个全局的信号分发器实例 `global_signals` (类似 PyQt 的 `Signal` 或 `blinker` 库)。
+    *   定义一个名为 `MESSAGE_BUS_STATUS_CHANGED` 的信号，它将发送两个参数：`new_state: str` (例如 `'CONNECTED'`) 和 `message: str` (例如 `'Successfully connected to MQTT broker.'`)。
+3.  **实现 `MessageBusManager` 类:**
+    *   **单例模式:** 将 `MessageBusManager` 实现为单例。最简单的 Pythonic 方式是在模块末尾创建一个实例：`message_bus_manager = MessageBusManager()`。
+    *   **构造函数 `__init__`:**
+        *   读取配置（使用步骤 1.1 中创建的 `ConfigManager`）。
+        *   根据配置中的 `message_bus.type`（例如 'MQTT'），实例化对应的总线实现 (`MqttBus`)。目前只处理 'MQTT' 类型即可。
+        *   将总线实例存储在内部属性 `self._bus` 中。
+    *   **生命周期方法:**
+        *   `connect()`: 调用 `self._bus.connect()`。
+        *   `disconnect()`: 调用 `self._bus.disconnect()`。
+    *   **状态变化与信号发射:**
+        *   `MessageBusManager` 必须监控其管理的 `_bus` 实例的状态变化。这可以通过向 `MqttBus` 传递一个回调函数来实现。
+        *   当 `MqttBus` 的内部状态（`DISCONNECTED`, `CONNECTED`等）发生变化时，`MessageBusManager` 必须通过 `global_signals` 发射 `MESSAGE_BUS_STATUS_CHANGED` 信号，并附带新的状态枚举名称（转换为字符串）和一条描述性消息。
+    *   **代理方法:** 提供 `publish` 和 `subscribe` 方法，将调用直接委托给 `self._bus` 实例。
+
+**验收标准:** 在一个模拟的 Qt 应用主线程中，能够连接到 `MESSAGE_BUS_STATUS_CHANGED` 信号，并在调用 `message_bus_manager.connect()` 后，正确接收到状态从 `CONNECTING` 到 `CONNECTED` 的变化信号。
+
+---
+
+#### **提示词 1.4: 核心调度逻辑改造**
+
+**角色:** 你是一位负责重构核心业务逻辑的 Python 工程师。
+
+**任务:** 改造 `core/task_manager.py` 和 `core/scheduler_manager.py`，以支持新的并发模型和多触发器类型的任务。
+
+**具体实现要求:**
+
+1.  **文件改造: `core/scheduler_manager.py`**
+    *   将 `SchedulerManager` 类重构为一个通用的后台任务执行器。
+    *   移除所有与 `APScheduler` 相关的特定逻辑。
+    *   内部使用 `concurrent.futures.ThreadPoolExecutor` 作为执行引擎。
+    *   提供两个核心公共方法:
+        *   `submit(func, *args, **kwargs)`: 将一个函数及其参数提交到线程池执行，并返回一个 `Future` 对象。
+        *   `shutdown(wait=True)`: 关闭线程池。
+2.  **文件改造: `core/task_manager.py`**
+    *   修改 `TaskManager` 的 `load_tasks` 或类似方法。
+    *   在加载每个任务时，检查其 `trigger` 配置。
+    *   **分支逻辑:**
+        *   如果 `trigger['type'] == 'schedule'` (或 'cron', 'interval')，则保留原有的基于 `APScheduler` 的调度逻辑。
+        *   如果 `trigger['type'] == 'event'`，则执行以下操作：
+            *   获取事件主题 `topic = trigger['topic']`。
+            *   使用 `message_bus_manager.subscribe(topic, wrapper_func)` 来订阅该主题。`wrapper_func` 是你为处理该事件而创建的一个包装函数。
+    *   **创建事件任务包装器 `wrapper_func(payload: dict)`:**
+        *   此函数是当消息总线收到消息时实际被调用的函数。
+        *   **关键前置检查:** 在将实际任务函数提交到线程池之前，此包装器**必须**执行以下两项检查：
+            1.  **循环检测:** 检查 `payload` 中的 `__hops` 字段。如果 `__hops` 超过一个预设的阈值（例如 5），则记录一条错误日志并**立即返回**，不执行任务，以防止无限循环。
+            2.  **输入验证:** 遍历任务配置中 `inputs` 列表。对于每一个标记为 `required: true` 的输入项，检查 `payload` 中是否存在对应的键。如果任何一个 `required` 的键缺失，记录一条错误日志并**立即返回**，不执行任务。
+        *   **提交任务:** 如果所有检查都通过，调用 `scheduler_manager.submit(actual_task_func, context, inputs_data)` 将真正的任务函数提交到后台线程池执行。
+
+---
+
+#### **提示词 1.5: 任务执行上下文实现**
+
+**角色:** 你是一位注重代码可维护性和可观测性的 Python 开发者。
+
+**任务:** 设计并实现一个 `TaskContext` 类，并改造 `TaskManager` 以提供上下文感知的日志记录功能。
+
+**具体实现要求:**
+
+1.  **定义 `TaskContext` 类 (可以在 `core/context.py` 或类似文件中):**
+    *   创建一个简单的 `TaskContext` 类。
+    *   它至少应包含两个属性：
+        *   `task_name: str`
+        *   `logger: logging.Logger`
+2.  **创建上下文感知的日志记录器:**
+    *   **自定义 Filter:** 创建一个名为 `TaskContextFilter` 的类，继承自 `logging.Filter`。它的 `filter` 方法会为日志记录（`LogRecord`）动态添加 `task_name` 属性。
+    *   **在 `TaskManager` 中集成:**
+        *   当 `TaskManager` 加载每个任务时（例如，在 `load_tasks` 方法内），执行以下操作：
+            1.  为该任务创建一个专用的 `logging.Logger` 实例，例如 `logger = logging.getLogger(f"task.{task_name}")`。
+            2.  确保该 logger 不会将日志传播到根 logger (`logger.propagate = False`)，以避免重复输出。
+            3.  创建一个 `TaskContextFilter` 实例，并将任务名传入。
+            4.  将此 filter 实例添加到 logger 中 (`logger.addFilter(...)`)。
+            5.  配置一个指向主日志处理程序（如控制台或文件）的 `Handler`，并为此 handler 设置一个包含 `%(task_name)s` 的格式化器 (`Formatter`)，例如：`[%(asctime)s] [%(levelname)s] [%(task_name)s] %(message)s`。
+3.  **注入 `TaskContext`:**
+    *   在 `TaskManager` 中，当准备执行一个任务时（无论是通过调度器还是事件），创建一个 `TaskContext` 实例。
+    *   将任务名和刚刚创建的专用 logger 实例赋给 `TaskContext` 的属性。
+    *   将这个 `context` 对象作为第一个参数传递给用户编写的任务脚本函数。
+
+**验收标准:** 当一个任务脚本（例如 `my_task.py`）被执行，并且其内部调用 `context.logger.info("任务正在执行")` 时，最终在控制台或日志文件中看到的输出应自动包含任务名前缀，格式如下：`[2023-10-27 10:00:00] [INFO] [MyTask] 任务正在执行`。
+
+---
+
+### **阶段二: 模块与界面升级 (Module & UI)**
+
+#### **提示词 2.1: 更新模块模板**
+
+**角色:** 你是一位负责制定开发规范和模板的团队领导。
+
+**任务:** 更新 `modules/template` 目录下的所有模板文件，使其符合 V2 版本的模块开发规范。
+
+**具体实现要求:**
+
+1.  **定位目录:** `modules/template`。
+2.  **更新 `__init__.py` 或主脚本模板:**
+    *   修改任务函数的签名为 `def run(context, inputs):`。
+    *   **添加详细注释:**
+        *   在函数签名上方，用大段注释清晰地解释 `context` 对象。列出它包含的所有可访问属性，特别是 `context.logger` 和 `context.task_name`，并给出演示用法，如 `context.logger.info("...")`。
+        *   解释 `inputs` 参数是一个字典，它包含了从触发事件的 `payload` 中映射过来的数据。
+3.  **更新 `manifest.yaml` 模板:**
+    *   在 `inputs` 部分，提供一个更详尽的示例，其中必须包含一个使用了 `required: true` 字段的输入项。
+    *   添加注释解释 `required` 字段的作用：如果为 `true`，系统将在执行任务前自动验证该字段是否存在于触发事件的 payload 中。
+    *   在 `trigger` 部分，提供两种类型的示例：一个 `schedule` 类型和一个 `event` 类型，并注释说明它们的区别和用法。
+
+---
+
+#### **提示词 2.2: 任务配置界面重构**
+
+**角色:** 你是一位熟练使用 PyQt/PySide 的 GUI 开发者。
+
+**任务:** 重构 `widgets/task_config_widget.py`，实现一个动态的、能够根据触发器类型切换配置面板的用户界面。
+
+**具体实现要求:**
+
+1.  **定位文件:** `widgets/task_config_widget.py` (或类似的UI配置文件)。
+2.  **实现触发器动态切换:**
+    *   在 UI 中添加一个 `QComboBox`，用于选择触发器类型（例如 "定时调度", "事件触发")。
+    *   在 `QComboBox` 下方放置一个 `QStackedWidget`。
+    *   `QStackedWidget` 包含多个页面（`QWidget`），每个页面对应一种触发器的配置面板。例如，一个用于配置 cron 表达式的面板，另一个用于配置事件主题（`topic`）的面板。
+    *   连接 `QComboBox` 的 `currentIndexChanged` 信号到一个槽函数，该函数根据选择的索引切换 `QStackedWidget` 的 `setCurrentIndex`。
+3.  **增强 Inputs UI 编辑器:**
+    *   定位到用于配置任务 `inputs` 列表的 UI 部分（可能是一个 `QTableWidget` 或自定义的列表控件）。
+    *   在每一行（代表一个输入项）的配置中，**新增一个 "必须" (Required) 的 `QCheckBox`**。
+    *   当保存任务配置时，读取此复选框的状态，并将其作为 `required: true/false` 写入到 `manifest.yaml` 的相应输入项中。
+
+---
+
+#### **提示词 2.3: UI 状态反馈**
+
+**角色:** 你是一位注重用户体验的 PyQt/PySide 前端开发者。
+
+**任务:** 在主界面和任务列表上实现实时的系统状态反馈，让用户清晰地了解后端服务的连接状态和任务的运行情况。
+
+**具体实现要求:**
+
+1.  **主窗口状态栏 (`main_window.py`):**
+    *   在主窗口的 `__init__` 方法中，连接到步骤 1.3 中创建的 `message_bus_manager` 的 `MESSAGE_BUS_STATUS_CHANGED` 全局信号。
+    *   创建一个槽函数来处理此信号。
+    *   在状态栏（`QStatusBar`）上放置一个标签或图标 (`QLabel`)。
+    *   根据接收到的信号状态 (`DISCONNECTED`, `CONNECTING`, `CONNECTED`, `RECONNECTING`)：
+        *   **更新图标:** 切换不同的图标（例如，红色断开、黄色连接中、绿色已连接）。
+        *   **更新 Tooltip:** 设置标签的 Tooltip 文本，显示详细的状态描述信息（例如，信号中附带的 `message`）。
+2.  **任务列表 (`task_list_widget.py`):**
+    *   假设存在 `TaskManager` 发射的任务状态信号（如 `TASK_STARTED`, `TASK_SUCCEEDED`, `TASK_FAILED`），请连接到这些信号。
+    *   当接收到任务执行相关的信号时，找到列表中对应的任务项，并更新其列信息，例如 "最后运行时间" 和 "最后运行状态"。
+3.  **展示事件监听状态:**
+    *   在任务列表视图中，为 `event` 类型的任务增加一列或修改其显示方式。
+    *   如果一个任务是事件驱动的，清晰地展示其正在“监听”的状态，并显示其监听的 MQTT 主题（`topic`）。例如，状态列可以显示为 `监听中: home/livingroom/light/command`。
+
+---
+
+### **阶段三: 集成、测试与文档**
+
+#### **提示词 3.1: 端到端功能与健壮性测试**
+
+**角色:** 你是一位严谨的质量保证 (QA) 工程师。
+
+**任务:** 编写一个或多个端到端的集成测试脚本，以验证整个 V2 系统在各种正常和异常场景下的行为。
+
+**具体实现要求:**
+
+请使用 `pytest` 框架编写测试脚本，模拟真实的用户操作和环境变化。你需要一个可用的 MQTT Broker (如 Mosquitto) 来运行这些测试。
+
+1.  **生产者-消费者测试 (正常流程):**
+    *   设置一个“消费者”任务，监听主题 `test/consumer`。
+    *   设置一个“生产者”任务，定时（或手动触发）向 `test/consumer` 主题发布消息。
+    *   启动应用，验证消费者任务是否能被生产者任务成功触发并执行。
+2.  **MQTT 断线重连与恢复测试 (异常测试):**
+    *   在生产者-消费者测试运行期间，通过命令行或工具手动停止 MQTT Broker 服务。
+    *   验证 UI 状态栏是否变为“重连中”。
+    *   验证日志中是否出现指数退避的重连尝试记录。
+    *   重新启动 MQTT Broker 服务。
+    *   验证系统是否能自动重连成功，UI 状态栏恢复为“已连接”，并且后续的生产者消息能再次成功触发消费者任务。
+3.  **输入验证失败测试:**
+    *   配置一个任务，其 `inputs` 中有一个字段 `data` 被标记为 `required: true`。
+    *   手动通过 MQTT 客户端向该任务监听的主题发布一条**不包含** `data` 字段的 JSON 消息。
+    *   断言该任务**没有**被执行（可以通过检查日志或任务的最后运行时间来验证）。
+    *   断言日志中记录了一条关于“缺少必需输入字段”的错误信息。
+4.  **循环依赖检测测试:**
+    *   创建两个任务：Task A 和 Task B。
+    *   配置 Task A 监听 `topic/A`，执行后发布消息到 `topic/B`。
+    *   配置 Task B 监听 `topic/B`，执行后发布消息到 `topic/A`。
+    *   手动向 `topic/A` 发布一条初始消息。
+    *   断言任务链在执行了有限次数（由跳数限制决定，例如 5 次）后停止。
+    *   断言日志中记录了一条关于“达到最大跳数限制，阻止循环执行”的错误信息。
+5.  **优雅停机测试:**
+    *   启动一个配置为长时间运行的任务（例如，一个执行 `time.sleep(10)` 的任务）。
+    *   在任务开始执行后，立即触发应用的关闭程序。
+    *   断言应用进程会等待，直到该长时任务执行完毕后才完全退出。
+
+---
+
+#### **提示词 3.2: 更新开发者文档**
+
+**角色:** 你是一位出色的技术文档撰写者。
+
+**任务:** 大幅修订 `docs/development_guide.md` 文件，使其全面反映 V2 模块的开发方式和核心概念。
+
+**具体实现要求:**
+
+请以清晰、易于理解的方式组织文档内容。使用 Markdown 格式，并酌情使用代码块、列表和表格。
+
+**文档大纲:**
+
+1.  **V2 模块结构概览:** 简要介绍 `manifest.yaml` 和任务脚本的核心作用。
+2.  **编写任务脚本 (`run` 函数):**
+    *   详细解释新的 `run(context, inputs)` 函数签名。
+    *   **上下文对象 (`context`):**
+        *   详细说明 `context` 是什么。
+        *   列出其所有属性 (`task_name`, `logger`)，并提供代码示例说明如何使用 `context.logger` 进行上下文感知的日志记录。
+    *   **输入数据 (`inputs`):**
+        *   解释 `inputs` 是一个字典，以及它的数据来源（通常是事件的 payload）。
+3.  **配置清单 (`manifest.yaml`):**
+    *   **触发器 (`trigger`):**
+        *   详细解释 `schedule` 和 `event` 两种触发器类型。
+        *   为每种类型提供完整的配置示例。
+    *   **输入映射与验证 (`inputs`):**
+        *   解释 `inputs` 字段如何将触发源数据映射到任务的 `inputs` 参数。
+        *   重点说明 `required: true` 字段的含义和作用，并强调这是实现健壮任务的第一道防线。
+4.  **核心概念详解:**
+    *   **并发模型:** 解释系统现在使用线程池 (`ThreadPoolExecutor`) 来并发执行任务，与旧的 `APScheduler` 模型的区别。
+    *   **事件驱动与消息总线:** 简要介绍消息总线（MQTT）在系统中的角色，以及任务如何通过订阅主题来响应事件。
+5.  **一个完整的 V2 模块示例:**
+    *   提供一个从 `manifest.yaml` 到 `__init__.py` 的完整、可工作的 V2 模块示例，该示例最好是一个事件驱动的任务，并使用了 `required` 输入和上下文日志。
+
+---
+
+#### **提示词 3.3: 实现优雅停机**
+
+**角色:** 你是一位关注系统稳定性和资源管理的 Python 工程师。
+
+**任务:** 在应用的主入口或主窗口的关闭事件中，实现一个有序的、优雅的停机序列。
+
+**具体实现要求:**
+
+1.  **定位关闭事件处理逻辑:**
+    *   找到应用的主入口文件（如 `main.py`）或主窗口类 (`main_window.py`) 中处理关闭事件的方法。对于 PyQt 应用，这通常是 `closeEvent(self, event)` 方法。
+2.  **实现停机序列:**
+    *   在捕获到关闭事件后，**不要立即接受事件并关闭** (`event.accept()`)。
+    *   **严格按照以下顺序**调用各个管理器的关闭方法：
+        1.  **停止任务调度和新任务接收:** 调用 `TaskManager.shutdown(wait=True)`。`wait=True` 参数至关重要，它会阻塞主线程，直到线程池中所有当前正在运行的任务都执行完毕。
+        2.  **断开消息总线连接:** 在 `TaskManager` 关闭后，调用 `MessageBusManager.disconnect()`。
+    *   **执行清理:** 在所有后台服务都安全关闭后，可以执行其他清理操作（如保存窗口状态）。
+    *   **确认关闭:** 最后，调用 `event.accept()`，允许窗口关闭，应用进程退出。
+3.  **用户反馈 (可选但推荐):**
+    *   在开始执行停机序列时，可以向用户显示一个简短的提示，例如在状态栏显示“正在关闭，请稍候...”，以改善用户体验。
