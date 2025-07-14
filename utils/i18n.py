@@ -94,3 +94,12 @@ def switch_language(language_code):
     Global function to switch the application language.
     """
     language_manager.load_language(language_code)
+
+
+def translate_service_state(state) -> str:
+    """
+    Translates a ServiceState enum member into a human-readable,
+    localized string.
+    """
+    key = f"service_status_{state.name.lower()}"
+    return _(key)

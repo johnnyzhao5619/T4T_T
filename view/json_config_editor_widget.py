@@ -4,7 +4,7 @@ import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QMessageBox, QPlainTextEdit)
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
-from utils.signals import a_signal
+from utils.signals import global_signals
 from utils.theme import theme_manager
 
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ class JsonConfigEditorWidget(QWidget):
 
         self.init_ui()
         self.load_config()
-        a_signal.theme_changed.connect(self.on_theme_changed)
+        global_signals.theme_changed.connect(self.on_theme_changed)
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -192,6 +192,6 @@ class JsonConfigEditorWidget(QWidget):
     def __del__(self):
         # Disconnect signal to prevent issues during shutdown
         try:
-            a_signal.theme_changed.disconnect(self.on_theme_changed)
+            global_signals.theme_changed.disconnect(self.on_theme_changed)
         except TypeError:
             pass  # Signal already disconnected

@@ -1,130 +1,84 @@
 # -*- coding: utf-8 -*-
 """
-This is a template for a new module.
+模块任务模板 V2
+这是一个新模块任务的模板。
 
-To create a new module, copy this directory and rename it to your module's
-name.
-Then, rename the files to match the directory name.
+要创建一个新模块，请复制此目录并将其重命名为您的模块名称。
+然后，将此文件名重命名以匹配目录名。
 """
 
-import json
-import logging
-import os
 
-# Standard logger for file-based logging. This is separate from the UI log.
-# It's good practice to use this for detailed, developer-focused logging.
-file_logger = logging.getLogger(__name__)
-
-
-def run(config, log_emitter, debug=False, config_path=None):
+def run(context, inputs):
     """
-    Main entry point for the module's task.
-
-    This function is called by the scheduler based on the settings in the
-    accompanying JSON configuration file.
+    这是模块任务的主入口点。
+    当满足 manifest.yaml 中定义的触发条件时，系统会调用此函数。
 
     Args:
-        config (dict): The configuration for this task, loaded from the
-                       associated `_template.json` file.
-        log_emitter (function): A callable that sends log messages to the UI.
-                                Use this for user-facing information.
-        debug (bool): A flag indicating if debug mode is enabled in the config.
-        config_path (str): The absolute path to the task's JSON config file.
-                           Useful for persisting state.
+        context: 一个包含任务上下文信息的对象。它提供了对日志、配置和状态管理的访问。
+                 可访问的属性包括：
+                 - context.logger: 一个日志记录器实例，用于向UI和日志文件发送消息。
+                   用法:
+                       context.logger.info("这是一条信息日志")
+                       context.logger.warning("这是一条警告日志")
+                       context.logger.error("这是一条错误日志")
+                       context.logger.debug("这是一条调试日志")
+
+                 - context.task_name (str): 当前任务的名称，来自 manifest.yaml。
+                   用法:
+                       task_name = context.task_name
+                       context.logger.info(f"任务 '{task_name}' 已启动")
+
+                 - context.config (dict): 一个包含此任务完整配置的字典，
+                                          内容来自 manifest.yaml。
+                   用法:
+                       api_key = context.config.get("settings", {}).get("api_key")
+
+                 - context.get_state(key, default=None): 从持久化存储中获取一个状态值。
+                   用法:
+                       last_run = context.get_state("last_run_timestamp")
+
+                 - context.update_state(key, value): 更新或添加一个状态值到
+                   持久化存储。
+                   用法:
+                       from datetime import datetime
+                       context.update_state("last_run_timestamp", datetime.now().isoformat())
+
+        inputs (dict): 一个包含从触发事件的 payload 中映射过来的数据
+                       的字典。
+                       这些输入字段在 manifest.yaml 的 'inputs' 部分定义。
+                       如果一个输入被标记为 'required: true'，系统会确保它
+                       在调用此函数之前存在。
+                       用法:
+                           user_id = inputs.get("user_id")
+                           if user_id:
+                               context.logger.info(f"处理用户 {user_id} 的请求")
     """
-    task_name = config.get('name', 'Unnamed Task')
+    task_name = context.task_name
+    context.logger.info(f"任务 '{task_name}' 已启动。")
 
-    # Always good to log the start of a task run.
-    log_emitter(f"INFO: Task '{task_name}' has started.")
-    file_logger.info(f"Task '{task_name}' started. Config Path: {config_path}")
-
-    # --- Core Task Logic ---
-    # Replace this section with the actual logic for your task.
+    # --- 核心任务逻辑 ---
+    # 在此替换为您的任务的实际逻辑。
     try:
-        # Example: Accessing custom settings from the config file.
-        settings = config.get('settings', {})
-        example_setting = settings.get('example_setting', 'default_value')
+        # 示例：访问 inputs 和 settings
+        context.logger.info(f"收到的输入: {inputs}")
 
-        if debug:
-            log_emitter(f"DEBUG: Debug mode is enabled for '{task_name}'.")
-            debug_message = settings.get('debug_message',
-                                         'No debug message set.')
-            log_emitter(f"DEBUG: Message from settings: {debug_message}")
-            log_emitter(
-                f"DEBUG: 'example_setting' is currently: '{example_setting}'")
-            file_logger.debug(f"Full config for {task_name}: {config}")
+        message = inputs.get("message", "没有提供消息")
+        context.logger.info(f"收到的消息是: '{message}'")
 
-        log_emitter(
-            f"INFO: The value of 'example_setting' is: {example_setting}")
+        # 示例：访问 manifest.yaml 中的自定义设置
+        settings = context.config.get('settings', {})
+        example_setting = settings.get('example_setting', '默认值')
+        context.logger.info(f"'example_setting' 的值是: '{example_setting}'")
 
-        # Example: Performing a simple operation.
-        # This is where your module's main functionality would go.
-        result = (f"Task '{task_name}' completed successfully with setting: "
-                  f"{example_setting}")
-        log_emitter(f"INFO: {result}")
-        file_logger.info(result)
+        # 示例：使用状态管理
+        run_count = context.get_state("run_count", 0) + 1
+        context.update_state("run_count", run_count)
+        context.logger.info(f"这是任务第 {run_count} 次运行。")
+
+        context.logger.info(f"任务 '{task_name}' 成功完成。")
 
     except Exception as e:
-        # It's crucial to handle exceptions to prevent the entire application
-        # from crashing if one task fails.
-        error_message = f"An error occurred in '{task_name}': {e}"
-        log_emitter(f"ERROR: {error_message}")
-        file_logger.exception(error_message)  # .exception logs stack trace
+        # 关键：处理异常以防止整个应用程序因单个任务失败而崩溃。
+        context.logger.error(f"任务 '{task_name}' 发生错误: {e}", exc_info=True)
 
-    # --- State Management (Optional) ---
-    # If your task needs to remember information between runs, you can
-    # persist state. Here are two common methods:
-
-    # Method 1: Modifying the main config file.
-    # Good for simple state. Be careful with frequent writes.
-    if config_path:
-        try:
-            # Example: Incrementing a run counter.
-            run_count = config.get('run_count', 0) + 1
-            config['run_count'] = run_count
-
-            # Write the updated config back to the file.
-            with open(config_path, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=4)
-
-            log_emitter(f"INFO: Task has been run {run_count} times.")
-            file_logger.info(
-                f"Updated run_count to {run_count} in {config_path}")
-
-        except Exception as e:
-            error_message = (
-                f"Failed to update config file at {config_path}: {e}")
-            log_emitter(f"ERROR: {error_message}")
-            file_logger.error(error_message)
-
-    # Method 2: Using a separate state file.
-    # Better for complex state or to keep the config file clean.
-    if config_path:
-        state_file_path = os.path.join(os.path.dirname(config_path),
-                                       'state.json')
-        try:
-            # Load existing state or initialize a new one.
-            if os.path.exists(state_file_path):
-                with open(state_file_path, 'r', encoding='utf-8') as f:
-                    state = json.load(f)
-            else:
-                state = {}
-
-            # Update state
-            state['last_run_timestamp'] = file_logger.name  # Just an example
-            state['some_other_data'] = "Example data"
-
-            # Write state back to the file.
-            with open(state_file_path, 'w', encoding='utf-8') as f:
-                json.dump(state, f, indent=4)
-
-            file_logger.info(f"State updated in {state_file_path}")
-
-        except Exception as e:
-            error_message = (
-                f"Failed to manage state file at {state_file_path}: {e}")
-            log_emitter(f"ERROR: {error_message}")
-            file_logger.error(error_message)
-
-    log_emitter(f"INFO: Task '{task_name}' has finished.")
-    file_logger.info(f"Task '{task_name}' finished.")
+    context.logger.info(f"任务 '{task_name}' 已结束。")

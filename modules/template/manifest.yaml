@@ -1,0 +1,54 @@
+# 模块清单 V2
+# 这是定义模块行为和元数据的核心文件。
+
+# name: 任务的唯一名称，将显示在UI中。
+name: My New Task
+
+# module_type: 模块的类型，与模块目录名对应。
+module_type: template
+
+# enabled: 是否默认启用此任务。
+enabled: true
+
+# debug: 是否默认开启Debug模式，提供更详细的日志。
+debug: false
+
+# trigger: 定义任务如何被触发。
+# trigger 可以是 'schedule'（基于时间）或 'event'（基于事件）。
+trigger:
+  # --- 示例 1: 基于时间的调度器 ---
+  # 使用 'schedule' 在固定的时间间隔或按 cron 表达式执行任务。
+  # 这适用于需要定期运行的后台任务，如数据同步、健康检查等。
+  schedule:
+    # type 可以是 'interval' 或 'cron'。
+    type: interval
+    # interval 的单位：'seconds', 'minutes', 'hours', 'days'。
+    minutes: 5
+  # --- 示例 2: 基于事件的触发器 ---
+  # 使用 'event' 监听特定的系统事件。当事件发生时，任务会被执行。
+  # 这适用于响应式任务，如“当用户上传文件时触发”。
+  # event:
+  #   name: "user_file_uploaded"
+
+# inputs: 定义任务执行时需要从触发事件的 payload 中接收的数据。
+inputs:
+  # key 是输入字段的名称。
+  user_id:
+    # description: 字段的描述，将显示在UI中。
+    description: "触发此任务的用户的唯一标识符。"
+    # required: 如果为 true，系统将在执行任务前验证 payload 中是否存在此字段。
+    # 如果验证失败，任务将不会执行，并会记录一条错误。
+    # 这对于确保任务获得必要数据至关重要。
+    required: true
+    # default: 如果 payload 中未提供该字段，则使用的默认值。
+    # 只有在 required 为 false 时才有效。
+    default: "guest"
+  message:
+    description: "要处理的消息内容。"
+    required: false
+
+# settings: 定义模块的自定义配置参数。
+# 这些参数在任务的整个生命周期中保持不变，除非手动修改。
+settings:
+  example_setting: "Hello, World!"
+  api_key: "YOUR_API_KEY_HERE"

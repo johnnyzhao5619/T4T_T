@@ -9,7 +9,7 @@ from view.settings_widget import SettingsWidget
 from view.new_task_widget import NewTaskWidget
 from view.log_viewer_widget import LogViewerWidget
 from view.help_widget import HelpWidget
-from utils.signals import a_signal
+from utils.signals import global_signals
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class DetailAreaWidget(QTabWidget):
         self.setTabsClosable(True)
         self.setMovable(True)
         self.tabCloseRequested.connect(self.close_task_tab)
-        a_signal.task_renamed.connect(self.on_task_renamed)
+        global_signals.task_renamed.connect(self.on_task_renamed)
 
         # Set tab bar alignment to the left
         self.setStyleSheet("QTabWidget::tab-bar { alignment: left; }")
@@ -98,6 +98,7 @@ class DetailAreaWidget(QTabWidget):
 
         widget = NewTaskWidget(self.task_manager)
         widget.task_created.connect(self.on_new_task_created)
+        widget.widget_id = widget_id  # Assign ID to widget
 
         icon = get_icon('fa5s.plus-square')
         index = self.addTab(widget, icon, _("add_task_action"))
@@ -132,6 +133,7 @@ class DetailAreaWidget(QTabWidget):
 
         constructor_args = constructor_args or []
         widget = widget_class(*constructor_args)
+        widget.widget_id = widget_id  # Assign ID to widget
 
         icon = get_icon(icon_name)
         index = self.addTab(widget, icon, title)
@@ -142,25 +144,31 @@ class DetailAreaWidget(QTabWidget):
 
     def close_task_tab(self, index):
         widget = self.widget(index)
+        if not hasattr(widget, 'widget_id'):
+            # This can happen if the welcome widget is somehow targeted,
+            # which shouldn't occur with a non-closable tab.
+            logger.warning("Attempted to close a tab without a widget_id.")
+            # It's safer to just remove the tab if we don't know what it is.
+            self.removeTab(index)
+            return
 
-        # Find the ID of the tab to close
-        tab_id_to_remove = None
-        for tab_id, tab_index in self.open_tabs.items():
-            if tab_index == index:
-                tab_id_to_remove = tab_id
-                break
+        tab_id_to_remove = widget.widget_id
 
-        if tab_id_to_remove:
-            # Special handling for task tabs
+        if tab_id_to_remove in self.open_tabs:
+            # Special handling for task tabs that have a splitter state
             if isinstance(widget, TaskDetailTabWidget):
                 widget.save_splitter_state()
 
-            widget.deleteLater()
-            self.removeTab(index)
+            # Remove from dictionary first
             del self.open_tabs[tab_id_to_remove]
+
+            # Now remove from UI and schedule for deletion
+            self.removeTab(index)
+            widget.deleteLater()
 
             logger.info(
                 f"Closed tab and released resources for: {tab_id_to_remove}")
+            # Resync indices for all remaining tabs
             self._update_tab_indices()
 
         if self.count() == 0:
@@ -173,20 +181,26 @@ class DetailAreaWidget(QTabWidget):
             self.open_tabs[new_name] = index
             self.setTabText(index, new_name)
             self.setTabToolTip(index, new_name)
-            # The widget's internal task_name is updated via its own signal
+
+            # Also update the widget_id on the widget itself
+            widget = self.widget(index)
+            if hasattr(widget, 'widget_id') and widget.widget_id == old_name:
+                widget.widget_id = new_name
+
             logger.info(f"Tab for task '{old_name}' updated to '{new_name}'.")
 
     def _update_tab_indices(self):
-        # Rebuild the open_tabs dictionary based on current tab order
-        current_tabs = {}
+        """
+        Rebuilds the open_tabs dictionary to ensure all indices are correct,
+        especially after a tab has been closed or moved.
+        """
+        new_open_tabs = {}
         for i in range(self.count()):
             widget = self.widget(i)
-            # Find the ID for this widget instance
-            for tab_id, tab_widget in self.open_tabs.items():
-                if self.widget(self.open_tabs[tab_id]) is widget:
-                    current_tabs[tab_id] = i
-                    break
-        self.open_tabs = current_tabs
+            # The welcome widget doesn't have a widget_id and isn't in open_tabs
+            if hasattr(widget, 'widget_id'):
+                new_open_tabs[widget.widget_id] = i
+        self.open_tabs = new_open_tabs
 
     def update_details(self, task_name: str, status: str):
         if task_name:
@@ -202,16 +216,13 @@ class DetailAreaWidget(QTabWidget):
             "log_viewer_tab": "logs_action",
             "help_tab": "help_action",
             "new_task_tab": "add_task_action",
+            "dev_guide_tab": "dev_guide_title",
+            "message_bus_monitor_tab": "message_bus_monitor_title",
         }
 
         for i in range(self.count()):
             widget = self.widget(i)
-            # Find the widget_id for the current tab index
-            widget_id = None
-            for w_id, w_index in self.open_tabs.items():
-                if w_index == i:
-                    widget_id = w_id
-                    break
+            widget_id = getattr(widget, 'widget_id', None)
 
             # Retranslate tab titles for known, non-task tabs
             if widget_id and widget_id in title_keys:

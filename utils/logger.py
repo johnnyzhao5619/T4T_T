@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from PyQt5.QtWidgets import QMessageBox
-from utils.signals import a_signal
+from utils.signals import global_signals
 
 
 class SignalHandler(logging.Handler):
@@ -19,11 +19,49 @@ class SignalHandler(logging.Handler):
     def emit(self, record):
         """
         Emits a signal with the log message.
-        The record's name is assumed to be the task_name.
+        It checks for a 'task_name' attribute on the record, which is injected
+        by the TaskContextFilter.
         """
         log_message = self.format(record)
-        # The record.name is set by get_logger(task_name)
-        a_signal.log_message.emit(record.name, log_message)
+        task_name = getattr(record, 'task_name', 'general')
+        global_signals.log_message.emit(task_name, log_message)
+
+
+class RedirectStdout:
+    """
+    A context manager for redirecting stdout to a custom write function.
+    This is used to capture output from print() statements within tasks.
+    """
+
+    def __init__(self, task_name):
+        self.task_name = task_name
+        self._original_stdout = sys.stdout
+        self._buffer = ""
+
+    def write(self, text):
+        # Buffer text until a newline is encountered
+        self._buffer += text
+        if '\n' in self._buffer:
+            # Emit the buffered text line by line
+            lines = self._buffer.split('\n')
+            for line in lines[:-1]:
+                if line.strip():  # Avoid sending empty lines
+                    global_signals.log_message.emit(self.task_name, line)
+            self._buffer = lines[-1]  # Keep the last partial line
+
+    def flush(self):
+        # When flush is called, emit any remaining text in the buffer
+        if self._buffer.strip():
+            global_signals.log_message.emit(self.task_name, self._buffer)
+        self._buffer = ""
+
+    def __enter__(self):
+        sys.stdout = self
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.flush()  # Ensure any remaining buffer is flushed on exit
+        sys.stdout = self._original_stdout
 
 
 class LoggerManager:

@@ -1,0 +1,15 @@
+debug: true
+name: C3
+module_type: counter
+enabled: false
+persist_state: false
+inputs:
+  increment_by:
+    description: '1'
+    required: false
+settings:
+  increment_by: 1
+trigger:
+  type: cron
+  config:
+    cron_expression: ''

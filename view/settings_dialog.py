@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QComboBox,
 from utils.theme import theme_manager, switch_theme
 from utils.i18n import language_manager, switch_language, _
 from core.module_manager import module_manager
-from utils.signals import a_signal
+from utils.signals import global_signals
 from utils.icon_manager import get_icon
 
 
@@ -74,7 +74,7 @@ class SettingsDialog(QDialog):
         self.import_module_button.clicked.connect(self.import_module)
 
         language_manager.language_changed.connect(self.retranslate_ui)
-        a_signal.modules_updated.connect(self.populate_modules)
+        global_signals.modules_updated.connect(self.populate_modules)
 
     def populate_themes(self):
         available_themes = theme_manager.get_available_themes()

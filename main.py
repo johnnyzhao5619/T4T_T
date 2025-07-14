@@ -40,13 +40,15 @@ def main():
     # Initialize core components
     config_manager = ConfigManager(config_dir=CONFIG_DIR)
 
-    scheduler = SchedulerManager(config_manager)
-    task_manager = TaskManager(tasks_dir=TASKS_DIR, modules_dir=MODULES_DIR)
+    scheduler = SchedulerManager()
+    task_manager = TaskManager(scheduler_manager=scheduler,
+                               tasks_dir=TASKS_DIR,
+                               modules_dir=MODULES_DIR)
     module_manager = ModuleManager(module_path=MODULES_DIR)
 
     # Load initial theme and language using the new managers
-    theme_name = config_manager.get('general', 'theme', fallback='dark')
-    lang_code = config_manager.get('general', 'language', fallback='en')
+    theme_name = config_manager.get('appearance', 'theme', fallback='dark')
+    lang_code = config_manager.get('appearance', 'language', fallback='en')
 
     # Apply initial theme
     # The switch_theme function now handles loading and applying
@@ -64,9 +66,6 @@ def main():
     # The main window and its children will connect to the managers' signals
     # to handle dynamic updates.
     window.show()
-
-    # Start the scheduler after the main window is shown
-    scheduler.start()
 
     sys.exit(app.exec_())
 

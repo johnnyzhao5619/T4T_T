@@ -3,10 +3,11 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QComboBox,
                              QFileDialog, QMessageBox, QListWidgetItem,
                              QGroupBox, QScrollArea)
 from PyQt5.QtCore import Qt
+from utils.config import ConfigManager
 from utils.theme import theme_manager, switch_theme
 from utils.i18n import language_manager, switch_language, _
 from core.module_manager import module_manager
-from utils.signals import a_signal
+from utils.signals import global_signals
 from utils.icon_manager import get_icon
 
 
@@ -18,6 +19,7 @@ class SettingsWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.config_manager = ConfigManager()
         self.init_ui()
         self.populate_and_connect()
         # Set an object name for styling
@@ -87,8 +89,8 @@ class SettingsWidget(QWidget):
             self.on_language_changed)
         self.import_module_button.clicked.connect(self.import_module)
 
-        a_signal.language_changed.connect(self.retranslate_ui)
-        a_signal.modules_updated.connect(self.populate_modules)
+        global_signals.language_changed.connect(self.retranslate_ui)
+        global_signals.modules_updated.connect(self.populate_modules)
 
     def populate_themes(self):
         available_themes = theme_manager.get_available_themes()
@@ -119,6 +121,7 @@ class SettingsWidget(QWidget):
     def on_theme_changed(self, theme_name):
         if theme_name:
             switch_theme(theme_name)
+            self.config_manager.set('appearance', 'theme', theme_name)
 
     def on_language_changed(self, language_name):
         if language_name:
@@ -126,6 +129,7 @@ class SettingsWidget(QWidget):
             lang_code = language_manager.get_language_code(language_name)
             if lang_code:
                 switch_language(lang_code)
+                self.config_manager.set('appearance', 'language', lang_code)
 
     def populate_modules(self):
         self.module_list_widget.clear()
@@ -188,7 +192,7 @@ class SettingsWidget(QWidget):
 
     def __del__(self):
         try:
-            a_signal.language_changed.disconnect(self.retranslate_ui)
-            a_signal.modules_updated.disconnect(self.populate_modules)
+            global_signals.language_changed.disconnect(self.retranslate_ui)
+            global_signals.modules_updated.disconnect(self.populate_modules)
         except TypeError:
             pass  # Signals already disconnected

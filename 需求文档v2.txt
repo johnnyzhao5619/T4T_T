@@ -136,7 +136,7 @@ def run(context, **inputs):
 **并发模型:**
 1.  `paho-mqtt` 在其专用线程接收到消息。
 2.  `MessageBusManager` 调用 `TaskManager` 注册的中间回调。
-3.  该回调将任务的 `run` 函数和解析后的 `inputs` **提交到全局线程池** (`SchedulerManager`管理的`ThreadPoolExecutor`)。
+3.  该回调将任务的 `run` 函数和解析后的 `inputs` **提交到全局线程池** (`Scheduler`管理的`ThreadPoolExecutor`)。
 4.  任务在后台线程中安全执行，不影响消息接收和 UI。
 
 ### 2.4. 高级架构考量 (新增章节)
@@ -145,9 +145,9 @@ def run(context, **inputs):
 *   **问题:** 强制关闭应用可能导致正在执行的任务中断、数据丢失或状态不一致。
 *   **解决方案:** 应用在主窗口关闭时，必须触发一个明确的、有序的停机序列：
     1.  **UI冻结:** 禁用所有任务操作按钮（启动、停止等）。
-    2.  **停止调度:** `TaskManager` 指示 `SchedulerManager` 停止所有**周期性**任务的调度，不再安排新的执行。
+    2.  **停止调度:** `TaskManager` 指示 `Scheduler` 停止所有**周期性**任务的调度，不再安排新的执行。
     3.  **停止监听:** `TaskManager` 指示 `MessageBusManager` 取消所有主题的订阅，不再接收新事件。
-    4.  **等待任务完成:** `SchedulerManager` 等待当前正在线程池中运行的任务执行完毕，并设置一个合理的超时时间（例如30秒）。若超时，则强制终止。
+    4.  **等待任务完成:** `Scheduler` 等待当前正在线程池中运行的任务执行完毕，并设置一个合理的超时时间（例如30秒）。若超时，则强制终止。
     5.  **断开连接:** `MessageBusManager` 断开与 Broker 的连接。
     6.  **安全退出:** 所有清理工作完成后，应用进程安全退出。
 
@@ -287,12 +287,12 @@ def run(context, **inputs):
 
 **角色:** 你是一位负责重构核心业务逻辑的 Python 工程师。
 
-**任务:** 改造 `core/task_manager.py` 和 `core/scheduler_manager.py`，以支持新的并发模型和多触发器类型的任务。
+**任务:** 改造 `core/task_manager.py` 和 `core/scheduler.py`，以支持新的并发模型和多触发器类型的任务。
 
 **具体实现要求:**
 
-1.  **文件改造: `core/scheduler_manager.py`**
-    *   将 `SchedulerManager` 类重构为一个通用的后台任务执行器。
+1.  **文件改造: `core/scheduler.py`**
+    *   将 `scheduler` 类重构为一个通用的后台任务执行器。
     *   移除所有与 `APScheduler` 相关的特定逻辑。
     *   内部使用 `concurrent.futures.ThreadPoolExecutor` 作为执行引擎。
     *   提供两个核心公共方法:
@@ -311,7 +311,7 @@ def run(context, **inputs):
         *   **关键前置检查:** 在将实际任务函数提交到线程池之前，此包装器**必须**执行以下两项检查：
             1.  **循环检测:** 检查 `payload` 中的 `__hops` 字段。如果 `__hops` 超过一个预设的阈值（例如 5），则记录一条错误日志并**立即返回**，不执行任务，以防止无限循环。
             2.  **输入验证:** 遍历任务配置中 `inputs` 列表。对于每一个标记为 `required: true` 的输入项，检查 `payload` 中是否存在对应的键。如果任何一个 `required` 的键缺失，记录一条错误日志并**立即返回**，不执行任务。
-        *   **提交任务:** 如果所有检查都通过，调用 `scheduler_manager.submit(actual_task_func, context, inputs_data)` 将真正的任务函数提交到后台线程池执行。
+        *   **提交任务:** 如果所有检查都通过，调用 `scheduler.submit(actual_task_func, context, inputs_data)` 将真正的任务函数提交到后台线程池执行。
 
 ---
 
@@ -344,7 +344,7 @@ def run(context, **inputs):
 
 **验收标准:** 当一个任务脚本（例如 `my_task.py`）被执行，并且其内部调用 `context.logger.info("任务正在执行")` 时，最终在控制台或日志文件中看到的输出应自动包含任务名前缀，格式如下：`[2023-10-27 10:00:00] [INFO] [MyTask] 任务正在执行`。
 
----
+---------------------------------------------------------------------------
 
 ### **阶段二: 模块与界面升级 (Module & UI)**
 
@@ -373,7 +373,7 @@ def run(context, **inputs):
 
 **角色:** 你是一位熟练使用 PyQt/PySide 的 GUI 开发者。
 
-**任务:** 重构 `widgets/task_config_widget.py`，实现一个动态的、能够根据触发器类型切换配置面板的用户界面。
+**任务:** 重构 `widgets/task_config_widget.py`，实现一个动态的、能够根据触发器类型切换配置面板的用户界面，界面风格参考vs code。
 
 **具体实现要求:**
 
@@ -387,6 +387,7 @@ def run(context, **inputs):
     *   定位到用于配置任务 `inputs` 列表的 UI 部分（可能是一个 `QTableWidget` 或自定义的列表控件）。
     *   在每一行（代表一个输入项）的配置中，**新增一个 "必须" (Required) 的 `QCheckBox`**。
     *   当保存任务配置时，读取此复选框的状态，并将其作为 `required: true/false` 写入到 `manifest.yaml` 的相应输入项中。
+    *   v2版本采用了yaml配置文件而不是之前的json格式，需要进行相应的适配。
 
 ---
 
@@ -394,7 +395,7 @@ def run(context, **inputs):
 
 **角色:** 你是一位注重用户体验的 PyQt/PySide 前端开发者。
 
-**任务:** 在主界面和任务列表上实现实时的系统状态反馈，让用户清晰地了解后端服务的连接状态和任务的运行情况。
+**任务:** 在主界面和任务列表上实现实时的系统状态反馈，让用户清晰地了解后端服务的连接状态和任务的运行情况。整个风格可参照vs code，同时需要支持theme和国际化
 
 **具体实现要求:**
 
@@ -411,8 +412,217 @@ def run(context, **inputs):
 3.  **展示事件监听状态:**
     *   在任务列表视图中，为 `event` 类型的任务增加一列或修改其显示方式。
     *   如果一个任务是事件驱动的，清晰地展示其正在“监听”的状态，并显示其监听的 MQTT 主题（`topic`）。例如，状态列可以显示为 `监听中: home/livingroom/light/command`。
+4. **消息队列的图形化展示*:*提示一个图形化的界面，可以显示MQTT或kafka的运行图形化展示。
+
+---------------------------------------------------------------------------------------------------------------
+### __详细实施步骤__
+
+#### __第一步: 主窗口状态栏 (main_window.py)__
+
+除了原有的状态反馈，我将对状态栏做如下增强：
+
+1. __添加服务控制按钮__: 在状态栏左侧，我会添加一个可点击的 `QPushButton` 或一个带有菜单的 `QToolButton`。这个按钮将作为启停消息服务的总入口。
+
+2. __点击交互__:
+
+   - 点击该按钮会弹出一个小菜单，提供“连接 MQTT”、“断开连接”等选项。
+   - 这些菜单项会直接调用 `utils.message_bus.message_bus_manager` 中对应的 `connect()` 和 `disconnect()` 方法。
+
+3. __状态联动__: 按钮的文本或图标会根据当前消息总线的连接状态（通过 `message_bus_status_changed` 信号获取）动态改变。例如，在“已连接”状态下，按钮显示为“断开”，在“已断开”状态下显示为“连接”。
+
+#### __第二步: #### __升级任务列表为多列视图 (task_list_widget.py)__
+
+为了展示更丰富的任务信息，我需要将 `TaskListWidget` 从 `QListWidget` 升级为 `QTreeWidget`：
+
+1. __修改继承关系__: `class TaskListWidget(QListWidget):` 将变更为 `class TaskListWidget(QTreeWidget):`。
+
+2. __设置表头__: 在 `__init__` 方法中，我会设置 `QTreeWidget` 的列数和表头标签，例如：`["任务名称", "状态", "最后运行", "详情"]`。
+
+3. __重构任务填充逻辑__:
+
+   - 修改 `populate_tasks` 方法，使其创建 `QTreeWidgetItem` 而不是 `QListWidgetItem`。
+   - 使用 `item.setText(column_index, text)` 为每一列填充初始数据。
+   - `_on_task_status_changed` 等槽函数也会相应地调整，以更新 `QTreeWidgetItem` 中特定列的内容。
+
+#### __第三步: #### __实现任务的详细状态追踪与展示__
+
+这是计划的核心，涉及 `core` 和 `view` 两个层面：
+
+1. __扩展 TaskManager (`core/task_manager.py`)__:
+
+   - __数据追踪__: 我会在 `self.tasks` 字典中为每个任务增加新的字段，例如 `last_run_time`, `last_run_status`, `last_run_message`，用于存储任务执行的历史信息。
+   - __定义新信号__: 在 `utils/signals.py` 中，我会定义新的全局信号，例如 `task_succeeded` 和 `task_failed`。这些信号将携带 `task_name`, `timestamp` 和结果信息。
+   - __发射信号__: 在 `TaskManager` 中负责执行任务的地方（例如 `job_wrapper` 和 `_create_event_wrapper`），我会添加 `try...except` 块。在任务成功执行后发射 `task_succeeded` 信号，在捕获到异常时发射 `task_failed` 信号。
+
+2. __在 UI 上展示信息 (`task_list_widget.py`)__:
+
+   - __连接新信号__: 在 `TaskListWidget` 中，我会连接刚刚创建的 `task_succeeded` 和 `task_failed` 信号到新的槽函数。
+   - __更新UI__: 这些槽函数会根据信号传递的数据，找到对应的 `QTreeWidgetItem`，并更新“最后运行”和“详情”列的内容。
+   - __展示监听状态__: 在更新UI的逻辑中，如果一个任务的状态是 `listening`，我会从任务配置中读取其 `topic`，并将其格式化后（例如 `监听中: home/light/command`）显示在“详情”列。
+
+#### __第四步:#### __创建消息总线监视器__
+
+为了满足“图形化展示”消息队列的需求，我将创建一个简单但实用的监视器：
+
+1. __创建新组件 (`view/message_bus_monitor_widget.py`)__:
+   - 这个新组件将包含一个 `QTextBrowser`，用于滚动显示实时消息。
+
+2. __定义新信号 (`utils/message_bus.py`)__:
+   - 在 `MqttBus` 的 `publish` 和 `_on_message` 方法中，我会发射新的全局信号，如 `message_published` 和 `message_received`，并附带 `topic` 和 `payload`。
+
+3. __连接并显示__:
+
+   - `MessageBusMonitorWidget` 将连接这些新信号。
+   - 当收到信号时，它会将消息格式化（例如，标记 `[发送]` 或 `[接收]`，并带上时间戳、主题和内容）后追加到 `QTextBrowser` 中。
+
+4. __集成到主窗口__:
+
+   - 在 `main_window.py` 中，我会添加一个新的 `QAction` 到工具栏，用于打开这个监视器。
+   - 点击该按钮后，会像打开“日志”或“设置”一样，在右侧的 `DetailAreaWidget` 中创建一个新的标签页来显示 `MessageBusMonitorWidget`。
+
+#### __第五步: 实现对 Kafka 的支持与控制 (新增)__
+
+由于现有代码主要围绕 MQTT 构建，为了支持 Kafka 并提供统一的控制，我需要进行以下扩展：
+
+1. __抽象配置 (`config/config.ini`)__:
+
+   - 我会检查并确保配置文件中可以同时定义 `[mqtt]` 和 `[kafka]` 的连接参数。
+   - 在 `[message_bus]` 配置节中，会有一个 `active_service` 字段，用于指定应用启动时默认激活的服务（`mqtt` 或 `kafka`）。
+
+2. __实现 KafkaBus (`utils/message_bus.py`)__:
+
+   - 仿照 `MqttBus`，我会创建一个新的 `KafkaBus` 类，它同样继承自 `MessageBusInterface`。
+   - 这个类会使用 `kafka-python` 库（如果项目中尚未引入，我会提示您需要安装）来实现 `connect`, `disconnect`, `publish`, `subscribe` 等核心方法。
+   - 它同样会管理连接状态，并通过回调函数通知 `MessageBusManager`。
+
+3. __改造 MessageBusManager (`utils/message_bus.py`)__:
+
+   - `_initialize_bus` 方法将被修改，使其能够根据配置文件中的 `active_service` 来决定是实例化 `MqttBus` 还是 `KafkaBus`。
+   - 我会添加新的公共方法，如 `switch_service(service_type)`。调用此方法会先断开当前的服务，然后根据传入的类型（'MQTT' 或 'KAFKA'）重新初始化并连接新的消息总线实例。
+
+4. __更新UI交互 (`main_window.py`)__:
+
+   - 在第一步创建的服务控制菜单中，除了“连接/断开”，还会增加“切换到 Kafka”和“切换到 MQTT”的选项。
+   - 选择切换后，会调用 `message_bus_manager.switch_service()`，整个应用后端的事件通信将切换到新的消息服务上。状态栏的图标和提示信息也会随之自动更新。
+
+
+#### __任务一：实现主窗口状态栏的交互式服务控制 (第一步)__
+
+__目标__: 将当前只读的状态图标替换为一个功能性的 `QToolButton`，提供服务控制菜单。
+
+__文件修改__:
+
+1. `view/main_window.py`
+2. `utils/message_bus.py` (可能需要微调以支持UI调用)
+3. `i18n/*.json` (添加新的UI文本)
+
+__实施步骤__:
+
+1. __修改 `view/main_window.py`__:
+
+   - 在 `setup_ui` 方法中，将 `self.message_bus_status_label` 的类型从 `QLabel` 改为 `QToolButton`。
+   - 给这个 `QToolButton` 设置一个 `QMenu`。
+   - 创建 `QAction`：“连接”、“断开”、“切换到 Kafka”、“切换到 MQTT”。
+   - 将这些 `QAction` 添加到菜单中。
+   - 将 `QAction` 的 `triggered` 信号连接到 `MessageBusManager` 中对应的方法（例如 `connect()`, `disconnect()`, 以及即将创建的 `switch_service()`）。
+
+2. __更新状态联动逻辑__:
+
+   - 修改 `_update_message_bus_status` 方法。现在它不仅要更新图标，还要根据连接状态更新按钮的文本和 `QAction` 的可用性。
+
+     - __已连接__: “断开”可用，“连接”禁用。按钮文本显示“已连接”。
+     - __已断开__: “连接”可用，“断开”禁用。按钮文本显示“已断开”。
+     - __切换选项__: 根据当前激活的服务（MQTT/Kafka）禁用对应的切换选项。
+
+3. __添加国际化文本__:
+   - 在 `i18n/zh-CN.json` 和 `i18n/en.json` 中为新的菜单项（如 "connect_service", "disconnect_service", "switch_to_kafka"）添加翻译。
 
 ---
+
+#### __任务二：实现对 Kafka 的支持与控制 (第五步)__
+
+__目标__: 将系统扩展为支持 Kafka，并允许在 MQTT 和 Kafka 之间动态切换。
+
+__文件修改__:
+
+1. `config/config.ini`
+2. `utils/config.py`
+3. `utils/message_bus.py`
+4. `requirements.txt`
+
+__实施步骤__:
+
+1. __更新配置文件 (`config/config.ini`)__:
+
+   - 添加 `[message_bus]` 配置节，并包含 `active_service = mqtt` 字段。
+   - 添加 `[mqtt]` 配置节（如果尚未明确存在）。
+   - 添加 `[kafka]` 配置节，包含 `bootstrap_servers` 等必要参数。
+
+2. __更新配置管理器 (`utils/config.py`)__:
+   - 确保 `ConfigManager` 能正确加载和解析新增的 `[message_bus]` 和 `[kafka]` 配置节。
+
+3. __实现 `KafkaBus` (`utils/message_bus.py`)__:
+
+   - 引入 `kafka-python` 库。如果用户环境中没有，需要提示安装（或者我们直接添加到 `requirements.txt`）。
+   - 创建 `class KafkaBus(MessageBusInterface):`。
+   - 实现 `connect`, `disconnect`, `publish`, `subscribe` 方法。这需要使用 `KafkaProducer` 和 `KafkaConsumer`。注意：Kafka 的 `subscribe` 通常在后台线程中运行一个消费循环。
+   - 同样，`KafkaBus` 需要管理其连接状态，并在状态变化时调用 `on_state_change` 回调。
+
+4. __改造 `MessageBusManager` (`utils/message_bus.py`)__:
+
+   - 修改 `_initialize_bus` 方法，使其读取 `config.ini` 中的 `active_service` 来决定实例化 `MqttBus` 还是 `KafkaBus`。
+
+   - 添加新方法 `switch_service(self, service_type: str)`:
+
+     - 该方法首先调用当前 `self._bus.disconnect()`。
+     - 然后根据 `service_type` ('mqtt' 或 'kafka') 重新实例化对应的 Bus。
+     - 最后调用新实例的 `connect()` 方法。
+     - __重要__: 需要处理好订阅的平滑过渡。切换服务后，需要将之前的所有订阅关系重新应用到新的 Bus 实例上。
+
+5. __更新依赖 (`requirements.txt`)__:
+   - 添加 `kafka-python`。
+
+---
+
+### __测试用例设计__
+
+#### __第一步: 主窗口状态栏__
+
+- __TC1.1 (UI显示)__: 启动应用，检查状态栏左侧是否显示一个带图标和文本的按钮。
+- __TC1.2 (菜单交互)__: 点击该按钮，检查是否弹出包含“连接”、“断开”等选项的菜单。
+- __TC1.3 (状态联动-连接)__: 当消息服务成功连接时，检查按钮图标是否变为“成功”状态，菜单中的“连接”选项是否被禁用，“断开”选项是否可用。
+- __TC1.4 (状态联动-断开)__: 手动点击“断开”，检查按钮图标是否变为“失败/未连接”状态，菜单中的“断开”选项是否被禁用，“连接”选项是否可用。
+- __TC1.5 (功能调用)__: 点击“连接”菜单项，确认 `message_bus_manager.connect()` 被调用（可通过日志或监视器验证）。点击“断开”同理。
+
+#### __第二步: 升级任务列表为多列视图__
+
+- __TC2.1 (UI布局)__: 启动应用，检查任务列表是否为表格形式，并包含正确的表头：“任务名称”, “状态”, “最后运行”, “详情”。
+- __TC2.2 (内容填充)__: 检查任务列表是否正确填充了所有 `tasks` 目录下的任务，每个任务为一行。
+- __TC2.3 (列宽适应)__: 检查“任务名称”列是否自动拉伸填充空间，而其他列是否根据内容自适应宽度。
+
+#### __第三步: 任务的详细状态追踪与展示__
+
+- __TC3.1 (成功状态)__: 运行一个会成功的定时任务。检查任务执行后，“状态”列是否短暂变为“运行中”然后恢复，“最后运行”列是否更新为当前时间，“详情”列是否显示“成功”并带有绿色提示。
+- __TC3.2 (失败状态)__: 运行一个会抛出异常的定时任务。检查任务执行后，“最后运行”列是否更新，“详情”列是否显示“失败”并带有红色提示，鼠标悬停在详情上时是否能看到具体的错误信息。
+- __TC3.3 (监听状态)__: 启动一个事件监听型任务。检查其“状态”列是否显示为“监听中”，“详情”列是否显示其正在监听的 `topic`。
+- __TC3.4 (数据持久化)__: 重启应用，检查之前任务的“最后运行”和“详情”状态是否被正确加载（如果设计上要求持久化的话，当前设计似乎没有持久化，但这是个好的测试点）。
+
+#### __第四步: 消息总线监视器__
+
+- __TC4.1 (打开监视器)__: 点击工具栏的“监视器”按钮，检查右侧是否打开一个新的标签页，标题为“消息总线监视器”。
+- __TC4.2 (发送消息)__: 运行一个会通过 `message_bus.publish` 发送消息的任务。检查监视器中是否立即出现一条标记为 `[发送]` 的记录，包含正确的时间戳、`topic` 和 `payload`。
+- __TC4.3 (接收消息)__: 运行一个事件监听型任务，并从外部（如 MQTTX 工具）向其监听的 `topic` 发送一条消息。检查监视器中是否立即出现一条标记为 `[接收]` 的记录。
+
+#### __第五步: Kafka 支持与控制__
+
+- __TC5.1 (配置加载)__: 修改 `config.ini`，设置 `active_service = kafka`。启动应用，检查应用是否尝试连接到 Kafka 服务器（通过日志确认）。
+- __TC5.2 (Kafka任务-发送)__: 创建一个在 Kafka 上 `publish` 消息的任务并运行。使用 Kafka 工具（如 `kafka-console-consumer`）确认消息是否被成功发送到对应的 `topic`。
+- __TC5.3 (Kafka任务-接收)__: 创建一个监听 Kafka `topic` 的事件任务。使用 Kafka 工具发送消息到该 `topic`，确认任务是否被触发。
+- __TC5.4 (服务切换-UI)__: 在 MQTT 连接时，检查状态栏菜单中“切换到 Kafka”是否可用，“切换到 MQTT”是否禁用。
+- __TC5.5 (服务切换-功能)__: 点击“切换到 Kafka”。检查应用是否先断开 MQTT，然后连接到 Kafka。状态栏图标和文本应相应更新。之前监听 MQTT 的任务应停止，而配置为监听 Kafka 的任务应开始工作。反向切换同理。
+
+
+---------------------------------------------------------------------------------------------------------------
 
 ### **阶段三: 集成、测试与文档**
 
@@ -509,3 +719,130 @@ def run(context, **inputs):
     *   **确认关闭:** 最后，调用 `event.accept()`，允许窗口关闭，应用进程退出。
 3.  **用户反馈 (可选但推荐):**
     *   在开始执行停机序列时，可以向用户显示一个简短的提示，例如在状态栏显示“正在关闭，请稍候...”，以改善用户体验。
+
+
+---------------------------------------------------------------------------------------------------------------------------
+
+### __项目最终目标__
+
+将应用程序的消息系统重构为使用一&#x4E2A;__&#x81EA;托管的、内嵌的 MQTT 代理__。这将消除对外部消息服务的依赖，简化用户配置，并通过 UI 提供对该内部服务的完全控制能力。
+
+---
+
+### __阶段一：清理与简化 - 彻底移除 Kafka__
+
+__目标：__ 在引入新功能前，剥离所有与 Kafka 相关的代码、配置和依赖，为后续开发扫清障碍，降低心智负担。
+
+- __步骤 1.1：修改 `utils/message_bus.py`__
+
+  - __动作：__
+
+    1. 删除整个 `KafkaBus` 类的定义。
+    2. 删除所有来自 `kafka` 库的 `import` 语句 (如 `KafkaProducer`, `NoBrokersAvailable` 等)。
+    3. 移除文件顶部的 `six` 模块猴子补丁代码。
+    4. 在 `MessageBusManager` 类中，删除 `_initialize_bus` 方法内所有处理 `service_type == 'kafka'` 的 `elif` 逻辑。
+    5. 删除 `switch_service` 方法，因为它在新架构中将不再需要。
+
+  - __达成目标：__ `utils/message_bus.py` 文件将变得更轻量，只包含 MQTT 客户端和管理器逻辑。
+
+- __步骤 1.2：修改 `config/config.ini`__
+
+  - __动作：__ 删除配置文件中整个 `[kafka]` 配置段。
+  - __达成目标：__ 配置文件中不再包含任何与 Kafka 相关的冗余信息。
+
+- __步骤 1.3：修改 `requirements.txt`__
+
+  - __动作：__ 找到并删除 `kafka-python` 这一行依赖。
+  - __达成目标：__ 项目的依赖项被清理，彻底移除 Kafka 客户端库。
+
+---
+
+### __阶段二：构建核心架构 - 嵌入式代理与服务管理器__
+
+__目标：__ 搭建新架构的基石：一个用于管理后台服务的 `ServiceManager` 和一个可被管理的 `EmbeddedMQTTBroker`。
+
+- __步骤 2.1：添加新依赖__
+
+  - __动作：__ 在 `requirements.txt` 文件中添加 `amqtt`。这是一个功能强大且纯 Python 实现的 MQTT 代理库。
+  - __达成目标：__ 项目具备了托管嵌入式 MQTT 代理的能力。
+
+- __步骤 2.2：创建 `core/service_manager.py`__
+
+  - __动作：__
+
+    1. 在 `core` 目录下创建新文件 `service_manager.py`。
+    2. 在该文件中定义一个 `ServiceState` 枚举 (`STOPPED`, `STARTING`, `RUNNING`, `FAILED`)。
+    3. 创建一个单例的 `ServiceManager` 类，负责管理应用内所有后台服务的生命周期。
+    4. 实现 `start_service(name)` 和 `stop_service(name)` 方法。__关键：__ 这两个方法必须在独立的 `threading.Thread` 中运行服务的启停逻辑，以防阻塞 UI 主线程。
+    5. 实现 `get_service_state(name)` 方法，用于查询服务当前状态。
+    6. 集成 `utils.signals.global_signals`，在服务状态变更时发出信号，例如 `global_signals.service_state_changed.emit('mqtt_broker', new_state)`。
+
+  - __达成目标：__ 创建了一个统一、非阻塞的后台服务管理中心，遵循了单一职责原则。
+
+- __步骤 2.3：创建 `services/embedded_mqtt_broker.py`__
+
+  - __动作：__
+
+    1. 在项目根目录创建新文件夹 `services/`。
+    2. 在 `services/` 文件夹下创建新文件 `embedded_mqtt_broker.py`。
+    3. 在该文件中创建一个 `EmbeddedMQTTBroker` 类。
+    4. `__init__` 方法负责从 `config.ini` 加载代理配置（如 host, port）。
+    5. `start()` 方法负责调用 `amqtt` 库的函数来启动代理。此方法是阻塞的，将被 `ServiceManager` 在子线程中调用。
+    6. `stop()` 方法负责调用 `amqtt` 的函数来优雅地关闭代理。
+    7. 在 `ServiceManager` 中，导入并实例化 `EmbeddedMQTTBroker`，将其注册为名为 `'mqtt_broker'` 的服务。
+
+  - __达成目标：__ 将嵌入式 MQTT 代理的实现细节封装起来，与服务管理逻辑解耦。
+
+---
+
+### __阶段三：重构消息总线客户端__
+
+__目标：__ 改造 `MessageBusManager`，使其从一个复杂的服务“切换者”转变为一个纯粹的“连接者”，并与新的 `ServiceManager` 协同工作。
+
+- __步骤 3.1：修改 `utils/message_bus.py`__
+
+  - __动作：__
+
+    1. 在 `MessageBusManager` 的 `__init__` 方法中，获取 `ServiceManager` 的单例实例。
+    2. __简化 `_initialize_bus` 方法：__ 移除所有服务选择和切换的逻辑，使其只负责创建 `MqttBus` 实例。
+    3. __重构 `connect` 方法：__ 在调用 `self._bus.connect()` 之前，先调用 `self.service_manager.start_service('mqtt_broker')`，确保代理服务已启动。
+    4. __重构 `disconnect` 方法：__ 在调用 `self._bus.disconnect()` 之后，调用 `self.service_manager.stop_service('mqtt_broker')`，实现与应用生命周期同步的服务关闭。
+
+  - __达成目标：__ `MessageBusManager` 的职责变得清晰：管理客户端连接，并委托 `ServiceManager` 管理服务端的生命周期。
+
+---
+
+### __阶段四：UI 集成与用户控制__
+
+__目标：__ 将后台的服务管理能力暴露给用户，提供直观的 UI 控件来启停和监控嵌入式 MQTT 代理。
+
+- __步骤 4.1：分析现有 UI__
+
+  - __动作：__ 读取 `view/message_bus_monitor_widget.py` 的代码。
+  - __达成目标：__ 了解现有 UI 布局和逻辑，为后续修改做准备。
+
+- __步骤 4.2：修改 `view/message_bus_monitor_widget.py`__
+
+  - __动作：__
+
+    1. 导入 `ServiceManager` 和 `ServiceState`。
+    2. 在 UI 布局中，移除旧的状态显示，添加新的控件：一个状态标签（如 "代理状态: STOPPED"）和两个按钮（"启动内置服务"、"停止内置服务"）。
+    3. 将按钮的 `clicked` 信号分别连接到 `ServiceManager` 的 `start_service('mqtt_broker')` 和 `stop_service('mqtt_broker')` 方法。
+    4. 创建一个槽函数，并将其连接到 `global_signals.service_state_changed` 信号。此函数根据收到的服务名称和新状态，实时更新 UI 上的状态标签，并控制按钮的启用/禁用状态。
+
+  - __达成目标：__ 用户可以通过图形界面完全控制嵌入式消息服务的启停，并实时看到其状态，极大提升了可用性。
+
+---
+
+### __阶段五：最终配置与清理__
+
+__目标：__ 精简配置文件，使其与新的、更简单的架构保持一致。
+
+- __步骤 5.1：修改 `config/config.ini`__
+
+  - __动作：__
+
+    1. 删除整个 `[message_bus]` 配置段。
+    2. 在 `[mqtt]` 配置段中，添加一个新键 `mode = embedded`。这明确了应用将使用内置代理。`host` 和 `port` 键现在将用于配置这个内置代理。
+
+  - __达成目标：__ 配置文件变得简洁、清晰，准确反映了当前架构，同时为未来可能支持连接外部代理（`mode = external`）留下了扩展空间。

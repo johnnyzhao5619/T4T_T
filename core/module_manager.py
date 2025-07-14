@@ -2,7 +2,7 @@ import os
 import shutil
 import zipfile
 from typing import Dict, Optional, List
-from utils.signals import a_signal
+from utils.signals import global_signals
 
 
 class ModuleManager:
@@ -37,7 +37,7 @@ class ModuleManager:
         Scans the modules directory to find and register valid modules.
         A valid module is a sub-directory containing both:
         - [module_name]_template.py
-        - [module_name]_template.json
+        - manifest.yaml
         """
         print(f"Discovering modules in '{self.module_path}'...")
         self.modules.clear()  # Clear existing modules before rediscovery
@@ -51,14 +51,13 @@ class ModuleManager:
             if os.path.isdir(module_dir):
                 py_template_path = os.path.join(module_dir,
                                                 f"{module_name}_template.py")
-                json_template_path = os.path.join(
-                    module_dir, f"{module_name}_template.json")
+                manifest_path = os.path.join(module_dir, "manifest.yaml")
 
                 if os.path.isfile(py_template_path) and os.path.isfile(
-                        json_template_path):
+                        manifest_path):
                     self.modules[module_name] = {
                         'py_template': py_template_path,
-                        'json_template': json_template_path,
+                        'manifest_path': manifest_path,
                         'path': module_dir
                     }
                     print("  -> Discovered and registered module:"
@@ -67,7 +66,7 @@ class ModuleManager:
                     print(f"  -> Skipping directory '{module_name}':"
                           " missing required template files.")
         print("Module discovery complete.")
-        a_signal.modules_updated.emit()
+        global_signals.modules_updated.emit()
 
     def get_module_names(self) -> List[str]:
         """
@@ -88,7 +87,7 @@ class ModuleManager:
 
         Returns:
             Optional[Dict[str, str]]: A dictionary with 'py_template'
-            and 'json_template' paths, or None if the module is not found.
+            and 'manifest_path' paths, or None if the module is not found.
         """
         return self.modules.get(module_name)
 

@@ -2,7 +2,7 @@ import logging
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QTextEdit, QComboBox, QLineEdit)
 from utils.i18n import _
-from utils.signals import a_signal
+from utils.signals import global_signals
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class TaskOutputWidget(QWidget):
         super().__init__(parent)
         self.task_name = task_name
         self.init_ui()
-        a_signal.log_message.connect(self.append_log)
+        global_signals.log_message.connect(self.append_log)
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -60,6 +60,6 @@ class TaskOutputWidget(QWidget):
 
     def __del__(self):
         try:
-            a_signal.log_message.disconnect(self.append_log)
+            global_signals.log_message.disconnect(self.append_log)
         except TypeError:
             pass
