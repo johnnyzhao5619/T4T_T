@@ -1,77 +1,81 @@
-# T4T 任务管理平台 - 用户手册 (V2)
-
-## 1. 欢迎使用 T4T
-
-欢迎使用 T4T V2，一个强大而灵活的自动化工具。无论您是想按时执行重复性任务，还是构建复杂的事件驱动工作流，T4T 都能满足您的需求。本手册将引导您熟悉软件的各项功能。
-
-## 2. 主界面概览
-
-![T4T 主界面](https://your-image-host.com/main-window.png) *(请替换为实际的界面截图)*
-
-*   **任务列表 (左侧)**: 集中展示您所有的任务。每个任务的状态（运行中、已暂停、监听中、或已停止）都一目了然。
-*   **详情区域 (右侧)**: 一个多标签页区域，用于配置新任务、修改现有任务、查看实时日志以及调整应用设置。
-*   **工具栏 (顶部)**: 提供常用操作的快捷方式，如“添加任务”、“全部启动”、“全部暂停”等。
-*   **状态栏 (底部)**: 显示系统摘要信息，包括任务总数、CPU/内存占用率，以及至关重要的 **消息总线连接状态**。
+[English](./user_manual.md) | [简体中文](./user_manual.zh-CN.md)
 
 ---
 
-## 3. 核心功能详解
+# T4T Task Management Platform - User Manual (V2)
 
-### 3.1. 管理您的任务
+## 1. Welcome to T4T
 
-*   **添加新任务**: 点击工具栏上的 `+` (添加) 图标，右侧将打开“新任务”配置页面。
-*   **控制任务**: 选中一个或多个任务后，使用工具栏上的“启动”、“暂停”、“停止”按钮来控制它们的生命周期。
-*   **删除任务**: 在任务列表上右键单击一个任务，然后选择“删除”。
+Welcome to T4T V2, a powerful and flexible automation tool. Whether you want to execute repetitive tasks on a schedule or build complex event-driven workflows, T4T has you covered. This manual will guide you through the software's features.
 
-### 3.2. 理解任务触发器
+## 2. Main Interface Overview
 
-在创建或编辑任务时，“触发器类型”是最核心的配置。它决定了任务何时被执行。
+![T4T Main Interface](https://your-image-host.com/main-window.png) *(Please replace with an actual screenshot of the interface)*
 
-| 触发器类型 | 用途说明 |
+*   **Task List (Left Panel)**: Centrally displays all your tasks. The status of each task (Running, Paused, Listening, or Stopped) is visible at a glance.
+*   **Detail Area (Right Panel)**: A tabbed area for configuring new tasks, modifying existing ones, viewing real-time logs, and adjusting application settings.
+*   **Toolbar (Top)**: Provides shortcuts for common actions like "Add Task," "Start All," "Pause All," etc.
+*   **Status Bar (Bottom)**: Shows a system summary, including the total number of tasks, CPU/memory usage, and the crucial **Message Bus connection status**.
+
+---
+
+## 3. Core Features Explained
+
+### 3.1. Managing Your Tasks
+
+*   **Add New Task**: Click the `+` (Add) icon on the toolbar to open the "New Task" configuration page on the right.
+*   **Control Tasks**: Select one or more tasks and use the "Start," "Pause," and "Stop" buttons on the toolbar to control their lifecycle.
+*   **Delete Task**: Right-click a task in the list and select "Delete."
+
+### 3.2. Understanding Task Triggers
+
+When creating or editing a task, the "Trigger Type" is the most critical setting. It determines *when* the task will be executed.
+
+| Trigger Type | Use Case Description |
 | :--- | :--- |
-| `schedule` | **定时调度**: 用于需要按固定时间表运行的任务。例如：每5分钟、每个工作日的上午9点、或在2025年1月1日的下午3点。 |
-| `event` | **事件驱动**: 用于响应系统中发生的特定事件。任务会“监听”一个消息主题，只有当该主题收到消息时才执行。 |
+| `schedule` | **Scheduled Execution**: For tasks that need to run on a fixed schedule. For example: every 5 minutes, every weekday at 9 AM, or at 3 PM on January 1, 2025. |
+| `event` | **Event-Driven**: For tasks that respond to specific events occurring in the system. The task "listens" to a message topic and only executes when a message arrives on that topic. |
 
-### 3.3. 配置一个任务
+### 3.3. Configuring a Task
 
-在“新任务”或“编辑任务”页面，您会看到以下关键配置区域：
+On the "New Task" or "Edit Task" page, you will see the following key configuration areas:
 
-*   **基础信息**: 设置任务的名称和描述。
-*   **触发器配置**: 根据您选择的触发器类型，这里会显示不同的选项。
-    *   如果选择 `schedule`，您需要配置 `cron`、`interval` 或 `date` 等参数。
-    *   如果选择 `event`，您需要指定任务应该订阅的 `topic` (主题)。
-*   **输入参数 (`inputs`)**: 这里定义了任务运行时需要的参数。对于事件驱动的任务，这些参数通常来自它所监听的事件内容。
+*   **Basic Information**: Set the task's name and description.
+*   **Trigger Configuration**: This section displays different options based on the trigger type you select.
+    *   If you choose `schedule`, you will need to configure parameters like `cron`, `interval`, or `date`.
+    *   If you choose `event`, you will need to specify the `topic` the task should subscribe to.
+*   **Input Parameters (`inputs`)**: This defines the parameters the task needs to run. For event-driven tasks, these parameters typically come from the content of the event it is listening to.
 
-### 3.4. 实时监控
+### 3.4. Real-Time Monitoring
 
-*   **任务日志 (`Output` 标签页)**: 每个任务的输出（包括信息、警告和错误）都会实时显示在这里。这是调试和监控任务执行情况的最重要窗口。
-*   **任务状态 (`State` 标签页)**: 显示任务的详细状态，例如：
-    *   对于定时任务，会显示“下一次运行时间”。
-    *   对于事件任务，会显示它正在监听的“主题”以及当前状态（如“监听中”）。
+*   **Task Logs (`Output` Tab)**: The output of each task (including info, warnings, and errors) is displayed here in real-time. This is the most important window for debugging and monitoring task execution.
+*   **Task State (`State` Tab)**: Shows the detailed status of a task, for example:
+    *   For scheduled tasks, it will show the "Next Run Time."
+    *   For event tasks, it will show the "Topic" it is listening to and its current status (e.g., "Listening").
 
 ---
 
-## 4. 事件驱动与消息总线
+## 4. Event-Driven Architecture and the Message Bus
 
-T4T V2 的核心是**消息总线**（通常是一个 MQTT 服务器），它允许任务之间以及任务与外部世界之间进行通信。
+The core of T4T V2 is the **Message Bus** (usually an MQTT server), which allows tasks to communicate with each other and with the outside world.
 
-*   **如何工作**: 想象一个邮局系统。一个任务（发布者）可以向一个特定的地址（主题/Topic）发送一封信（消息）。其他任何一个或多个任务（订阅者）如果对这个地址感兴趣，就可以“订阅”它，并在这封信到达时立即收到它。
-*   **连接状态**: 请务必关注主界面右下角的状态栏。有一个专门的图标会显示当前应用是否已成功连接到消息总线。**如果连接断开，所有事件驱动的任务将无法接收事件。**
+*   **How It Works**: Imagine a post office system. A task (the publisher) can send a letter (a message) to a specific address (a topic). Any other task or tasks (the subscribers) interested in this address can "subscribe" to it and will receive the letter instantly upon its arrival.
+*   **Connection Status**: Be sure to pay attention to the status bar in the bottom-right corner of the main interface. A dedicated icon will show whether the application is currently connected to the message bus. **If the connection is lost, all event-driven tasks will be unable to receive events.**
 
-## 5. 应用设置
+## 5. Application Settings
 
-点击主工具栏上的“设置”图标（通常是一个齿轮），可以打开全局设置页面。
+Click the "Settings" icon (usually a gear) on the main toolbar to open the global settings page.
 
-*   **主题与语言**: 在这里个性化您的应用外观和显示语言。
-*   **消息总线配置**: 这是配置 T4T 如何连接到您的 MQTT 服务器的地方。您需要正确填写服务器地址、端口、用户名和密码（如果需要）。
+*   **Theme & Language**: Personalize your application's appearance and display language here.
+*   **Message Bus Configuration**: This is where you configure how T4T connects to your MQTT server. You need to correctly fill in the server address, port, username, and password (if required).
 
-## 6. 常见问题 (FAQ)
+## 6. Frequently Asked Questions (FAQ)
 
-*   **问：我的定时任务没有按时运行？**
-    *   **答：** 请检查：1) 任务是否处于“已启动”状态？ 2) 在“State”标签页中检查“下一次运行时间”是否正确。 3) 查看应用主日志或任务自己的日志，看是否有错误信息。
+*   **Q: My scheduled task isn't running on time.**
+    *   **A:** Please check: 1) Is the task in the "Started" state? 2) In the "State" tab, is the "Next Run Time" correct? 3) Check the main application log or the task's own log for any error messages.
 
-*   **问：我的事件任务没有反应？**
-    *   **答：** 请检查：1) 任务是否处于“监听中”状态？ 2) 状态栏中的消息总线图标是否显示为“已连接”？ 3) 确认发布消息的源头（另一个任务或外部程序）是否真的在向该任务监听的、完全相同的主题上发布消息。
+*   **Q: My event-driven task is not responding.**
+    *   **A:** Please check: 1) Is the task in the "Listening" state? 2) Does the message bus icon in the status bar show as "Connected"? 3) Confirm that the source publishing the message (another task or an external program) is actually publishing to the exact same topic that the task is listening to.
 
-*   **问：如何让两个任务协同工作？**
-    *   **答：** 这正是事件驱动的魅力所在！让任务 A 在完成工作后，向一个主题（如 `tasks/A/result`）发布一条包含其结果的消息。然后，创建一个事件驱动的任务 B，让它订阅 `tasks/A/result` 主题。这样，每当 A 完成时，B 就会自动被触发并接收到 A 的结果。
+*   **Q: How can I make two tasks work together?**
+    *   **A:** This is the beauty of event-driven design! Have Task A, upon completion, publish a message with its result to a topic (e.g., `tasks/A/result`). Then, create an event-driven Task B and have it subscribe to the `tasks/A/result` topic. This way, whenever A finishes, B will be automatically triggered and receive A's results.

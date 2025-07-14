@@ -1,86 +1,89 @@
-# T4T 开发者指南 (V2)
-
-欢迎来到 T4T V2 模块开发的世界！本文档将引导您了解新的事件驱动架构、核心概念以及如何构建一个功能完备的 V2 模块。
-
-## 1. V2 模块结构概览
-
-一个 V2 模块由两个核心文件组成，它们共同定义了模块的行为和元数据。
-
-*   **`manifest.yaml`**: 这是模块的“身份证”。它是一个声明式的配置文件，用于定义模块的名称、触发方式、输入参数以及其他元数据。系统通过解析这个文件来了解如何以及何时执行你的任务。
-*   **任务脚本 (`__init__.py` 或其他指定脚本)**: 这是模块的“大脑”，包含了实际的业务逻辑。其核心是一个名为 `run` 的函数，系统会在触发条件满足时调用它。
+[English](./development_guide.md) | [简体中文](./development_guide.zh-CN.md)
 
 ---
 
-## 2. 编写任务脚本 (`run` 函数)
+# T4T Developer Guide (V2)
 
-V2 模块的入口点是一个具有标准签名的 `run` 函数。这个函数的设计遵循“依赖注入”的原则，使得测试和代码复用变得更加简单。
+Welcome to the world of T4T V2 module development! This document will guide you through the new event-driven architecture, core concepts, and how to build a fully functional V2 module.
+
+## 1. V2 Module Structure Overview
+
+A V2 module consists of two core files that together define its behavior and metadata.
+
+*   **`manifest.yaml`**: This is the module's "ID card." It is a declarative configuration file used to define the module's name, trigger mechanism, input parameters, and other metadata. The system parses this file to understand how and when to execute your task.
+*   **Task Script (`__init__.py` or other specified script)**: This is the module's "brain," containing the actual business logic. Its core is a function named `run`, which the system calls when the trigger condition is met.
+
+---
+
+## 2. Writing the Task Script (The `run` function)
+
+The entry point for a V2 module is a `run` function with a standard signature. This function's design follows the principle of "dependency injection," making testing and code reuse simpler.
 
 ```python
 def run(context, inputs):
     """
-    一个标准的 V2 任务函数。
+    A standard V2 task function.
 
-    :param context: 由系统注入的上下文对象，提供对日志、消息总线等核心服务的访问。
-    :param inputs: 一个包含任务所需输入数据的字典。
+    :param context: A context object injected by the system, providing access to core services like logging and the message bus.
+    :param inputs: A dictionary containing the input data required by the task.
     """
-    # 你的代码逻辑在这里
+    # Your code logic goes here
     pass
 ```
 
-### 2.1. 上下文对象 (`context`)
+### 2.1. The Context Object (`context`)
 
-`context` 对象是你的任务与 T4T 系统交互的桥梁。它是一个由任务管理器在运行时动态创建并传入的实例，包含了执行任务所需的所有环境信息和服务。
+The `context` object is the bridge for your task to interact with the T4T system. It is an instance created and passed by the Task Manager at runtime, containing all the environmental information and services needed to execute the task.
 
-**`context` 对象的属性:**
+**`context` Object Attributes:**
 
-| 属性 | 类型 | 描述 |
-| :--- | :--- | :--- |
-| `task_name` | `str` | 当前执行的任务实例的名称。 |
-| `logger` | `function` | 一个可调用的日志记录器，用于将消息发送到该任务的专属日志视图中。 |
+| Attribute   | Type       | Description                                                                 |
+| :---------- | :--------- | :-------------------------------------------------------------------------- |
+| `task_name` | `str`      | The name of the currently executing task instance.                          |
+| `logger`    | `function` | A callable logger used to send messages to the task's dedicated log view.   |
 
-**代码示例：使用上下文日志**
+**Code Example: Using the Contextual Logger**
 
-使用 `context.logger` 而不是 `print()` 是最佳实践，因为它能将日志与特定的任务关联起来，便于调试。
+Using `context.logger` instead of `print()` is a best practice because it associates logs with a specific task, which is invaluable for debugging.
 
 ```python
 def run(context, inputs):
-    context.logger("INFO", f"任务 '{context.task_name}' 已启动。")
+    context.logger("INFO", f"Task '{context.task_name}' has started.")
     
     try:
-        # ... 核心逻辑 ...
-        result = "操作成功"
-        context.logger("SUCCESS", f"处理完成: {result}")
+        # ... core logic ...
+        result = "Operation successful"
+        context.logger("SUCCESS", f"Processing complete: {result}")
     except Exception as e:
-        context.logger("ERROR", f"任务执行失败: {e}")
-
+        context.logger("ERROR", f"Task execution failed: {e}")
 ```
 
-### 2.2. 输入数据 (`inputs`)
+### 2.2. Input Data (`inputs`)
 
-`inputs` 参数是一个字典，包含了任务执行所需的所有数据。这些数据的来源由 `manifest.yaml` 中的 `trigger` 和 `inputs` 配置决定。
+The `inputs` parameter is a dictionary containing all the data needed for the task's execution. The source of this data is determined by the `trigger` and `inputs` configurations in `manifest.yaml`.
 
-*   **对于事件触发器 (`event`)**: `inputs` 字典的键值对通常来自于触发事件的 `payload`（例如，一个 MQTT 消息的内容）。
-*   **对于定时触发器 (`schedule`)**: `inputs` 字典通常为空，因为这类任务不是由外部数据驱动的。
+*   **For `event` triggers**: The key-value pairs in the `inputs` dictionary typically come from the `payload` of the triggering event (e.g., the content of an MQTT message).
+*   **For `schedule` triggers**: The `inputs` dictionary is usually empty, as these tasks are not driven by external data.
 
 ---
 
-## 3. 配置清单 (`manifest.yaml`)
+## 3. The Manifest File (`manifest.yaml`)
 
-`manifest.yaml` 是 V2 模块的核心，它以一种清晰、可读的方式定义了模块的行为。
+`manifest.yaml` is the core of a V2 module, defining its behavior in a clear, human-readable way.
 
-### 3.1. 触发器 (`trigger`)
+### 3.1. The Trigger (`trigger`)
 
-`trigger` 字段定义了启动任务的条件。T4T V2 支持两种主要的触发器类型。
+The `trigger` field defines the condition that starts the task. T4T V2 supports two main types of triggers.
 
-#### a) 定时触发器 (`schedule`)
+#### a) Schedule Trigger (`schedule`)
 
-当您希望任务按固定的时间表（例如，每小时、每天午夜）执行时，使用此触发器。它底层由 `APScheduler` 支持。
+Use this trigger when you want a task to run on a fixed schedule (e.g., every hour, daily at midnight). It is powered by `APScheduler` under the hood.
 
-**完整配置示例:**
+**Complete Configuration Example:**
 
 ```yaml
 # manifest.yaml
-name: "每日报告任务"
+name: "Daily Report Task"
 module_type: "reporting_v2"
 version: "1.0"
 
@@ -88,45 +91,45 @@ trigger:
   type: schedule
   config:
     type: cron      # cron, interval, or date
-    hour: 0         # 每天 00:00 执行
+    hour: 0         # Executes daily at 00:00
     minute: 0
 ```
 
-#### b) 事件触发器 (`event`)
+#### b) Event Trigger (`event`)
 
-当您希望任务响应系统中的特定事件（例如，另一任务完成、收到一条 MQTT 消息）时，使用此触发器。这是构建响应式、解耦系统的关键。
+Use this trigger when you want a task to respond to a specific event in the system (e.g., the completion of another task, the receipt of an MQTT message). This is key to building responsive, decoupled systems.
 
-**完整配置示例:**
+**Complete Configuration Example:**
 
 ```yaml
 # manifest.yaml
-name: "温度传感器处理器"
+name: "Temperature Sensor Processor"
 module_type: "sensor_handler_v2"
 version: "1.0"
 
 trigger:
   type: event
   config:
-    topic: "sensors/temperature/reading" # 订阅 MQTT 主题
+    topic: "sensors/temperature/reading" # Subscribe to an MQTT topic
 ```
 
-### 3.2. 输入映射与验证 (`inputs`)
+### 3.2. Input Mapping and Validation (`inputs`)
 
-`inputs` 字段是 `manifest.yaml` 中一个至关重要的部分。它扮演着双重角色：
+The `inputs` field is a crucial part of `manifest.yaml`. It serves a dual role:
 
-1.  **数据映射**: 它声明了任务 `run` 函数期望接收哪些输入参数。对于事件触发器，系统会尝试从事件的 `payload` 中提取这些字段。
-2.  **前置验证**: 它是保护你的任务免受无效或缺失数据影响的第一道防线。
+1.  **Data Mapping**: It declares which input parameters the task's `run` function expects. For event triggers, the system will attempt to extract these fields from the event's `payload`.
+2.  **Upfront Validation**: It is the first line of defense to protect your task from invalid or missing data.
 
-**重点: `required: true`**
+**Highlight: `required: true`**
 
-当一个输入字段被标记为 `required: true` 时，任务管理器会在调用 `run` 函数**之前**检查该字段是否存在于输入数据中。如果数据缺失，任务将不会被执行，并会在系统日志中记录一条错误。这可以极大地简化你 `run` 函数中的错误处理逻辑。
+When an input field is marked as `required: true`, the Task Manager will check for its existence in the input data **before** calling the `run` function. If the data is missing, the task will not be executed, and an error will be logged. This can significantly simplify the error-handling logic within your `run` function.
 
-**配置示例:**
+**Configuration Example:**
 
 ```yaml
 # manifest.yaml
-name: "用户注册处理器"
-# ... 其他配置 ...
+name: "User Registration Handler"
+# ... other configs ...
 
 trigger:
   type: event
@@ -136,58 +139,58 @@ trigger:
 inputs:
   - name: username
     type: string
-    description: "用户的唯一标识符。"
-    required: true  # 如果 MQTT 消息中没有 username 字段，任务将不会运行
+    description: "The user's unique identifier."
+    required: true  # Task will not run if username is missing from the MQTT message
 
   - name: email
     type: string
-    description: "用户的电子邮件地址。"
+    description: "The user's email address."
     required: true
 
   - name: referral_code
     type: string
-    description: "推荐码（可选）。"
-    required: false # 这个字段是可选的
+    description: "Referral code (optional)."
+    required: false # This field is optional
 ```
 
 ---
 
-## 4. 核心概念详解
+## 4. Core Concepts Explained
 
-### 4.1. 并发模型
+### 4.1. Concurrency Model
 
-T4T V2 采用 `ThreadPoolExecutor` 来管理一个工作线程池。所有的任务（无论是 `schedule` 还是 `event` 触发）都会被提交到这个线程池中异步执行。
+T4T V2 uses a `ThreadPoolExecutor` to manage a pool of worker threads. All tasks (whether triggered by `schedule` or `event`) are submitted to this pool for asynchronous execution.
 
-*   **与旧模型的区别**: 在旧的 `APScheduler` 模型中，长时间运行的任务可能会阻塞调度器线程。新的线程池模型确保了每个任务都在一个独立的线程中运行，从而避免了任务之间的相互干扰，并保证了主应用的 UI 始终保持响应。
+*   **Difference from the old model**: In the old `APScheduler` model, a long-running task could block the scheduler thread. The new thread pool model ensures that each task runs in a separate thread, preventing tasks from interfering with each other and ensuring the main application UI remains responsive at all times.
 
-### 4.2. 事件驱动与消息总线
+### 4.2. Event-Driven Architecture & The Message Bus
 
-系统的核心是一个轻量级的**消息总线**（默认使用 MQTT 实现）。它允许不同的模块和任务之间以“发布/订阅”的模式进行通信，而无需直接相互依赖。
+At the heart of the system is a lightweight **Message Bus** (implemented with MQTT by default). It allows different modules and tasks to communicate in a "publish/subscribe" pattern without being directly dependent on each other.
 
-*   **角色**: 消息总线是整个系统事件驱动架构的基石。一个任务可以向一个主题（Topic）发布一条消息（例如 `task/A/completed`），而其他任意数量的任务都可以订阅这个主题，并在消息到达时被触发。这种模式极大地提高了系统的灵活性和可扩展性。
+*   **Role**: The message bus is the cornerstone of the system's event-driven architecture. One task can publish a message to a topic (e.g., `task/A/completed`), and any number of other tasks can subscribe to that topic to be triggered when the message arrives. This pattern dramatically increases the system's flexibility and scalability.
 
 ---
 
-## 5. 一个完整的 V2 模块示例
+## 5. A Complete V2 Module Example
 
-让我们将以上所有概念整合到一个完整的、事件驱动的模块中。这个模块会监听一个 MQTT 主题，验证输入的温度数据，并根据温度值记录不同级别的日志。
+Let's bring all these concepts together in a complete, event-driven module. This module will listen to an MQTT topic, validate the incoming temperature data, and log messages at different levels based on the temperature value.
 
-**目录结构:**
+**Directory Structure:**
 
 ```
 modules/
 └── smart_thermostat/
     ├── manifest.yaml
-    └── __init__.py
+    └── smart_thermostat_template.py
 ```
 
 **`manifest.yaml`:**
 
 ```yaml
-name: "智能恒温器"
+name: "Smart Thermostat"
 module_type: "smart_thermostat_v2"
 version: "1.1"
-description: "监听温度读数，如果过高则记录警告。"
+description: "Listens for temperature readings and logs a warning if it's too high."
 
 trigger:
   type: event
@@ -197,12 +200,12 @@ trigger:
 inputs:
   - name: current_temp
     type: float
-    description: "当前的摄氏温度读数。"
+    description: "The current temperature reading in Celsius."
     required: true
 
   - name: device_id
     type: string
-    description: "传感器的唯一ID。"
+    description: "The unique ID of the sensor."
     required: false
 ```
 
@@ -211,25 +214,25 @@ inputs:
 ```python
 def run(context, inputs):
     """
-    处理温度传感器数据。
+    Processes temperature sensor data.
     """
     task_name = context.task_name
     logger = context.logger
 
-    # 由于 manifest.yaml 中设置了 required: true，
-    # 我们在这里可以安全地直接访问 'current_temp'。
+    # Because `required: true` is set in manifest.yaml,
+    # we can safely access 'current_temp' directly here.
     temperature = inputs['current_temp']
-    device_id = inputs.get('device_id', '未知设备') # .get() 用于可选字段
+    device_id = inputs.get('device_id', 'Unknown Device') # Use .get() for optional fields
 
-    logger("INFO", f"[{task_name}] 从 '{device_id}' 收到温度数据: {temperature}°C")
+    logger("INFO", f"[{task_name}] Received temperature data from '{device_id}': {temperature}°C")
 
     if temperature > 30.0:
-        logger("WARNING", f"[{task_name}] 高温警报！温度已达到 {temperature}°C。")
+        logger("WARNING", f"[{task_name}] High temperature alert! Temperature reached {temperature}°C.")
     elif temperature < 5.0:
-        logger("WARNING", f"[{task_name}] 低温警报！温度已降至 {temperature}°C。")
+        logger("WARNING", f"[{task_name}] Low temperature alert! Temperature dropped to {temperature}°C.")
     else:
-        logger("INFO", f"[{task_name}] 温度 '{temperature}°C' 在正常范围内。")
+        logger("INFO", f"[{task_name}] Temperature '{temperature}°C' is within the normal range.")
 
 ```
 
-这个示例展示了如何利用 V2 架构的特性——声明式的 `manifest.yaml`、健壮的输入验证和上下文感知的日志记录——来创建一个简洁、可靠且易于维护的模块。
+This example demonstrates how to leverage the features of the V2 architecture—a declarative `manifest.yaml`, robust input validation, and context-aware logging—to create a module that is concise, reliable, and easy to maintain.

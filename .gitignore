@@ -1,9 +1,11 @@
 # Ignore virtual environment directories
 venv/
 .venv/
+
 # Ignore build directories
 build/
 dist/
+
 # Ignore Python package directories
 *.egg-info/
 
@@ -19,5 +21,7 @@ utils/__pycache__/
 logs/*.txt
 
 # Ignore Documentation files
-T4T_Requirements.markdown
+SRS/
 
+# Ignore test directories
+tests/
