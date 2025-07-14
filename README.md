@@ -67,7 +67,7 @@ The project follows a layered architecture, clearly separating presentation, bus
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/your-repo/T4T.git
+    git clone github.com/johnnyzhao5619/T4T_T.git
     cd T4T
     ```
 
