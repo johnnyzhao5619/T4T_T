@@ -210,7 +210,7 @@ inputs:
     required: false
 ```
 
-**`__init__.py`:**
+**`smart_thermostat_template.py`:**
 
 ```python
 def run(context, inputs):
