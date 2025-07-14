@@ -33,7 +33,7 @@
 
 1.  **克隆仓库**
     ```bash
-    git clone https://github.com/your-repo/T4T.git
+    git clone [https://github.com/your-repo/T4T.git](https://github.com/johnnyzhao5619/T4T_T.git)
     cd T4T
     ```
 
