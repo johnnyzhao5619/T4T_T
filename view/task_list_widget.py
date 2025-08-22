@@ -22,6 +22,7 @@ class TaskListWidget(QTreeWidget):
         self.scheduler = scheduler
         self.main_window = main_window
         self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setIndentation(0)
         self.setColumnCount(4)
         headers = [
             _("header_task_name"),
@@ -31,12 +32,17 @@ class TaskListWidget(QTreeWidget):
         ]
         self.setHeaderLabels(headers)
         header = self.header()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        # Make all columns user-resizable
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        # Set a wider default width for the first column
+        self.setColumnWidth(0, 80)
 
         self.populate_tasks()
+
+        # Set initial size for other columns based on content
+        self.resizeColumnToContents(1)
+        self.resizeColumnToContents(2)
+        self.resizeColumnToContents(3)
 
         # Connect signals
         self.customContextMenuRequested.connect(self.show_context_menu)

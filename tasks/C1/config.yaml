@@ -1,0 +1,15 @@
+name: C1
+module_type: counter
+enabled: true
+debug: false
+persist_state: false
+trigger:
+  schedule:
+    type: cron
+    expression: '*/1 * * * *'
+inputs:
+  increment_by:
+    description: 单次执行要增加的计数值。如果未提供，则使用 settings 中的默认值。
+    required: false
+settings:
+  increment_by: 1

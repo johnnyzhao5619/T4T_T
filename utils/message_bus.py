@@ -185,7 +185,7 @@ class MqttBus(MessageBusInterface):
                 f"Failed to connect to MQTT broker, return code: {rc}")
             self._set_state(BusConnectionState.DISCONNECTED)
 
-    def _on_disconnect(self, client, userdata, rc, properties=None):
+    def _on_disconnect(self, client, userdata, flags, rc, properties=None):
         self.logger.warning(
             f"Disconnected from MQTT broker with result code: {rc}.")
         if not self._stop_reconnect.is_set():
