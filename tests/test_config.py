@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import textwrap
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
@@ -148,3 +149,49 @@ reconnect_interval_max_seconds = also-invalid
         reconnect_log = "Invalid value for 'reconnect_interval_max_seconds'"
         assert reconnect_log in caplog.text
         assert "Using default value: 60" in caplog.text
+
+
+def test_lowercase_sections_are_read(tmp_path):
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    config_file = config_dir / "config.ini"
+    config_content = textwrap.dedent("""
+        [message_bus]
+        type = CustomBus
+        active_service = kafka
+
+        [mqtt]
+        host = mqtt.local
+        port = 2883
+        username = lower_user
+        password = lower_pass
+        client_id = lower_client
+        reconnect_interval_max_seconds = 45
+        tls_enabled = false
+
+        [kafka]
+        bootstrap_servers = kafka.local:29092
+        client_id = lower_kafka_client
+    """)
+    config_file.write_text(config_content)
+
+    manager = ConfigManager(config_dir=str(config_dir))
+
+    assert manager.message_bus['type'] == 'CustomBus'
+    assert manager.message_bus['active_service'] == 'kafka'
+
+    mqtt_config = manager.mqtt
+    assert mqtt_config['host'] == 'mqtt.local'
+    assert mqtt_config['port'] == 2883
+    assert mqtt_config['username'] == 'lower_user'
+    assert mqtt_config['password'] == 'lower_pass'
+    assert mqtt_config['client_id'] == 'lower_client'
+    assert mqtt_config['reconnect_interval_max_seconds'] == 45
+    assert mqtt_config['tls_enabled'] is False
+
+    kafka_config = manager.kafka
+    assert kafka_config['bootstrap_servers'] == 'kafka.local:29092'
+    assert kafka_config['client_id'] == 'lower_kafka_client'
+
+    assert manager.get('mqtt', 'host') == 'mqtt.local'
+    assert manager.get('MQTT', 'host') == 'mqtt.local'

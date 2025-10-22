@@ -53,6 +53,7 @@ class ConfigManager:
         """
         self.config_file = os.path.join(config_dir, 'config.ini')
         self.config = configparser.ConfigParser()
+        self._section_map: Dict[str, str] = {}
         self._message_bus_config: Dict[str, Any] | None = None
         self._mqtt_config: Dict[str, Any] | None = None
         self._kafka_config: Dict[str, Any] | None = None
@@ -70,6 +71,24 @@ class ConfigManager:
             logger.info(
                 f"Configuration file not found at: {self.config_file}. "
                 "Using default values.")
+        self._refresh_section_map()
+
+    def _refresh_section_map(self) -> None:
+        """Build a mapping of normalized section names to their original form."""
+        self._section_map = {
+            self._canonical_section_key(section): section
+            for section in self.config.sections()
+        }
+
+    @staticmethod
+    def _canonical_section_key(section: str) -> str:
+        """Normalize section names for case-insensitive lookups."""
+        return ''.join(ch for ch in section.lower() if ch.isalnum())
+
+    def _resolve_section(self, section: str) -> str:
+        """Resolve a section name using the normalization map."""
+        key = self._canonical_section_key(section)
+        return self._section_map.get(key, section)
 
     @property
     def message_bus(self) -> Dict[str, Any]:
@@ -80,11 +99,12 @@ class ConfigManager:
             A dictionary containing the message_bus configuration.
         """
         if self._message_bus_config is None:
+            section = self._resolve_section('message_bus')
             self._message_bus_config = {
                 'type':
-                self.config.get('MessageBus', 'type', fallback='MQTT'),
+                self.config.get(section, 'type', fallback='MQTT'),
                 'active_service':
-                self.config.get('message_bus',
+                self.config.get(section,
                                 'active_service',
                                 fallback='mqtt')
             }
@@ -99,21 +119,24 @@ class ConfigManager:
             A dictionary containing the MQTT connection parameters.
         """
         if self._mqtt_config is None:
+            section = self._resolve_section('mqtt')
             self._mqtt_config = {
                 'host':
-                self.config.get('MQTT', 'host', fallback='localhost'),
+                self.config.get(section, 'host', fallback='localhost'),
                 'port':
-                self._get_int('MQTT', 'port', 1883),
+                self._get_int('mqtt', 'port', 1883),
                 'username':
-                self.config.get('MQTT', 'username', fallback=''),
+                self.config.get(section, 'username', fallback=''),
                 'password':
-                self.config.get('MQTT', 'password', fallback=''),
+                self.config.get(section, 'password', fallback=''),
                 'client_id':
-                self.config.get('MQTT', 'client_id', fallback=''),
+                self.config.get(section, 'client_id', fallback=''),
                 'reconnect_interval_max_seconds':
-                self._get_int('MQTT', 'reconnect_interval_max_seconds', 60),
+                self._get_int('mqtt', 'reconnect_interval_max_seconds', 60),
                 'tls_enabled':
-                self.config.getboolean('MQTT', 'tls_enabled', fallback=False)
+                self.config.getboolean(section,
+                                       'tls_enabled',
+                                       fallback=False)
             }
         return self._mqtt_config
 
@@ -123,23 +146,32 @@ class ConfigManager:
         Get the [kafka] configuration, parsed with defaults.
         """
         if self._kafka_config is None:
+            section = self._resolve_section('kafka')
             self._kafka_config = {
                 'bootstrap_servers':
-                self.config.get('kafka',
+                self.config.get(section,
                                 'bootstrap_servers',
                                 fallback='localhost:9092'),
                 'client_id':
-                self.config.get('kafka', 'client_id', fallback='t4t_client'),
+                self.config.get(section,
+                                'client_id',
+                                fallback='t4t_client'),
                 'sasl_plain_username':
-                self.config.get('kafka', 'sasl_plain_username', fallback=''),
+                self.config.get(section,
+                                'sasl_plain_username',
+                                fallback=''),
                 'sasl_plain_password':
-                self.config.get('kafka', 'sasl_plain_password', fallback=''),
+                self.config.get(section,
+                                'sasl_plain_password',
+                                fallback=''),
                 'security_protocol':
-                self.config.get('kafka',
+                self.config.get(section,
                                 'security_protocol',
                                 fallback='PLAINTEXT'),
                 'sasl_mechanism':
-                self.config.get('kafka', 'sasl_mechanism', fallback=''),
+                self.config.get(section,
+                                'sasl_mechanism',
+                                fallback=''),
             }
         return self._kafka_config
 
@@ -158,12 +190,13 @@ class ConfigManager:
         Returns:
             The integer value or the fallback.
         """
+        resolved_section = self._resolve_section(section)
         try:
-            return self.config.getint(section, key)
+            return self.config.getint(resolved_section, key)
         except (configparser.NoSectionError, configparser.NoOptionError):
             return fallback  # No need to log if the key simply doesn't exist
         except ValueError:
-            value = self.config.get(section, key)
+            value = self.config.get(resolved_section, key)
             logger.warning(
                 f"Invalid value for '{key}' in section '[{section}]'. "
                 f"Expected an integer, but got '{value}'. "
@@ -182,7 +215,8 @@ class ConfigManager:
         Returns:
             The value associated with the key, or the fallback value.
         """
-        return self.config.get(section, key, fallback=fallback)
+        resolved_section = self._resolve_section(section)
+        return self.config.get(resolved_section, key, fallback=fallback)
 
     def set(self, section: str, key: str, value: str) -> None:
         """
@@ -193,9 +227,14 @@ class ConfigManager:
             key (str): The key in the section.
             value (str): The value to set for the key.
         """
-        if not self.config.has_section(section):
-            self.config.add_section(section)
-        self.config.set(section, key, value)
+        resolved_section = self._resolve_section(section)
+        if not self.config.has_section(resolved_section):
+            resolved_section = section
+            if not self.config.has_section(resolved_section):
+                self.config.add_section(resolved_section)
+        self.config.set(resolved_section, key, value)
+        self._section_map[self._canonical_section_key(resolved_section)] = (
+            resolved_section)
         self.save_config()
 
     def save_config(self) -> None:
