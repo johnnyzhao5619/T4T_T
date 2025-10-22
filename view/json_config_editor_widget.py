@@ -127,6 +127,8 @@ class JsonConfigEditorWidget(QWidget):
         # Default VS Code dark theme colors
         bg_color = "#1E1E1E"
         fg_color = "#D4D4D4"
+        border_color = "#3c3c3c"
+        theme_data = {}
 
         try:
             with open(theme_file, 'r') as f:
@@ -136,11 +138,11 @@ class JsonConfigEditorWidget(QWidget):
                     fg_color = theme_data["editor"].get("foreground", fg_color)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.warning(
-                "Could not load editor styles from %s: %s. Using defaults.",
+                "Could not load editor styles from %s: %s. Falling back to default editor style.",
                 theme_file, e)
 
         border_color = theme_data.get("colors", {}).get(
-            "editorWidget.border", "#3c3c3c")
+            "editorWidget.border", border_color)
         self.editor.setStyleSheet(f"""
             QPlainTextEdit {{
                 background-color: {bg_color};
