@@ -16,15 +16,17 @@ class StateManager:
     def __init__(self):
         self._states = {}
         self._locks = {}
+        self._manager_lock = Lock()
 
     def get_task_lock(self, task_name: str) -> Lock:
         """
         Retrieves a lock for a specific task to ensure thread-safe
         state modifications.
         """
-        if task_name not in self._locks:
-            self._locks[task_name] = Lock()
-        return self._locks[task_name]
+        with self._manager_lock:
+            if task_name not in self._locks:
+                self._locks[task_name] = Lock()
+            return self._locks[task_name]
 
     def load_state(self, task_name: str, task_path: str):
         """
@@ -89,3 +91,26 @@ class StateManager:
         for task_name, task_info in tasks.items():
             if task_info.get('config_data', {}).get('persist_state', False):
                 self.save_state(task_name, task_info['path'])
+
+    def rename_task(self, old_name: str, new_name: str) -> None:
+        """Rename the in-memory state and lock entries for a task.
+
+        This keeps the state manager aligned with renamed task folders while
+        ensuring that concurrent updates remain thread-safe.
+        """
+        if old_name == new_name:
+            return
+
+        task_lock = self.get_task_lock(old_name)
+
+        with task_lock:
+            with self._manager_lock:
+                if old_name in self._states:
+                    self._states[new_name] = self._states.pop(old_name)
+                else:
+                    self._states.setdefault(new_name, {})
+
+                # Move the lock reference to the new task name so that future
+                # requests reuse the same lock instance.
+                existing_lock = self._locks.pop(old_name, task_lock)
+                self._locks[new_name] = existing_lock

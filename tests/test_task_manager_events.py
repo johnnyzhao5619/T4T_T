@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import time
@@ -143,6 +144,27 @@ def _create_interval_task(tasks_dir: Path, name: str = "IntervalTask",
     }
 
     _write_task_files(task_dir, config)
+
+
+def _create_persistent_task(tasks_dir: Path, name: str = "PersistentTask",
+                            state: dict | None = None):
+    task_dir = tasks_dir / name
+    config = {
+        "name": name,
+        "module_type": "test",
+        "enabled": False,
+        "persist_state": True,
+        "trigger": {
+            "type": "event",
+            "topic": "persist/topic"
+        }
+    }
+
+    _write_task_files(task_dir, config)
+
+    if state is not None:
+        with open(task_dir / "state.json", "w", encoding="utf-8") as state_file:
+            json.dump(state, state_file)
 
 
 def _create_manager(monkeypatch, tasks_dir: Path) -> Tuple[TaskManager, FakeBusManager, DummySignals]:
@@ -429,3 +451,38 @@ def test_save_task_config_updates_interval_trigger(prepared_schedule_manager):
     assert manager.tasks["IntervalTask"]["status"] == "running"
     assert dummy_signals.task_status_changed.emitted[-1][0] == (
         "IntervalTask", "running")
+
+
+def test_rename_persistent_task_preserves_state(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    initial_state = {"count": 3, "enabled": True}
+    _create_persistent_task(tasks_dir, state=initial_state)
+
+    manager, fake_bus, dummy_signals = _create_manager(monkeypatch, tasks_dir)
+
+    try:
+        assert manager.state_manager.get_state("PersistentTask", "count") == 3
+
+        assert manager.rename_task("PersistentTask", "RenamedTask")
+
+        assert "RenamedTask" in manager.tasks
+        assert "PersistentTask" not in manager.tasks
+        assert manager.state_manager.get_state("RenamedTask", "count") == 3
+        assert manager.state_manager.get_state("PersistentTask", "count") is None
+
+        manager.state_manager.update_state("RenamedTask", "count", 5)
+
+        renamed_path = Path(manager.tasks["RenamedTask"]["path"])
+        manager.state_manager.save_state("RenamedTask", str(renamed_path))
+
+        with open(renamed_path / "state.json", "r", encoding="utf-8") as state_file:
+            persisted_state = json.load(state_file)
+
+        assert persisted_state["count"] == 5
+        assert persisted_state["enabled"] is True
+        assert not fake_bus.unsubscribe_calls  # no subscriptions for disabled task
+        assert not dummy_signals.task_status_changed.emitted
+    finally:
+        manager.shutdown()
