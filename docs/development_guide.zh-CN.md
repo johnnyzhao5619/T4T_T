@@ -170,6 +170,14 @@ T4T V2 采用 `ThreadPoolExecutor` 来管理一个工作线程池。所有的任
 
 * **角色**: 消息总线是整个系统事件驱动架构的基石。一个任务可以向一个主题（Topic）发布一条消息（例如 `task/A/completed`），而其他任意数量的任务都可以订阅这个主题，并在消息到达时被触发。这种模式极大地提高了系统的灵活性和可扩展性。
 
+### 4.3. 后台服务与 ServiceManager
+
+`ServiceManager` 负责统一管理后台服务（例如嵌入式 MQTT Broker）的生命周期。系统在 `main.py` 中显式注册所需服务，以保证入口唯一性。
+
+* **注册策略**: 通过 `service_manager.register_service('mqtt_broker', EmbeddedMQTTBroker(...))` 注册服务。当需要重新配置或替换实例时，再次调用 `register_service` 会自动停止旧实例并解除它与 Qt 信号的绑定，避免残留线程或重复订阅。
+* **何时调用**: 推荐仅在应用启动或配置发生变化时调用 `register_service`。这样可以确保新的配置被正确加载，同时防止旧实例继续响应消息。
+* **清理保证**: `register_service` 内部会在替换前调用旧实例的 `stop()` 和 `disconnect_signals()`，并等待相关线程结束。重启或重新配置时无需额外手动清理。
+
 ---
 
 ## 5. 一个完整的 V2 模块示例
