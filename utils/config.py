@@ -14,7 +14,20 @@ def load_yaml(file_path: str) -> Dict[str, Any]:
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
+            data = yaml.safe_load(f)
+
+        if isinstance(data, dict):
+            return data
+
+        if data is None:
+            logger.info(
+                "YAML file '%s' is empty. Using default empty configuration.",
+                file_path)
+        else:
+            logger.warning(
+                "YAML file '%s' did not contain a mapping. "
+                "Using default empty configuration.", file_path)
+        return {}
     except FileNotFoundError:
         logger.error(f"YAML file not found at: {file_path}")
         return {}
