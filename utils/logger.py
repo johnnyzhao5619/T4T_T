@@ -3,7 +3,9 @@ import os
 import sys
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+
 from PyQt5.QtWidgets import QMessageBox
+
 from utils.signals import global_signals
 
 

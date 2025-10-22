@@ -1,7 +1,8 @@
-import os
 import configparser
 import logging
-from typing import Dict, Any
+import os
+from typing import Any, Dict
+
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -80,6 +81,8 @@ class ConfigManager:
         """
         if self._message_bus_config is None:
             self._message_bus_config = {
+                'type':
+                self.config.get('MessageBus', 'type', fallback='MQTT'),
                 'active_service':
                 self.config.get('message_bus',
                                 'active_service',

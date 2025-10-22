@@ -8,7 +8,8 @@ persist_state: false
 
 # 触发器：每5秒执行一次，以频繁检查鼠标活动
 trigger:
-  schedule:
+  type: schedule
+  config:
     type: interval
     seconds: 5
 

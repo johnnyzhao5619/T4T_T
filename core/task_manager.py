@@ -2,7 +2,7 @@ import os
 import logging
 import shutil
 import importlib.util
-from typing import Callable
+from typing import Any, Callable
 from datetime import datetime
 from functools import partial
 
@@ -119,6 +119,64 @@ class TaskManager:
         logger.info(f"Loaded {len(self.tasks)} tasks.")
         self._initialize_tasks()
 
+    def _parse_trigger(self, config: dict) -> tuple[str | None, dict]:
+        """Extracts the trigger type and its configuration from a task."""
+        trigger_section = config.get('trigger', {})
+        if not isinstance(trigger_section, dict):
+            return None, {}
+
+        trigger_type: str | None = None
+        trigger_params: dict[str, Any] = {}
+
+        trigger_type_value = trigger_section.get('type')
+        if trigger_type_value:
+            trigger_type = str(trigger_type_value).lower()
+            raw_params = trigger_section.get('config') or {}
+            trigger_params = dict(raw_params) if isinstance(raw_params, dict) else {}
+
+            if trigger_type == 'schedule':
+                inner_type = trigger_params.pop('type', None)
+                trigger_type = str(inner_type).lower() if inner_type else None
+                if not trigger_params:
+                    trigger_params = {
+                        key: value
+                        for key, value in trigger_section.items()
+                        if key not in {'type', 'config'}
+                    }
+            elif trigger_type == 'event':
+                if 'topic' in trigger_section and 'topic' not in trigger_params:
+                    trigger_params['topic'] = trigger_section['topic']
+            else:
+                if not trigger_params:
+                    trigger_params = {
+                        key: value
+                        for key, value in trigger_section.items()
+                        if key != 'type'
+                    }
+        elif 'schedule' in trigger_section:
+            schedule_conf = trigger_section.get('schedule') or {}
+            inner_type = schedule_conf.get('type')
+            trigger_type = str(inner_type).lower() if inner_type else None
+            trigger_params = {
+                key: value
+                for key, value in schedule_conf.items()
+                if key != 'type'
+            }
+        elif 'event' in trigger_section:
+            trigger_type = 'event'
+            event_conf = trigger_section.get('event') or {}
+            if isinstance(event_conf, dict):
+                trigger_params = dict(event_conf)
+
+        if trigger_type == 'cron':
+            cron_expression = trigger_params.pop('cron_expression', None)
+            if not cron_expression:
+                cron_expression = trigger_params.pop('expression', None)
+            if cron_expression:
+                trigger_params['cron_expression'] = cron_expression
+
+        return trigger_type, trigger_params
+
     def _initialize_tasks(self):
         """
         Initializes loaded tasks, scheduling them or subscribing to events
@@ -130,15 +188,13 @@ class TaskManager:
                 logger.debug(f"Task '{task_name}' is disabled, skipping.")
                 continue
 
-            trigger_config = config.get('trigger', {})
-            trigger_type = trigger_config.get('type')
+            trigger_type, trigger_params = self._parse_trigger(config)
 
             if trigger_type in ['cron', 'interval', 'date']:
                 # For scheduled tasks, use the existing start_task method
                 self.start_task(task_name)
             elif trigger_type == 'event':
-                # For event-driven tasks, subscribe to the message bus
-                topic = trigger_config.get('topic')
+                topic = trigger_params.get('topic')
                 if not topic:
                     msg = ("Event task '%s' is enabled but missing a 'topic' "
                            "in its trigger configuration.")
@@ -178,17 +234,34 @@ class TaskManager:
                 return
 
             # 2. Input validation
+            payload_with_defaults = dict(payload)
             inputs_schema = config.get('inputs', [])
-            for item in inputs_schema:
-                item_name = item.get('name')
-                if item.get('required') and item_name not in payload:
+
+            if isinstance(inputs_schema, dict):
+                schema_iterable = inputs_schema.items()
+            else:
+                schema_iterable = []
+                if isinstance(inputs_schema, list):
+                    schema_iterable = (
+                        (item.get('name'), item)
+                        for item in inputs_schema
+                        if isinstance(item, dict))
+
+            for item_name, item_def in schema_iterable:
+                if not item_name or not isinstance(item_def, dict):
+                    continue
+
+                if item_def.get('required') and item_name not in payload_with_defaults:
                     logger.error(
                         f"Task '{task_name}' execution stopped: missing "
                         f"required input '{item_name}'.")
                     return
 
+                if item_name not in payload_with_defaults and 'default' in item_def:
+                    payload_with_defaults[item_name] = item_def['default']
+
             # 3. Submit task for execution
-            self._execute_task_logic(task_name, payload)
+            self._execute_task_logic(task_name, payload_with_defaults)
 
         return wrapper
 
@@ -591,9 +664,19 @@ class TaskManager:
 
         task_info = self.tasks[task_name]
         config = task_info['config_data']
-        trigger_config = config.get('trigger', {})
-        trigger_type = trigger_config.get('type')
-        trigger_params = trigger_config.get('config', {})
+        trigger_type, trigger_params = self._parse_trigger(config)
+
+        if trigger_type not in ['cron', 'interval', 'date']:
+            if trigger_type == 'event':
+                logger.info(
+                    f"Task '{task_name}' is event-driven and does not "
+                    "require scheduling.")
+                return True
+
+            logger.error(
+                f"Task '{task_name}' uses a '{trigger_type}' trigger that "
+                "cannot be scheduled with APScheduler.")
+            return False
 
         # Load the actual function to be executed
         executable_func = self._load_task_executable(task_info['script'])
@@ -611,11 +694,14 @@ class TaskManager:
 
         try:
             # Special handling for cron triggers to support cron_expression
-            if trigger_type == 'cron' and 'cron_expression' in trigger_params:
-                cron_expr = trigger_params.pop('cron_expression')
+            params = dict(trigger_params)
+            job_kwargs = dict(trigger_params)
+            if trigger_type == 'cron' and 'cron_expression' in params:
+                cron_expr = params.pop('cron_expression')
                 if cron_expr:
                     trigger = CronTrigger.from_crontab(cron_expr,
-                                                       **trigger_params)
+                                                       **params)
+                    job_kwargs = params
                 else:
                     # If cron_expression is empty, don't schedule the job
                     logger.warning(
@@ -630,10 +716,11 @@ class TaskManager:
                                      id=task_name,
                                      name=task_name,
                                      trigger=trigger,
-                                     **trigger_params)
+                                     **job_kwargs)
             self.tasks[task_name]['status'] = 'running'
             logger.info(
-                f"Task '{task_name}' scheduled with trigger: {trigger_config}")
+                f"Task '{task_name}' scheduled with trigger type '{trigger_type}' "
+                f"and parameters {job_kwargs}.")
             global_signals.task_status_changed.emit(task_name, 'running')
             return True
         except Exception as e:
@@ -763,8 +850,8 @@ class TaskManager:
             return 'not found'
 
         task_info = self.tasks[task_name]
-        trigger_config = task_info.get('config_data', {}).get('trigger', {})
-        trigger_type = trigger_config.get('type')
+        trigger_type, _ = self._parse_trigger(
+            task_info.get('config_data', {}))
 
         if trigger_type == 'event':
             return task_info.get('status', 'stopped')

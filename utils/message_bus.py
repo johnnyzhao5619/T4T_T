@@ -4,7 +4,7 @@ import json
 import logging
 import threading
 import time
-from typing import Callable, Dict, Any
+from typing import Any, Callable, Dict
 
 import paho.mqtt.client as mqtt
 
@@ -75,7 +75,7 @@ class MqttBus(MessageBusInterface):
                  | None = None):
         self.logger = logger
         self._config = config
-        self._client = None
+        self._client: mqtt.Client | None = None
         self._on_state_change_callback = on_state_change
         self._state = BusConnectionState.DISCONNECTED
         self._subscriptions: Dict[str, Callable[[Dict[str, Any]], None]] = {}
@@ -134,10 +134,10 @@ class MqttBus(MessageBusInterface):
             self._reconnect_thread.join(timeout=2)  # Add timeout
 
         # Check if the client is actually connected before disconnecting
-        if self._state == BusConnectionState.CONNECTED:
+        if self._client and self._state == BusConnectionState.CONNECTED:
             self._client.disconnect()
 
-        if self._client.is_connected():
+        if self._client and self._client.is_connected():
             self._client.loop_stop()
 
         # Always ensure the state is set to DISCONNECTED
@@ -253,6 +253,7 @@ class MessageBusManager:
         self._bus: MessageBusInterface | None = None
         self._subscriptions: Dict[str, Callable] = {}
         self._service_manager = service_manager
+        self._active_service_type = 'mqtt'
         self._initialize_bus()
 
     def _initialize_bus(self):
@@ -271,7 +272,7 @@ class MessageBusManager:
 
     def get_active_service_type(self) -> str:
         """Returns the type of the currently active service."""
-        return 'mqtt'
+        return self._active_service_type
 
     def _handle_state_change(self, new_state: BusConnectionState):
         """
@@ -297,7 +298,8 @@ class MessageBusManager:
         message bus client.
         """
         # Start the embedded broker service
-        self._service_manager.start_service('mqtt_broker')
+        if self._active_service_type == 'mqtt':
+            self._service_manager.start_service('mqtt_broker')
 
         # TODO: We might need a short delay or a signal-based wait here
         # to ensure the broker is fully up before the client tries to connect.
@@ -314,7 +316,8 @@ class MessageBusManager:
             self._bus.disconnect()
 
         # Stop the embedded broker service
-        self._service_manager.stop_service('mqtt_broker')
+        if self._active_service_type == 'mqtt':
+            self._service_manager.stop_service('mqtt_broker')
 
     def publish(self, topic: str, payload: Dict[str, Any]):
         """
@@ -335,6 +338,30 @@ class MessageBusManager:
         self._subscriptions[topic] = callback
         if self._bus:
             self._bus.subscribe(topic, callback)
+
+    def switch_service(self, service_type: str):
+        """
+        Switches the active message bus implementation.
+
+        Currently only the embedded MQTT implementation is supported,
+        but the method exists to avoid runtime errors from UI actions
+        and to provide a single place to extend the behaviour.
+        """
+        normalized_type = service_type.lower()
+        if normalized_type != 'mqtt':
+            self._logger.warning(
+                "Unsupported message bus service requested: %s",
+                service_type)
+            return
+
+        if normalized_type == self._active_service_type:
+            self._logger.debug("Message bus already using '%s'.", service_type)
+            return
+
+        self.disconnect()
+        self._active_service_type = normalized_type
+        self._initialize_bus()
+        self.connect()
 
 
 # Global singleton instance of the MessageBusManager

@@ -124,6 +124,8 @@ The `inputs` field is a crucial part of `manifest.yaml`. It serves a dual role:
 
 When an input field is marked as `required: true`, the Task Manager will check for its existence in the input data **before** calling the `run` function. If the data is missing, the task will not be executed, and an error will be logged. This can significantly simplify the error-handling logic within your `run` function.
 
+> ℹ️ **Tip**: The `inputs` section can be declared either as a list (as shown below) or as a dictionary keyed by the field name. Optional fields may also define a `default` value—if the payload omits that field, the Task Manager automatically injects the default into the dictionary passed to your task.
+
 **Configuration Example:**
 
 ```yaml

@@ -1,9 +1,10 @@
 import logging
-import psutil
 import os
 import shutil
-import json
 from functools import partial
+
+import psutil
+import yaml
 from PyQt5.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -29,7 +30,7 @@ from utils.i18n import language_manager, _
 from utils.theme import theme_manager
 from utils.icon_manager import get_icon, set_theme as set_icon_theme
 from utils.signals import global_signals
-from utils.message_bus import message_bus_manager, BusConnectionState
+from utils.message_bus import BusConnectionState, message_bus_manager
 
 logger = logging.getLogger(__name__)
 
@@ -99,19 +100,17 @@ class DevGuideWidget(QWidget):
                                            f'{safe_module_name}_template.py')
                 os.rename(py_path, new_py_path)
 
-                json_path = os.path.join(dest_dir, 'template_template.json')
-                new_json_path = os.path.join(
-                    dest_dir, f'{safe_module_name}_template.json')
-                os.rename(json_path, new_json_path)
-
-                # Update the module_type in the new json file
-                with open(new_json_path, 'r+', encoding='utf-8') as f:
-                    data = json.load(f)
-                    data['module_type'] = safe_module_name
-                    data['name'] = module_name
-                    f.seek(0)
-                    json.dump(data, f, indent=4)
-                    f.truncate()
+                manifest_path = os.path.join(dest_dir, 'manifest.yaml')
+                if os.path.exists(manifest_path):
+                    with open(manifest_path, 'r', encoding='utf-8') as f:
+                        manifest_data = yaml.safe_load(f) or {}
+                    manifest_data['module_type'] = safe_module_name
+                    manifest_data['name'] = module_name
+                    with open(manifest_path, 'w', encoding='utf-8') as f:
+                        yaml.safe_dump(manifest_data,
+                                       f,
+                                       allow_unicode=True,
+                                       sort_keys=False)
 
                 QMessageBox.information(
                     self, _("success"),
@@ -241,7 +240,6 @@ class T4TMainWindow(QMainWindow):
         logger.info(f"Theme changed to {theme_manager.current_theme_name}.")
         set_icon_theme(theme_manager.current_theme_name)
         self.setup_toolbar_icons()
-        pass
 
     def setup_ui(self):
         # Main widget and layout
@@ -609,12 +607,12 @@ class T4TMainWindow(QMainWindow):
             logger.warning("No task selected to pause.")
 
     def start_all_tasks(self):
-        self.task_manager.start_all_tasks(self.scheduler)
+        self.task_manager.start_all_tasks()
         self.on_task_selection_changed()
         logger.info("Attempted to start all tasks.")
 
     def pause_all_tasks(self):
-        self.task_manager.pause_all_tasks(self.scheduler)
+        self.task_manager.pause_all_tasks()
         self.on_task_selection_changed()
         logger.info("Attempted to pause all tasks.")
 

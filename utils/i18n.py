@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Union
+
 from PyQt5.QtCore import QObject, pyqtSignal
 
 

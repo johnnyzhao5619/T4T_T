@@ -19,7 +19,8 @@ trigger:
   # --- 示例 1: 基于时间的调度器 ---
   # 使用 'schedule' 在固定的时间间隔或按 cron 表达式执行任务。
   # 这适用于需要定期运行的后台任务，如数据同步、健康检查等。
-  schedule:
+  type: schedule
+  config:
     # type 可以是 'interval' 或 'cron'。
     type: interval
     # interval 的单位：'seconds', 'minutes', 'hours', 'days'。
@@ -27,8 +28,9 @@ trigger:
   # --- 示例 2: 基于事件的触发器 ---
   # 使用 'event' 监听特定的系统事件。当事件发生时，任务会被执行。
   # 这适用于响应式任务，如“当用户上传文件时触发”。
-  # event:
-  #   name: "user_file_uploaded"
+  # type: event
+  # config:
+  #   topic: "user/file_uploaded"
 
 # inputs: 定义任务执行时需要从触发事件的 payload 中接收的数据。
 inputs:

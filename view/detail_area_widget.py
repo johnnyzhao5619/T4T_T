@@ -1,15 +1,17 @@
 import logging
-from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QVBoxLayout
+
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
+
+from core.task_manager import TaskManager
 from utils.i18n import _
 from utils.icon_manager import get_icon
-from core.task_manager import TaskManager
-from view.task_detail_tab_widget import TaskDetailTabWidget
-from view.settings_widget import SettingsWidget
-from view.new_task_widget import NewTaskWidget
-from view.log_viewer_widget import LogViewerWidget
-from view.help_widget import HelpWidget
 from utils.signals import global_signals
+from view.help_widget import HelpWidget
+from view.log_viewer_widget import LogViewerWidget
+from view.new_task_widget import NewTaskWidget
+from view.settings_widget import SettingsWidget
+from view.task_detail_tab_widget import TaskDetailTabWidget
 
 logger = logging.getLogger(__name__)
 

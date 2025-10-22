@@ -1,24 +1,24 @@
-import os
-import sys
-import time
 import json
-import pytest
 import logging
-import threading
+import os
 import subprocess
+import sys
+import threading
+import time
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
+import pytest
 
 # Add project root to the Python path to allow imports of project modules
 # This is a common pattern for testing standalone scripts
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
-from core.task_manager import TaskManager
 from core.scheduler import SchedulerManager
+from core.task_manager import TaskManager
+from utils.message_bus import BusConnectionState, message_bus_manager
 from utils.signals import global_signals
-from utils.message_bus import message_bus_manager, BusConnectionState
 
 # Configure logging for tests
 logging.basicConfig(
