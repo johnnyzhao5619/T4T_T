@@ -191,6 +191,18 @@ class DetailAreaWidget(QTabWidget):
             if hasattr(widget, 'widget_id') and widget.widget_id == old_name:
                 widget.widget_id = new_name
 
+            if hasattr(widget, 'on_task_renamed'):
+                try:
+                    widget.on_task_renamed(new_name)
+                except TypeError:
+                    logger.exception(
+                        "Failed to forward rename event to widget '%s'.",
+                        new_name)
+                    if hasattr(widget, 'task_name'):
+                        widget.task_name = new_name
+            elif hasattr(widget, 'task_name'):
+                widget.task_name = new_name
+
             logger.info(f"Tab for task '{old_name}' updated to '{new_name}'.")
 
     def _update_tab_indices(self):

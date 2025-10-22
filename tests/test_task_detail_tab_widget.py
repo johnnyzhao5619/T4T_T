@@ -15,7 +15,9 @@ except ImportError as exc:  # pragma: no cover - handled via pytest skip
     )
 
 from view.task_detail_tab_widget import TaskDetailTabWidget
+from view.detail_area_widget import DetailAreaWidget
 from utils.i18n import _
+from utils.signals import global_signals
 
 
 class _TaskManagerStub:
@@ -131,3 +133,117 @@ def test_save_config_reload_after_rename(monkeypatch, qapp):
         assert all(label.text() != failure_message for label in labels)
     finally:
         widget.deleteLater()
+
+
+def test_on_task_renamed_reloads_when_clean(monkeypatch, qapp):
+    manager = _TaskManagerStub()
+    widget = TaskDetailTabWidget("demo", manager)
+
+    try:
+        new_name = "demo_external"
+        config_copy = deepcopy(manager._configs["demo"])
+        config_copy["name"] = new_name
+        manager._configs[new_name] = config_copy
+
+        original_load_config = widget.load_config
+        reload_calls = []
+
+        def wrapped_load_config():
+            reload_calls.append(widget.task_name)
+            return original_load_config()
+
+        monkeypatch.setattr(widget, "load_config", wrapped_load_config)
+
+        widget.save_button.setEnabled(False)
+        widget.on_task_renamed(new_name)
+        qapp.processEvents()
+
+        assert reload_calls == [new_name]
+        assert widget.task_name == new_name
+        assert widget.task_config_widget.task_name == new_name
+        assert widget.json_editor_widget.task_name == new_name
+        assert widget.output_widget.task_name == new_name
+        assert widget._last_loaded_task_name == new_name
+
+        global_signals.log_message.emit(new_name, "log after rename")
+        qapp.processEvents()
+        assert "log after rename" in widget.output_widget.log_output_area.toPlainText()
+    finally:
+        widget.deleteLater()
+
+
+def test_on_task_renamed_preserves_unsaved_changes(monkeypatch, qapp):
+    manager = _TaskManagerStub()
+    widget = TaskDetailTabWidget("demo", manager)
+
+    try:
+        new_name = "demo_pending"
+        config_copy = deepcopy(manager._configs["demo"])
+        config_copy["name"] = new_name
+        manager._configs[new_name] = config_copy
+
+        original_load_config = widget.load_config
+        reload_calls = []
+
+        def wrapped_load_config():
+            reload_calls.append(widget.task_name)
+            return original_load_config()
+
+        monkeypatch.setattr(widget, "load_config", wrapped_load_config)
+
+        modified_content = "{\n  \"name\": \"demo\"\n}"
+        widget.json_editor_widget.editor.setPlainText(modified_content)
+        widget.save_button.setEnabled(True)
+
+        widget.on_task_renamed(new_name)
+        qapp.processEvents()
+
+        assert reload_calls == []
+        assert widget.task_name == new_name
+        assert widget.task_config_widget.task_name == new_name
+        assert widget.json_editor_widget.task_name == new_name
+        assert widget.output_widget.task_name == new_name
+        assert widget._last_loaded_task_name == new_name
+        assert widget.json_editor_widget.editor.toPlainText() == modified_content
+        assert widget.save_button.isEnabled()
+    finally:
+        widget.deleteLater()
+
+
+def test_detail_area_widget_updates_task_tab_on_rename(monkeypatch, qapp):
+    manager = _TaskManagerStub()
+    config_manager = object()
+    detail_widget = DetailAreaWidget(manager, config_manager)
+
+    try:
+        detail_widget.open_task_tab("demo")
+        qapp.processEvents()
+
+        index = detail_widget.open_tabs["demo"]
+        task_widget = detail_widget.widget(index)
+
+        new_name = "demo_area"
+        config_copy = deepcopy(manager._configs["demo"])
+        config_copy["name"] = new_name
+        manager._configs[new_name] = config_copy
+
+        original_on_task_renamed = task_widget.on_task_renamed
+        forwarded_names = []
+
+        def wrapped_on_task_renamed(name):
+            forwarded_names.append(name)
+            return original_on_task_renamed(name)
+
+        monkeypatch.setattr(task_widget, "on_task_renamed", wrapped_on_task_renamed)
+
+        global_signals.task_renamed.emit("demo", new_name)
+        qapp.processEvents()
+
+        assert forwarded_names == [new_name]
+        assert detail_widget.open_tabs[new_name] == index
+        assert detail_widget.tabText(index) == new_name
+        assert task_widget.widget_id == new_name
+        assert task_widget.task_name == new_name
+    finally:
+        task_widget.deleteLater()
+        detail_widget.deleteLater()
