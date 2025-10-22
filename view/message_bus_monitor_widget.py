@@ -202,29 +202,24 @@ class MessageBusMonitorWidget(QWidget):
 
     def update_status(self):
         state = service_manager.get_service_state('mqtt_broker')
-        status_icon = ""
+
         if state is None:
             translated_state = _("service_status_unregistered")
-            status_icon = "⚪"
-        else:
-            translated_state = translate_service_state(state)
+            status_text = f"⚪ <strong>{translated_state}</strong>"
+            self.status_label.setText(status_text)
+            self.status_label.setStyleSheet("color: #7f8c8d;")
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(False)
+            self.host_label.setText("N/A")
+            self.port_label.setText("N/A")
+            return
 
+        translated_state = translate_service_state(state)
         status_text = f"<strong>{translated_state}</strong>"
-        if status_icon:
-            status_text = f"{status_icon} {status_text}"
-
         self.status_label.setText(status_text)
 
         is_running = state is not None and state == ServiceState.RUNNING
         is_stopped = state is not None and state == ServiceState.STOPPED
-
-        if state is None:
-            self.start_button.setEnabled(False)
-            self.stop_button.setEnabled(False)
-            self.status_label.setStyleSheet("color: #7f8c8d;")
-            self.host_label.setText("N/A")
-            self.port_label.setText("N/A")
-            return
 
         self.start_button.setEnabled(is_stopped)
         self.stop_button.setEnabled(is_running)

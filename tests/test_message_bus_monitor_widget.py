@@ -51,10 +51,7 @@ def test_update_status_handles_unregistered_service(qapp, message_bus_module):
     original_translations = i18n.language_manager.translations
     original_language = i18n.language_manager.current_language
 
-    i18n.language_manager.translations = {
-        "service_status_unregistered": "未注册",
-    }
-    i18n.language_manager.current_language = "zh-CN"
+    i18n.language_manager.load_language("zh-CN")
 
     widget = module.MessageBusMonitorWidget()
 
