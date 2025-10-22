@@ -147,6 +147,7 @@
   "service_status_starting": "启动中",
   "service_status_stopping": "停止中",
   "service_status_failed": "失败",
+  "service_status_unregistered": "未注册",
   "topic_label": "主题:",
   "broker_status_label": "代理状态:",
   "start_broker_button": "启动代理",

@@ -140,5 +140,6 @@
   "connect_service": "Connecter",
   "disconnect_service": "Déconnecter",
   "switch_service_type": "Changer de Service",
-  "shutting_down_message": "Fermeture en cours, veuillez patienter..."
+  "shutting_down_message": "Fermeture en cours, veuillez patienter...",
+  "service_status_unregistered": "Non enregistré"
 }

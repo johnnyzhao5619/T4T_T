@@ -202,11 +202,24 @@ class MessageBusMonitorWidget(QWidget):
 
     def update_status(self):
         state = service_manager.get_service_state('mqtt_broker')
-        self.status_label.setText(
-            f"<strong>{translate_service_state(state)}</strong>")
+        if state is None:
+            translated_state = _("service_status_unregistered")
+        else:
+            translated_state = translate_service_state(state)
 
-        is_running = state == ServiceState.RUNNING
-        is_stopped = state == ServiceState.STOPPED
+        self.status_label.setText(
+            f"<strong>{translated_state}</strong>")
+
+        is_running = state is not None and state == ServiceState.RUNNING
+        is_stopped = state is not None and state == ServiceState.STOPPED
+
+        if state is None:
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(False)
+            self.status_label.setStyleSheet("color: #7f8c8d;")
+            self.host_label.setText("N/A")
+            self.port_label.setText("N/A")
+            return
 
         self.start_button.setEnabled(is_stopped)
         self.stop_button.setEnabled(is_running)
@@ -214,10 +227,13 @@ class MessageBusMonitorWidget(QWidget):
         if is_running:
             self.status_label.setStyleSheet("color: #2ecc71;")
             broker_service = service_manager.get_service('mqtt_broker')
-            if broker_service:
+            if broker_service is not None:
                 details = broker_service.get_connection_details()
                 self.host_label.setText(details.get('host', 'N/A'))
                 self.port_label.setText(str(details.get('port', 'N/A')))
+            else:
+                self.host_label.setText("N/A")
+                self.port_label.setText("N/A")
         elif is_stopped:
             self.status_label.setStyleSheet("color: #e74c3c;")
             self.host_label.setText("N/A")
