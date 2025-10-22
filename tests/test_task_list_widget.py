@@ -20,29 +20,21 @@ from view.task_list_widget import TaskListWidget
 
 
 class _TaskManagerStub:
-    def __init__(self):
-        self._statuses = {"event_task": "stopped"}
-        self._configs = {
-            "event_task": {
-                "name": "event_task",
-                "trigger": {
-                    "type": "event",
-                    "config": {
-                        "topic": "demo/config/topic",
-                    },
-                },
-            }
-        }
+    def __init__(self, config):
+        self._config = deepcopy(config)
+        self._task_name = self._config.get("name", "event_task")
+        self._statuses = {self._task_name: "stopped"}
 
     def get_task_list(self):
-        return list(self._configs.keys())
+        return [self._task_name]
 
     def get_task_status(self, task_name):
         return self._statuses.get(task_name, "stopped")
 
     def get_task_config(self, task_name):
-        config = self._configs.get(task_name)
-        return deepcopy(config) if config is not None else None
+        if task_name != self._task_name:
+            return None
+        return deepcopy(self._config)
 
     def _parse_trigger(self, config):
         return TaskManager._parse_trigger(self, config)
@@ -66,22 +58,54 @@ def qapp():
         app = QApplication([])
     yield app
 
-
-def test_task_list_widget_displays_event_topic_from_nested_config(qapp):
-    manager = _TaskManagerStub()
+@pytest.mark.parametrize(
+    "trigger_section, expected_topic",
+    [
+        (
+            {
+                "type": "event",
+                "config": {"topic": "demo/config/topic"},
+            },
+            "demo/config/topic",
+        ),
+        (
+            {
+                "type": "event",
+                "topic": "demo/direct/topic",
+            },
+            "demo/direct/topic",
+        ),
+        (
+            {
+                "event": {"topic": "demo/event/topic"},
+            },
+            "demo/event/topic",
+        ),
+    ],
+)
+def test_task_list_widget_displays_event_topic_from_legacy_formats(
+    qapp, trigger_section, expected_topic
+):
+    task_name = "event_task"
+    task_config = {
+        "name": task_name,
+        "trigger": deepcopy(trigger_section),
+    }
+    manager = _TaskManagerStub(task_config)
     widget = TaskListWidget(manager, scheduler=None, main_window=_MainWindowStub())
 
     try:
-        global_signals.task_status_changed.emit("event_task", "listening")
+        global_signals.task_status_changed.emit(task_name, "listening")
         qapp.processEvents()
 
-        item = widget.find_item_by_name("event_task")
+        item = widget.find_item_by_name(task_name)
         assert item is not None
 
-        expected_text = f"{_('listening_on')}: demo/config/topic"
-        expected_tooltip = f"{_('listening_on_tooltip')}: demo/config/topic"
+        expected_text = f"{_('listening_on')}: {expected_topic}"
+        expected_tooltip = f"{_('listening_on_tooltip')}: {expected_topic}"
 
         assert item.text(3) == expected_text
         assert item.toolTip(3) == expected_tooltip
     finally:
         widget.deleteLater()
+        qapp.processEvents()

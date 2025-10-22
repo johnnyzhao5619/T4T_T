@@ -204,30 +204,9 @@ class TaskListWidget(QTreeWidget):
         if status == 'listening':
             topic_display = 'N/A'
             task_config = self.task_manager.get_task_config(task_name)
-
-            if isinstance(task_config, dict):
-                topic_value = None
-                parse_trigger = getattr(self.task_manager, '_parse_trigger', None)
-                if callable(parse_trigger):
-                    try:
-                        trigger_type, trigger_params = parse_trigger(task_config)
-                    except Exception as exc:  # pragma: no cover - defensive logging
-                        logger.warning(
-                            "Failed to parse trigger for task '%s': %s",
-                            task_name,
-                            exc,
-                        )
-                        trigger_type, trigger_params = None, {}
-                    if trigger_type == 'event':
-                        topic_value = trigger_params.get('topic')
-
-                if topic_value is None:
-                    trigger_section = task_config.get('trigger')
-                    topic_value = self._extract_event_topic(trigger_section)
-
-                normalized_topic = self._normalize_topic(topic_value)
-                if normalized_topic is not None:
-                    topic_display = normalized_topic
+            normalized_topic = self._resolve_event_topic_text(task_name, task_config)
+            if normalized_topic is not None:
+                topic_display = normalized_topic
 
             item.setText(3, f"{_('listening_on')}: {topic_display}")
             item.setToolTip(3, f"{_('listening_on_tooltip')}: {topic_display}")
@@ -236,6 +215,32 @@ class TaskListWidget(QTreeWidget):
             item.setText(2, "")
             item.setText(3, "")
             item.setToolTip(3, "")
+
+    def _resolve_event_topic_text(self, task_name, task_config):
+        """Return a normalized topic string for an event task, if available."""
+        if not isinstance(task_config, dict):
+            return None
+
+        topic_value = None
+        parse_trigger = getattr(self.task_manager, '_parse_trigger', None)
+        if callable(parse_trigger):
+            try:
+                trigger_type, trigger_params = parse_trigger(task_config)
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.warning(
+                    "Failed to parse trigger for task '%s': %s",
+                    task_name,
+                    exc,
+                )
+            else:
+                if trigger_type == 'event':
+                    topic_value = trigger_params.get('topic')
+
+        if topic_value is None:
+            trigger_section = task_config.get('trigger')
+            topic_value = self._extract_event_topic(trigger_section)
+
+        return self._normalize_topic(topic_value)
 
     @staticmethod
     def _extract_event_topic(trigger_section):
