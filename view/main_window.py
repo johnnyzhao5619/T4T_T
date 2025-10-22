@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 from functools import partial
+from pathlib import Path
 
 import psutil
 import yaml
@@ -41,6 +42,7 @@ class DevGuideWidget(QWidget):
     def __init__(self, module_manager, parent=None):
         super().__init__(parent)
         self.module_manager = module_manager
+        self.project_root = Path(__file__).resolve().parent.parent
         self.init_ui()
 
     def init_ui(self):
@@ -61,7 +63,8 @@ class DevGuideWidget(QWidget):
 
     def load_guide(self):
         try:
-            with open('docs/development_guide.md', 'r', encoding='utf-8') as f:
+            guide_path = self.project_root / 'docs' / 'development_guide.md'
+            with guide_path.open('r', encoding='utf-8') as f:
                 content = f.read()
             self.text_browser.setMarkdown(content)
         except FileNotFoundError:
@@ -81,10 +84,14 @@ class DevGuideWidget(QWidget):
                                         _("module_name_invalid_chars"))
                     return
 
-                src_dir = 'modules/template'
-                dest_dir = f'modules/{safe_module_name}'
+                src_dir = self.project_root / 'modules' / 'template'
+                dest_dir = Path(self.module_manager.module_path) / safe_module_name
 
-                if os.path.exists(dest_dir):
+                if not src_dir.exists():
+                    raise FileNotFoundError(
+                        f"Template directory not found: {src_dir}")
+
+                if dest_dir.exists():
                     QMessageBox.warning(
                         self, _("module_exists"),
                         _("module_already_exists").format(
@@ -92,21 +99,20 @@ class DevGuideWidget(QWidget):
                     return
 
                 # Copy the template directory
-                shutil.copytree(src_dir, dest_dir)
+                shutil.copytree(str(src_dir), str(dest_dir))
 
                 # Rename the files
-                py_path = os.path.join(dest_dir, 'template_template.py')
-                new_py_path = os.path.join(dest_dir,
-                                           f'{safe_module_name}_template.py')
+                py_path = dest_dir / 'template_template.py'
+                new_py_path = dest_dir / f'{safe_module_name}_template.py'
                 os.rename(py_path, new_py_path)
 
-                manifest_path = os.path.join(dest_dir, 'manifest.yaml')
-                if os.path.exists(manifest_path):
-                    with open(manifest_path, 'r', encoding='utf-8') as f:
+                manifest_path = dest_dir / 'manifest.yaml'
+                if manifest_path.exists():
+                    with manifest_path.open('r', encoding='utf-8') as f:
                         manifest_data = yaml.safe_load(f) or {}
                     manifest_data['module_type'] = safe_module_name
                     manifest_data['name'] = module_name
-                    with open(manifest_path, 'w', encoding='utf-8') as f:
+                    with manifest_path.open('w', encoding='utf-8') as f:
                         yaml.safe_dump(manifest_data,
                                        f,
                                        allow_unicode=True,
