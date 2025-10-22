@@ -453,6 +453,32 @@ def test_save_task_config_updates_interval_trigger(prepared_schedule_manager):
         "IntervalTask", "running")
 
 
+def test_save_task_config_switches_interval_to_event(prepared_schedule_manager):
+    manager, dummy_signals = prepared_schedule_manager
+
+    task_name = "IntervalTask"
+    assert manager.apscheduler.get_job(task_name) is not None
+
+    original_config = manager.get_task_config(task_name)
+    success, _ = manager.save_task_config(task_name, original_config)
+    assert success
+    assert manager.apscheduler.get_job(task_name) is not None
+
+    event_config = manager.get_task_config(task_name)
+    event_config["trigger"] = {
+        "type": "event",
+        "topic": "switch/topic"
+    }
+
+    success, _ = manager.save_task_config(task_name, event_config)
+
+    assert success
+    assert manager.apscheduler.get_job(task_name) is None
+    assert manager.tasks[task_name]["status"] == "listening"
+    assert dummy_signals.task_status_changed.emitted[-1][0] == (
+        task_name, "listening")
+
+
 def test_rename_persistent_task_preserves_state(tmp_path, monkeypatch):
     tasks_dir = tmp_path / "tasks"
     tasks_dir.mkdir()

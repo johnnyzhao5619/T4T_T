@@ -709,8 +709,20 @@ class TaskManager:
             enabled, topic = self._get_event_topic(config_data)
             self._update_event_subscription(final_task_name, enabled, topic)
 
+            job = self.apscheduler.get_job(final_task_name)
+
+            if trigger_type not in {'cron', 'interval', 'date'} and job is not None:
+                try:
+                    self.apscheduler.remove_job(final_task_name)
+                    logger.info(
+                        "Cleared scheduled job for task '%s' after trigger change.",
+                        final_task_name)
+                except Exception as exc:  # pragma: no cover - defensive
+                    logger.error(
+                        "Failed to clear job for task '%s' when trigger changed: %s",
+                        final_task_name, exc)
+
             if trigger_type in {'cron', 'interval', 'date'}:
-                job = self.apscheduler.get_job(final_task_name)
                 job_exists = job is not None
                 enabled_now = bool(config_data.get('enabled'))
                 enabled_before = bool(previous_config.get('enabled'))
