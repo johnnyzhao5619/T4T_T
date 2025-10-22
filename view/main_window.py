@@ -167,9 +167,6 @@ class T4TMainWindow(QMainWindow):
         global_signals.service_state_changed.connect(
             self.on_service_state_changed)
 
-        # Start tasks that are marked as enabled in their config
-        self.autostart_enabled_tasks()
-
         # Initially connect the message bus
         message_bus_manager.connect()
 
@@ -233,16 +230,6 @@ class T4TMainWindow(QMainWindow):
                 self._update_message_bus_status(
                     BusConnectionState.CONNECTING.value,
                     _("status_connecting"))
-
-    def autostart_enabled_tasks(self):
-        """
-        Automatically starts tasks that are marked as 'enabled' in their
-        configuration file.
-        """
-        for task_name in self.task_manager.get_task_list():
-            task_config = self.task_manager.get_task_config(task_name)
-            if task_config and task_config.get('enabled', False):
-                self.task_manager.start_task(task_name)
 
     def on_theme_changed(self, stylesheet):
         """
