@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable, Tuple
 
 import pytest
+import yaml
 
 PyQt5 = types.ModuleType("PyQt5")
 QtCore = types.ModuleType("PyQt5.QtCore")
@@ -505,6 +506,51 @@ def test_save_task_config_switches_interval_to_event(prepared_schedule_manager):
     assert manager.tasks[task_name]["status"] == "listening"
     assert dummy_signals.task_status_changed.emitted[-1][0] == (
         task_name, "listening")
+
+
+def test_load_tasks_refreshes_scheduler_jobs(prepared_schedule_manager):
+    manager, dummy_signals = prepared_schedule_manager
+
+    job = manager.apscheduler.get_job("IntervalTask")
+    assert job is not None
+    assert job.trigger.interval.total_seconds() == pytest.approx(1)
+
+    config_path = Path(manager.tasks["IntervalTask"]["config"])
+
+    with open(config_path, "r", encoding="utf-8") as config_file:
+        config_data = yaml.safe_load(config_file)
+
+    config_data["trigger"]["config"]["seconds"] = 3
+    with open(config_path, "w", encoding="utf-8") as config_file:
+        yaml.safe_dump(config_data,
+                      config_file,
+                      allow_unicode=True,
+                      sort_keys=False)
+
+    manager.load_tasks()
+
+    jobs = manager.apscheduler.get_jobs()
+    assert len(jobs) == 1
+    refreshed_job = jobs[0]
+    assert refreshed_job.id == "IntervalTask"
+    assert refreshed_job.trigger.interval.total_seconds() == pytest.approx(3)
+
+    with open(config_path, "r", encoding="utf-8") as config_file:
+        updated_config = yaml.safe_load(config_file)
+
+    updated_config["enabled"] = False
+    with open(config_path, "w", encoding="utf-8") as config_file:
+        yaml.safe_dump(updated_config,
+                      config_file,
+                      allow_unicode=True,
+                      sort_keys=False)
+
+    manager.load_tasks()
+
+    assert manager.apscheduler.get_jobs() == []
+    assert manager.tasks["IntervalTask"]["status"] == "stopped"
+    assert dummy_signals.task_status_changed.emitted[-1][0] == (
+        "IntervalTask", "stopped")
 
 
 def test_rename_persistent_task_preserves_state(tmp_path, monkeypatch):

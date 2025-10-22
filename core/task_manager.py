@@ -73,6 +73,22 @@ class TaskManager:
         for existing_task in list(self._event_task_topics.keys()):
             self._unsubscribe_event_task(existing_task, emit_status=False)
 
+        # Stop and remove any scheduled jobs before reloading configuration
+        existing_jobs = list(self.apscheduler.get_jobs())
+        if existing_jobs:
+            for job in existing_jobs:
+                task_name = job.id
+                task_info = self.tasks.get(task_name)
+                if task_info and task_info.get('status') in {'running', 'paused'}:
+                    task_info['status'] = 'stopped'
+                    global_signals.task_status_changed.emit(task_name, 'stopped')
+            try:
+                self.apscheduler.remove_all_jobs()
+                logger.debug("Cleared %d existing scheduled jobs before reload.",
+                             len(existing_jobs))
+            except Exception as exc:
+                logger.error("Failed to clear existing scheduled jobs: %s", exc)
+
         self.tasks.clear()
         self._event_task_topics.clear()
         if not os.path.exists(self.tasks_dir):
