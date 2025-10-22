@@ -2,13 +2,14 @@ import logging
 import os
 import platform
 import subprocess
+from pathlib import Path
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
                              QPushButton, QTextEdit, QMessageBox, QLabel)
 from utils.i18n import _
 from utils.icon_manager import get_icon
 
 logger = logging.getLogger(__name__)
-LOGS_DIR = "logs"
+LOGS_DIR_PATH = Path(__file__).resolve().parent.parent / "logs"
 
 
 class LogViewerWidget(QWidget):
@@ -59,15 +60,15 @@ class LogViewerWidget(QWidget):
 
     def load_log_files(self):
         self.log_combo.clear()
-        if not os.path.exists(LOGS_DIR):
+        if not LOGS_DIR_PATH.exists():
             self.log_content_display.setText(_("log_dir_not_found"))
             self.delete_log_button.setEnabled(False)
             self.open_folder_button.setEnabled(False)
             return
 
         log_files = sorted(
-            [f for f in os.listdir(LOGS_DIR) if f.endswith(".txt")],
-            key=lambda f: os.path.getmtime(os.path.join(LOGS_DIR, f)),
+            [f.name for f in LOGS_DIR_PATH.glob("*.txt")],
+            key=lambda f: os.path.getmtime(LOGS_DIR_PATH / f),
             reverse=True)
 
         if not log_files:
@@ -83,7 +84,7 @@ class LogViewerWidget(QWidget):
             return
 
         log_file_name = self.log_combo.itemText(index)
-        log_file_path = os.path.join(LOGS_DIR, log_file_name)
+        log_file_path = LOGS_DIR_PATH / log_file_name
 
         try:
             with open(log_file_path, 'r', encoding='utf-8') as f:
@@ -94,14 +95,14 @@ class LogViewerWidget(QWidget):
             logger.error(error_message)
 
     def open_log_folder(self):
-        log_path = os.path.abspath(LOGS_DIR)
+        log_path = LOGS_DIR_PATH.resolve()
         try:
             if platform.system() == "Windows":
-                os.startfile(log_path)
+                os.startfile(str(log_path))
             elif platform.system() == "Darwin":  # macOS
-                subprocess.run(["open", log_path], check=True)
+                subprocess.run(["open", str(log_path)], check=True)
             else:  # Linux and other UNIX-like systems
-                subprocess.run(["xdg-open", log_path], check=True)
+                subprocess.run(["xdg-open", str(log_path)], check=True)
         except Exception as e:
             QMessageBox.warning(self, _("error_title"),
                                 f"{_('open_folder_failed')}: {e}")
@@ -118,7 +119,7 @@ class LogViewerWidget(QWidget):
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-            log_file_path = os.path.join(LOGS_DIR, current_log)
+            log_file_path = LOGS_DIR_PATH / current_log
             try:
                 os.remove(log_file_path)
                 logger.info(f"Deleted log file: {current_log}")
