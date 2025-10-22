@@ -137,8 +137,15 @@ class TaskDetailTabWidget(QWidget):
             if success:
                 QMessageBox.information(self, _("success_title"),
                                         _("config_saved_message"))
-                # The task name might have changed, update it
+                previous_config_task_name = self.task_config_widget.task_name
+
+                if final_task_name != previous_config_task_name:
+                    self.task_config_widget.mark_as_saved(final_task_name)
+
                 self.task_name = final_task_name
+                self.task_config_widget.task_name = final_task_name
+                self.json_editor_widget.task_name = final_task_name
+
                 # Reload config in both editors to ensure they are in sync
                 # with the saved state. This is the single source of truth.
                 self.load_config()
