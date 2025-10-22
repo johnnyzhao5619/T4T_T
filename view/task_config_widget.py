@@ -279,27 +279,72 @@ class TaskConfigWidget(QWidget):
         layout.addRow(trigger_content_widget)
 
         # Set initial values
-        current_type = trigger_data.get("type", "cron")
-        if current_type in trigger_types:
-            combo.setCurrentIndex(trigger_types.index(current_type))
-            stack.setCurrentIndex(trigger_types.index(current_type))
+        raw_type = str(trigger_data.get("type", "cron")).lower()
+        config_section = trigger_data.get("config")
+        config = config_section if isinstance(config_section, dict) else {}
+        schedule_section = trigger_data.get("schedule")
+        schedule_config = schedule_section if isinstance(schedule_section, dict) else {}
 
-        config = trigger_data.get("config", {})
-        self.trigger_widget["widgets"]["cron"].setText(
-            config.get("cron_expression", ""))
-        self.trigger_widget["widgets"]["interval_days"].setValue(
-            config.get("days", 0))
-        self.trigger_widget["widgets"]["interval_hours"].setValue(
-            config.get("hours", 0))
-        self.trigger_widget["widgets"]["interval_minutes"].setValue(
-            config.get("minutes", 5))
-        self.trigger_widget["widgets"]["interval_seconds"].setValue(
-            config.get("seconds", 0))
-        self.trigger_widget["widgets"]["date"].setDateTime(
-            QDateTime.fromString(config.get("run_date", ""), Qt.ISODate)
-            if config.get("run_date") else QDateTime.currentDateTime())
-        self.trigger_widget["widgets"]["event"].setText(
-            trigger_data.get("topic", ""))
+        fallback_type = None
+        if isinstance(config, dict):
+            fallback_type = config.get("type")
+        if not fallback_type:
+            if isinstance(schedule_section, dict):
+                fallback_type = schedule_section.get("type")
+            elif isinstance(schedule_section, str):
+                fallback_type = schedule_section
+        fallback_type = str(fallback_type).lower() if fallback_type else None
+
+        selected_type = raw_type if raw_type in trigger_types else None
+        if not selected_type and fallback_type in trigger_types:
+            selected_type = fallback_type
+        if not config and schedule_config and fallback_type in trigger_types:
+            config = schedule_config
+
+        if not selected_type:
+            selected_type = trigger_types[0]
+
+        combo.setCurrentIndex(trigger_types.index(selected_type))
+        stack.setCurrentIndex(trigger_types.index(selected_type))
+
+        cron_expression = ""
+        if isinstance(config, dict):
+            cron_expression = config.get("cron_expression", "")
+        self.trigger_widget["widgets"]["cron"].setText(cron_expression)
+
+        if selected_type == "interval":
+            interval_fields = {
+                "days": "interval_days",
+                "hours": "interval_hours",
+                "minutes": "interval_minutes",
+                "seconds": "interval_seconds",
+            }
+            for field, widget_key in interval_fields.items():
+                widget = self.trigger_widget["widgets"][widget_key]
+                if isinstance(config, dict) and field in config:
+                    value = config.get(field)
+                    if value is not None:
+                        widget.setValue(int(value))
+                elif field == "minutes":
+                    widget.setValue(5)
+
+        if selected_type == "date" and isinstance(config, dict):
+            run_date = config.get("run_date")
+            if run_date:
+                parsed_date = QDateTime.fromString(str(run_date), Qt.ISODate)
+                if (not parsed_date.isValid() and
+                        hasattr(Qt, "ISODateWithMs")):
+                    parsed_date = QDateTime.fromString(
+                        str(run_date), Qt.ISODateWithMs)
+                if parsed_date.isValid():
+                    self.trigger_widget["widgets"]["date"].setDateTime(parsed_date)
+
+        event_topic = ""
+        if isinstance(config, dict):
+            event_topic = config.get("topic", "")
+        if not event_topic:
+            event_topic = trigger_data.get("topic", "")
+        self.trigger_widget["widgets"]["event"].setText(event_topic)
 
     def _create_cron_panel(self, stack):
         panel = QWidget()

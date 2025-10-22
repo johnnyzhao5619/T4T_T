@@ -5,6 +5,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 
 try:
+    from PyQt5.QtCore import Qt
     from PyQt5.QtWidgets import QApplication, QTableWidgetItem
 except ImportError as exc:  # pragma: no cover - handled via pytest skip
     pytest.skip(
@@ -153,5 +154,54 @@ def test_validate_required_input_name(qapp):
         assert widget.validate_config()
         assert "inputs.table" not in widget.get_errors()
         assert widget.inputs_widget.styleSheet() == ""
+    finally:
+        widget.deleteLater()
+
+
+def test_schedule_interval_trigger_preserves_inner_type(qapp):
+    widget = _create_widget({
+        "trigger": {
+            "type": "schedule",
+            "config": {
+                "type": "interval",
+                "seconds": 30
+            }
+        }
+    })
+    try:
+        combo = widget.trigger_widget["combo"]
+        assert combo.currentText().lower() == "interval"
+
+        interval_widgets = widget.trigger_widget["widgets"]
+        assert interval_widgets["interval_seconds"].value() == 30
+
+        saved_trigger = widget.get_config()["trigger"]
+        assert saved_trigger["type"] == "interval"
+        assert saved_trigger["config"]["seconds"] == 30
+    finally:
+        widget.deleteLater()
+
+
+def test_schedule_date_trigger_preserves_inner_type(qapp):
+    run_date = "2024-05-01T12:00:00"
+    widget = _create_widget({
+        "trigger": {
+            "type": "schedule",
+            "config": {
+                "type": "date",
+                "run_date": run_date
+            }
+        }
+    })
+    try:
+        combo = widget.trigger_widget["combo"]
+        assert combo.currentText().lower() == "date"
+
+        date_widget = widget.trigger_widget["widgets"]["date"]
+        assert date_widget.dateTime().toString(Qt.ISODate) == run_date
+
+        saved_trigger = widget.get_config()["trigger"]
+        assert saved_trigger["type"] == "date"
+        assert saved_trigger["config"]["run_date"] == run_date
     finally:
         widget.deleteLater()
