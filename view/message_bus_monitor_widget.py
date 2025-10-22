@@ -202,13 +202,18 @@ class MessageBusMonitorWidget(QWidget):
 
     def update_status(self):
         state = service_manager.get_service_state('mqtt_broker')
+        status_icon = ""
         if state is None:
             translated_state = _("service_status_unregistered")
+            status_icon = "⚪"
         else:
             translated_state = translate_service_state(state)
 
-        self.status_label.setText(
-            f"<strong>{translated_state}</strong>")
+        status_text = f"<strong>{translated_state}</strong>"
+        if status_icon:
+            status_text = f"{status_icon} {status_text}"
+
+        self.status_label.setText(status_text)
 
         is_running = state is not None and state == ServiceState.RUNNING
         is_stopped = state is not None and state == ServiceState.STOPPED
@@ -228,7 +233,7 @@ class MessageBusMonitorWidget(QWidget):
             self.status_label.setStyleSheet("color: #2ecc71;")
             broker_service = service_manager.get_service('mqtt_broker')
             if broker_service is not None:
-                details = broker_service.get_connection_details()
+                details = broker_service.get_connection_details() or {}
                 self.host_label.setText(details.get('host', 'N/A'))
                 self.port_label.setText(str(details.get('port', 'N/A')))
             else:
