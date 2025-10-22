@@ -599,6 +599,9 @@ class TaskManager:
 
             self.tasks[new_name] = task_data
 
+            # Ensure the in-memory state follows the renamed task
+            self.state_manager.rename_task(old_name, new_name)
+
             if event_topic:
                 enabled, topic = self._get_event_topic(task_data.get(
                     'config_data', {}))
