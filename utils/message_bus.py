@@ -61,6 +61,11 @@ class MessageBusInterface(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
+    def unsubscribe(self, topic: str) -> None:
+        """Unsubscribe from a topic."""
+        pass
+
 
 class MqttBus(MessageBusInterface):
     """
@@ -168,6 +173,17 @@ class MqttBus(MessageBusInterface):
         self._subscriptions[topic] = callback
         if self._state == BusConnectionState.CONNECTED:
             self._client.subscribe(topic)
+
+    def unsubscribe(self, topic: str) -> None:
+        self.logger.info(f"Unsubscribing from topic: {topic}")
+        if topic in self._subscriptions:
+            self._subscriptions.pop(topic, None)
+        if self._client and self._state == BusConnectionState.CONNECTED:
+            try:
+                self._client.unsubscribe(topic)
+            except Exception as exc:
+                self.logger.error(
+                    f"Failed to unsubscribe from topic '{topic}': {exc}")
 
     def _on_connect(self, client, userdata, flags, rc, properties=None):
         if rc == 0:
@@ -338,6 +354,13 @@ class MessageBusManager:
         self._subscriptions[topic] = callback
         if self._bus:
             self._bus.subscribe(topic, callback)
+
+    def unsubscribe(self, topic: str):
+        """Unsubscribes from a topic and removes internal bookkeeping."""
+        if topic in self._subscriptions:
+            self._subscriptions.pop(topic, None)
+        if self._bus:
+            self._bus.unsubscribe(topic)
 
     def switch_service(self, service_type: str):
         """
