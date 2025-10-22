@@ -23,14 +23,33 @@ class ModuleManager:
         Args:
             module_path (str): The path to the directory containing modules.
         """
-        # Prevent re-initialization
-        if hasattr(self, '_initialized') and self._initialized:
+        resolved_path = os.path.abspath(module_path)
+
+        if not hasattr(self, 'modules'):
+            self.modules: Dict[str, Dict[str, str]] = {}
+
+        current_path = getattr(self, 'module_path', None)
+        if current_path != resolved_path:
+            self.module_path = resolved_path
+            self.discover_modules()
+
+        if getattr(self, '_initialized', False):
             return
 
-        self.module_path = module_path
-        self.modules: Dict[str, Dict[str, str]] = {}
-        self.discover_modules()
         self._initialized = True
+
+    def set_module_path(self, module_path: str):
+        """Update the module path and refresh discovered modules if needed."""
+        resolved_path = os.path.abspath(module_path)
+        current_path = getattr(self, 'module_path', None)
+        if current_path == resolved_path:
+            return
+
+        if not hasattr(self, 'modules'):
+            self.modules = {}
+
+        self.module_path = resolved_path
+        self.discover_modules()
 
     def discover_modules(self):
         """
