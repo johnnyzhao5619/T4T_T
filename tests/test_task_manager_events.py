@@ -39,8 +39,10 @@ sys.modules.setdefault("PyQt5.QtWidgets", QtWidgets)
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
+from core.context import TaskContextFilter
 from core.scheduler import SchedulerManager
 from core.task_manager import TaskManager
+from utils.logger import SignalHandler
 
 
 class DummySignal:
@@ -56,6 +58,7 @@ class DummySignals:
         self.task_status_changed = DummySignal()
         self.task_manager_updated = DummySignal()
         self.task_renamed = DummySignal()
+        self.log_message = DummySignal()
 
 
 class FakeBusManager:
@@ -325,6 +328,31 @@ def test_event_task_renamed_updates_subscription(prepared_manager, monkeypatch):
 
     fake_bus.publish("test/topic", {"after": "rename"})
     assert calls == ["RenamedTask"]
+
+
+def test_rename_task_updates_logger_filter(prepared_manager, monkeypatch):
+    manager, _, dummy_signals = prepared_manager
+
+    old_logger = manager.tasks["EventTask"]["logger"]
+
+    monkeypatch.setattr("utils.logger.global_signals", dummy_signals)
+
+    assert manager.rename_task("EventTask", "RenamedLoggerTask")
+
+    assert not any(isinstance(f, TaskContextFilter) for f in getattr(old_logger, "filters", []))
+
+    new_logger = manager.tasks["RenamedLoggerTask"]["logger"]
+
+    handler = SignalHandler()
+    new_logger.addHandler(handler)
+    try:
+        new_logger.info("Logger rename message")
+    finally:
+        new_logger.removeHandler(handler)
+
+    assert dummy_signals.log_message.emitted
+    args, _ = dummy_signals.log_message.emitted[-1]
+    assert args[0] == "RenamedLoggerTask"
 
 
 def test_start_all_tasks_does_not_duplicate_event_subscription(prepared_manager,
