@@ -6,3 +6,4 @@ apscheduler
 qtawesome
 amqtt
 pyqtgraph
+markdown==3.4.4
