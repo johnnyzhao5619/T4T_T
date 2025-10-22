@@ -202,15 +202,73 @@ class TaskListWidget(QTreeWidget):
         self.update_item_visuals(item, status)
 
         if status == 'listening':
+            topic_display = 'N/A'
             task_config = self.task_manager.get_task_config(task_name)
-            topic = task_config.get('trigger', {}).get('topic', 'N/A')
-            item.setText(3, f"{_('listening_on')}: {topic}")
-            item.setToolTip(3, f"{_('listening_on_tooltip')}: {topic}")
+
+            if isinstance(task_config, dict):
+                topic_value = None
+                parse_trigger = getattr(self.task_manager, '_parse_trigger', None)
+                if callable(parse_trigger):
+                    try:
+                        trigger_type, trigger_params = parse_trigger(task_config)
+                    except Exception as exc:  # pragma: no cover - defensive logging
+                        logger.warning(
+                            "Failed to parse trigger for task '%s': %s",
+                            task_name,
+                            exc,
+                        )
+                        trigger_type, trigger_params = None, {}
+                    if trigger_type == 'event':
+                        topic_value = trigger_params.get('topic')
+
+                if topic_value is None:
+                    trigger_section = task_config.get('trigger')
+                    topic_value = self._extract_event_topic(trigger_section)
+
+                normalized_topic = self._normalize_topic(topic_value)
+                if normalized_topic is not None:
+                    topic_display = normalized_topic
+
+            item.setText(3, f"{_('listening_on')}: {topic_display}")
+            item.setToolTip(3, f"{_('listening_on_tooltip')}: {topic_display}")
         elif status == 'stopped':
             # Clear details when stopped
             item.setText(2, "")
             item.setText(3, "")
             item.setToolTip(3, "")
+
+    @staticmethod
+    def _extract_event_topic(trigger_section):
+        """Safely extract an event topic from legacy trigger formats."""
+        if not isinstance(trigger_section, dict):
+            return None
+
+        direct_topic = trigger_section.get('topic')
+        if direct_topic is not None:
+            return direct_topic
+
+        config_section = trigger_section.get('config')
+        if isinstance(config_section, dict):
+            config_topic = config_section.get('topic')
+            if config_topic is not None:
+                return config_topic
+
+        event_section = trigger_section.get('event')
+        if isinstance(event_section, dict):
+            event_topic = event_section.get('topic')
+            if event_topic is not None:
+                return event_topic
+
+        return None
+
+    @staticmethod
+    def _normalize_topic(topic_value):
+        """Convert a topic value into a cleaned string or None."""
+        if topic_value is None:
+            return None
+
+        topic_str = str(topic_value).strip()
+        return topic_str or None
 
     def _on_task_succeeded(self, task_name: str, timestamp: str, message: str):
         """
