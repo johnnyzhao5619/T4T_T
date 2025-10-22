@@ -234,3 +234,50 @@ def test_execute_task_in_main_thread_uses_task_context(monkeypatch):
     assert executed["inputs"] == {}
     assert executed["config"] == {"foo": "bar"}
     assert captured_logs == [("TestTask", "main-thread-log")]
+
+
+def test_message_bus_monitor_widget_handles_unregistered_service(monkeypatch):
+    from view import message_bus_monitor_widget as widget_module
+    from utils import i18n
+
+    i18n.language_manager.load_language('en')
+
+    monkeypatch.setattr(widget_module.service_manager,
+                        'get_service_state', lambda name: None)
+    monkeypatch.setattr(widget_module.service_manager,
+                        'get_service', lambda name: None)
+
+    class _DummyLabel:
+        def __init__(self):
+            self.text_value = None
+            self.stylesheet = None
+
+        def setText(self, value):
+            self.text_value = value
+
+        def setStyleSheet(self, value):
+            self.stylesheet = value
+
+    class _DummyButton:
+        def __init__(self):
+            self.enabled = None
+
+        def setEnabled(self, value):
+            self.enabled = value
+
+    widget = widget_module.MessageBusMonitorWidget.__new__(
+        widget_module.MessageBusMonitorWidget)
+    widget.status_label = _DummyLabel()
+    widget.start_button = _DummyButton()
+    widget.stop_button = _DummyButton()
+    widget.host_label = _DummyLabel()
+    widget.port_label = _DummyLabel()
+
+    widget.update_status()
+
+    assert widget.status_label.text_value == "<strong>Unregistered</strong>"
+    assert widget.status_label.stylesheet == "color: #7f8c8d;"
+    assert widget.start_button.enabled is False
+    assert widget.stop_button.enabled is False
+    assert widget.host_label.text_value == "N/A"
+    assert widget.port_label.text_value == "N/A"

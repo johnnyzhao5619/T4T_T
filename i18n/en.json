@@ -147,6 +147,7 @@
   "service_status_starting": "Starting",
   "service_status_stopping": "Stopping",
   "service_status_failed": "Failed",
+  "service_status_unregistered": "Unregistered",
   "topic_label": "Topic:",
   "broker_status_label": "Broker Status:",
   "start_broker_button": "Start Broker",
