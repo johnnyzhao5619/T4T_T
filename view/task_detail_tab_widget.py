@@ -25,6 +25,7 @@ class TaskDetailTabWidget(QWidget):
         self.task_name = task_name
         self.task_manager = task_manager
         self.settings = QSettings()
+        self._last_loaded_task_name = None
 
         self.init_ui()
         self.load_config()
@@ -97,10 +98,13 @@ class TaskDetailTabWidget(QWidget):
         self.splitter.addWidget(self.output_widget)
 
     def load_config(self):
+        self.task_config_widget.task_name = self.task_name
+        self.json_editor_widget.task_name = self.task_name
         self.task_config_widget.load_config()
         self.json_editor_widget.load_config()
         self.save_button.setEnabled(False)
         self.task_config_widget.mark_as_saved()
+        self._last_loaded_task_name = self.task_name
 
     def save_config(self):
         config_data = None
@@ -182,12 +186,25 @@ class TaskDetailTabWidget(QWidget):
         self.save_button.setEnabled(True)
 
     def on_task_renamed(self, new_name):
-        """
-        Handles the UI updates when a task is renamed.
-        """
+        """Handle updates when a task is renamed."""
+        old_name = self.task_name
         self.task_name = new_name
+        self.task_config_widget.task_name = new_name
         self.json_editor_widget.task_name = new_name
-        # The DetailAreaWidget will handle the tab title change via a signal
+        self.output_widget.task_name = new_name
+
+        should_reload = (self._last_loaded_task_name is not None
+                         and self._last_loaded_task_name != new_name
+                         and not self.save_button.isEnabled())
+
+        if should_reload:
+            self.load_config()
+        else:
+            self._last_loaded_task_name = new_name
+
+        if old_name != new_name and self.save_button.isEnabled():
+            logger.info("Task '%s' renamed to '%s' with unsaved changes kept.",
+                        old_name, new_name)
 
     def import_config(self):
         file_path, _unused = QFileDialog.getOpenFileName(
