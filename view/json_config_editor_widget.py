@@ -4,7 +4,6 @@ import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QMessageBox, QPlainTextEdit)
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
-from utils.signals import global_signals
 from utils.theme import theme_manager
 
 logger = logging.getLogger(__name__)
@@ -88,7 +87,7 @@ class JsonSyntaxHighlighter(QSyntaxHighlighter):
                 index = expression.indexIn(text, index + length)
         self.setCurrentBlockState(0)
 
-    def on_theme_changed(self):
+    def on_theme_changed(self, _stylesheet):
         self.load_theme_colors()
         self.rehighlight()
 
@@ -106,7 +105,7 @@ class JsonConfigEditorWidget(QWidget):
 
         self.init_ui()
         self.load_config()
-        global_signals.theme_changed.connect(self.on_theme_changed)
+        theme_manager.theme_changed.connect(self.on_theme_changed)
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -187,13 +186,6 @@ class JsonConfigEditorWidget(QWidget):
                 f"Invalid JSON format for task '{self.task_name}': {e}")
             return None  # Return None to indicate failure
 
-    def on_theme_changed(self):
+    def on_theme_changed(self, stylesheet):
         self.update_editor_style()
-        self.highlighter.on_theme_changed()
-
-    def __del__(self):
-        # Disconnect signal to prevent issues during shutdown
-        try:
-            global_signals.theme_changed.disconnect(self.on_theme_changed)
-        except TypeError:
-            pass  # Signal already disconnected
+        self.highlighter.on_theme_changed(stylesheet)
