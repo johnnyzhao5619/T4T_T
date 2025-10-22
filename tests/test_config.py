@@ -200,6 +200,20 @@ def test_lowercase_sections_are_read(tmp_path):
     assert manager.get('MQTT', 'host') == 'mqtt.local'
 
 
+def test_set_invalidates_cached_properties(tmp_path):
+    config_dir = tmp_path / "config"
+    manager = ConfigManager(config_dir=str(config_dir))
+
+    # 预热缓存，随后更新值应立即反映出来。
+    assert manager.message_bus['type'] == 'MQTT'
+    manager.set('MessageBus', 'type', 'Kafka')
+    assert manager.message_bus['type'] == 'Kafka'
+
+    assert manager.mqtt['host'] == 'localhost'
+    manager.set('MQTT', 'host', 'mqtt.example.com')
+    assert manager.mqtt['host'] == 'mqtt.example.com'
+
+
 def test_load_yaml_empty_file_returns_empty_dict(tmp_path, caplog):
     empty_yaml = tmp_path / "empty.yaml"
     empty_yaml.write_text("", encoding='utf-8')

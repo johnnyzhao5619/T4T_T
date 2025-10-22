@@ -246,8 +246,16 @@ class ConfigManager:
             if not self.config.has_section(resolved_section):
                 self.config.add_section(resolved_section)
         self.config.set(resolved_section, key, value)
-        self._section_map[self._canonical_section_key(resolved_section)] = (
-            resolved_section)
+        # 配置被修改后需要使缓存失效，保证后续读取得到最新值。
+        logger.debug(
+            "Updating configuration for section '%s' key '%s'; invalidating cached sections.",
+            resolved_section,
+            key,
+        )
+        self._refresh_section_map()
+        self._message_bus_config = None
+        self._mqtt_config = None
+        self._kafka_config = None
         self.save_config()
 
     def save_config(self) -> None:
