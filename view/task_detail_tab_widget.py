@@ -107,6 +107,8 @@ class TaskDetailTabWidget(QWidget):
             # Determine active editor and get config data
             if self.config_tabs.currentWidget() == self.json_editor_widget:
                 config_data = self.json_editor_widget.get_config()
+                if config_data is None:
+                    return
             else:
                 if not self.task_config_widget.validate_config():
                     errors = self.task_config_widget.get_errors()
@@ -151,6 +153,8 @@ class TaskDetailTabWidget(QWidget):
                 self.json_editor_widget.set_config(config_data)
             else:
                 config_data = self.json_editor_widget.get_config()
+                if config_data is None:
+                    return
                 self.task_config_widget.set_config(config_data)
         except Exception as e:
             logger.warning(
