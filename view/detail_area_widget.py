@@ -43,9 +43,10 @@ class DetailAreaWidget(QTabWidget):
     closable tab interface, with left-aligned tabs.
     """
 
-    def __init__(self, task_manager: TaskManager, parent=None):
+    def __init__(self, task_manager: TaskManager, config_manager, parent=None):
         super().__init__(parent)
         self.task_manager = task_manager
+        self.config_manager = config_manager
         self.open_tabs = {}
 
         self.setTabsClosable(True)
@@ -72,7 +73,8 @@ class DetailAreaWidget(QTabWidget):
         self.open_widget_as_tab(widget_id="settings_tab",
                                 widget_class=SettingsWidget,
                                 title=_("settings_action"),
-                                icon_name='fa5s.cog')
+                                icon_name='fa5s.cog',
+                                constructor_args=[self.config_manager])
 
     def open_log_viewer_tab(self):
         self.open_widget_as_tab(widget_id="log_viewer_tab",

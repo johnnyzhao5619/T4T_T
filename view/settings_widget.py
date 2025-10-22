@@ -17,9 +17,9 @@ class SettingsWidget(QWidget):
     in a tab.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent=None):
         super().__init__(parent)
-        self.config_manager = ConfigManager()
+        self.config_manager = config_manager
         self.init_ui()
         self.populate_and_connect()
         # Set an object name for styling
