@@ -8,7 +8,7 @@ from core.module_manager import ModuleManager
 from view.main_window import T4TMainWindow
 from utils.config import ConfigManager
 from utils.theme import switch_theme
-from utils.i18n import switch_language
+from utils.i18n import switch_language, set_language_dir
 from utils.logger import LoggerManager, setup_exception_hook, get_logger
 
 
@@ -36,12 +36,14 @@ def main():
     CONFIG_DIR = os.path.join(script_dir, 'config')
     MODULES_DIR = os.path.join(script_dir, 'modules')
     TASKS_DIR = os.path.join(script_dir, 'tasks')
+    LANGUAGE_DIR = os.path.join(script_dir, 'i18n')
 
     # Initialize core components
     config_manager = ConfigManager(config_dir=CONFIG_DIR)
 
     module_manager = ModuleManager()
     module_manager.set_module_path(MODULES_DIR)
+    set_language_dir(LANGUAGE_DIR)
 
     scheduler = SchedulerManager()
     task_manager = TaskManager(scheduler_manager=scheduler,
