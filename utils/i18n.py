@@ -14,9 +14,16 @@ class LanguageManager(QObject):
 
     def __init__(self, language_dir='i18n'):
         super().__init__()
-        self.language_dir = language_dir
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self._project_root = os.path.dirname(script_dir)
+        self.set_language_dir(language_dir)
         self.translations = {}
         self.current_language = 'en'  # Default language
+
+    def set_language_dir(self, language_dir: str):
+        if not os.path.isabs(language_dir):
+            language_dir = os.path.join(self._project_root, language_dir)
+        self.language_dir = language_dir
 
     def get_available_languages(self):
         """
@@ -95,6 +102,11 @@ def switch_language(language_code):
     Global function to switch the application language.
     """
     language_manager.load_language(language_code)
+
+
+def set_language_dir(language_dir: str):
+    """Global function to update the language directory."""
+    language_manager.set_language_dir(language_dir)
 
 
 def translate_service_state(state) -> str:
