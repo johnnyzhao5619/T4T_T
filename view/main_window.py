@@ -132,7 +132,8 @@ class DevGuideWidget(QWidget):
 class T4TMainWindow(QMainWindow):
     """Main window for the T4T Task Management Platform."""
 
-    def __init__(self, scheduler, task_manager, module_manager):
+    def __init__(self, scheduler, task_manager, module_manager,
+                 config_manager):
         super().__init__()
         self.setGeometry(100, 100, 1280, 720)
         self.setMinimumSize(1280, 720)
@@ -141,6 +142,7 @@ class T4TMainWindow(QMainWindow):
         self.scheduler = scheduler
         self.task_manager = task_manager
         self.module_manager = module_manager
+        self.config_manager = config_manager
         self._mqtt_stats_slot_connected = False
 
         # Setup UI
@@ -278,7 +280,8 @@ class T4TMainWindow(QMainWindow):
             self.on_task_selection_changed)
 
         # Right panel: Task Details (Tabbed view)
-        self.detail_area_widget = DetailAreaWidget(self.task_manager)
+        self.detail_area_widget = DetailAreaWidget(self.task_manager,
+                                                   self.config_manager)
         splitter.addWidget(self.detail_area_widget)
 
         # Set minimum widths for the panels

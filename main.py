@@ -62,7 +62,8 @@ def main():
 
     # Initialize main window
     # The window no longer needs theme_data and lang_data in its constructor
-    window = T4TMainWindow(scheduler, task_manager, module_manager)
+    window = T4TMainWindow(scheduler, task_manager, module_manager,
+                           config_manager)
 
     # The theme and language are now managed globally.
     # The main window and its children will connect to the managers' signals
