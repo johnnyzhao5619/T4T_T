@@ -16,9 +16,15 @@ class EmbeddedMQTTBroker(ServiceInterface):
     An implementation of ServiceInterface that runs an embedded AMQTT broker.
     """
 
-    def __init__(self):
+    def __init__(self,
+                 config_manager: ConfigManager | None = None,
+                 config_dir: str | None = None):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._config_manager = ConfigManager()
+        if config_manager:
+            self._config_manager = config_manager
+        else:
+            self._config_manager = ConfigManager(config_dir=config_dir
+                                                 or 'config')
         self._broker: Broker | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._stats_thread: threading.Thread | None = None

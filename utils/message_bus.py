@@ -263,19 +263,51 @@ class MessageBusManager:
     service (e.g., an embedded MQTT broker) is running.
     """
 
-    def __init__(self):
-        self._config_manager = ConfigManager()
+    def __init__(self,
+                 config_manager: ConfigManager | None = None,
+                 config_dir: str | None = None):
+        self._config_manager: ConfigManager | None = None
         self._logger = logging.getLogger(self.__class__.__name__)
         self._bus: MessageBusInterface | None = None
         self._subscriptions: Dict[str, Callable] = {}
         self._service_manager = service_manager
         self._active_service_type = 'mqtt'
+        self._set_config_manager(config_manager=config_manager,
+                                 config_dir=config_dir)
+        self._initialize_bus()
+
+    def _set_config_manager(self,
+                            config_manager: ConfigManager | None = None,
+                            config_dir: str | None = None) -> None:
+        """Resolves and assigns the ConfigManager instance."""
+        if config_manager:
+            self._config_manager = config_manager
+            return
+
+        if config_dir:
+            self._config_manager = ConfigManager(config_dir=config_dir)
+            return
+
+        if self._config_manager is None:
+            self._config_manager = ConfigManager()
+
+    def configure(self,
+                  *,
+                  config_manager: ConfigManager | None = None,
+                  config_dir: str | None = None) -> None:
+        """Updates the configuration source and rebuilds the bus instance."""
+        self._set_config_manager(config_manager=config_manager,
+                                 config_dir=config_dir)
         self._initialize_bus()
 
     def _initialize_bus(self):
         """Initializes the MQTT bus client."""
         if self._bus:
             self._bus.disconnect()
+
+        if self._config_manager is None:
+            raise RuntimeError("ConfigManager must be set before initializing the"
+                               " message bus.")
 
         config = self._config_manager.mqtt
         self._bus = MqttBus(config=config,
