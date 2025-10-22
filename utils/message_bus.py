@@ -3,7 +3,6 @@ import enum
 import json
 import logging
 import threading
-import time
 from typing import Any, Callable, Dict, List
 
 import paho.mqtt.client as mqtt
@@ -136,16 +135,17 @@ class MqttBus(MessageBusInterface):
 
     def disconnect(self) -> None:
         self.logger.info("Disconnecting from MQTT broker...")
-        self._stop_reconnect.set()
-        if self._reconnect_thread and self._reconnect_thread.is_alive():
-            self._reconnect_thread.join(timeout=2)  # Add timeout
+        self._stop_reconnect_loop()
 
         # Check if the client is actually connected before disconnecting
         if self._client and self._state == BusConnectionState.CONNECTED:
             self._client.disconnect()
 
-        if self._client and self._client.is_connected():
-            self._client.loop_stop()
+        if self._client:
+            try:
+                self._client.loop_stop()
+            except Exception as exc:
+                self.logger.warning("Failed to stop MQTT network loop: %s", exc)
 
         # Always ensure the state is set to DISCONNECTED
         self._set_state(BusConnectionState.DISCONNECTED)
@@ -222,7 +222,7 @@ class MqttBus(MessageBusInterface):
             self._set_state(BusConnectionState.CONNECTED)
             # Reset reconnect delay on successful connection
             self._reconnect_delay = 1
-            self._stop_reconnect.set()  # Stop any running reconnect loop
+            self._stop_reconnect_loop(wait=False)
             # Resubscribe to all topics
             for topic in self._subscriptions:
                 self.logger.info(f"Resubscribing to {topic}")
@@ -273,25 +273,45 @@ class MqttBus(MessageBusInterface):
                                                   daemon=True)
         self._reconnect_thread.start()
 
-    def _reconnect_loop(self):
-        while not self._stop_reconnect.is_set():
-            try:
-                self.logger.info(
-                    f"Attempting to reconnect in {self._reconnect_delay} "
-                    f"seconds...")
-                time.sleep(self._reconnect_delay)
+    def _stop_reconnect_loop(self, wait: bool = True):
+        self._stop_reconnect.set()
+        thread = self._reconnect_thread
+        if not thread:
+            return
 
-                # Use blocking connect in the reconnect loop
-                self._client.reconnect()
-                # If reconnect() is successful, on_connect will be called
-                # and will stop the loop.
-                break
-            except (OSError, ConnectionRefusedError) as e:
-                self.logger.warning(f"Reconnect attempt failed: {e}")
-                max_delay = self._config.get('reconnect_interval_max_seconds',
-                                             60)
-                self._reconnect_delay = min(self._reconnect_delay * 2,
-                                            max_delay)
+        if wait and thread is not threading.current_thread():
+            thread.join(timeout=2)
+            if thread.is_alive():
+                self.logger.warning(
+                    "MQTT reconnect thread did not terminate within timeout.")
+
+        if not thread.is_alive():
+            self._reconnect_thread = None
+
+    def _reconnect_loop(self):
+        try:
+            while not self._stop_reconnect.is_set():
+                try:
+                    self.logger.info(
+                        f"Attempting to reconnect in {self._reconnect_delay} "
+                        f"seconds...")
+                    if self._stop_reconnect.wait(self._reconnect_delay):
+                        break
+
+                    # Use blocking connect in the reconnect loop
+                    self._client.reconnect()
+                    # If reconnect() is successful, on_connect will be called
+                    # and will stop the loop.
+                    break
+                except (OSError, ConnectionRefusedError) as e:
+                    self.logger.warning(f"Reconnect attempt failed: {e}")
+                    max_delay = self._config.get('reconnect_interval_max_seconds',
+                                                 60)
+                    self._reconnect_delay = min(self._reconnect_delay * 2,
+                                                max_delay)
+        finally:
+            if self._reconnect_thread is threading.current_thread():
+                self._reconnect_thread = None
 
 
 class MessageBusManager:
