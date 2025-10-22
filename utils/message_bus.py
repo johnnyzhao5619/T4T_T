@@ -4,7 +4,7 @@ import json
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 import paho.mqtt.client as mqtt
 
@@ -62,7 +62,9 @@ class MessageBusInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def unsubscribe(self, topic: str) -> None:
+    def unsubscribe(self, topic: str,
+                    callback: Callable[[Dict[str, Any]], None] | None = None
+                    ) -> None:
         """Unsubscribe from a topic."""
         pass
 
@@ -83,7 +85,7 @@ class MqttBus(MessageBusInterface):
         self._client: mqtt.Client | None = None
         self._on_state_change_callback = on_state_change
         self._state = BusConnectionState.DISCONNECTED
-        self._subscriptions: Dict[str, Callable[[Dict[str, Any]], None]] = {}
+        self._subscriptions: Dict[str, List[Callable[[Dict[str, Any]], None]]] = {}
         self._reconnect_delay = 1
         self._reconnect_thread: threading.Thread | None = None
         self._stop_reconnect = threading.Event()
@@ -167,18 +169,47 @@ class MqttBus(MessageBusInterface):
             self.logger.error(
                 f"Failed to serialize payload for topic '{topic}': {e}")
 
-    def subscribe(self, topic: str, callback: Callable[[Dict[str, Any]],
-                                                       None]) -> None:
+    def subscribe(self, topic: str,
+                  callback: Callable[[Dict[str, Any]], None]) -> None:
         self.logger.info(f"Subscribing to topic: {topic}")
-        self._subscriptions[topic] = callback
-        if self._state == BusConnectionState.CONNECTED:
-            self._client.subscribe(topic)
+        callbacks = self._subscriptions.setdefault(topic, [])
+        if callback in callbacks:
+            return
 
-    def unsubscribe(self, topic: str) -> None:
+        callbacks.append(callback)
+        if self._state == BusConnectionState.CONNECTED and len(callbacks) == 1:
+            try:
+                self._client.subscribe(topic)
+            except Exception as exc:
+                self.logger.error(
+                    f"Failed to subscribe to topic '{topic}': {exc}")
+
+    def unsubscribe(self, topic: str,
+                    callback: Callable[[Dict[str, Any]], None] | None = None
+                    ) -> None:
         self.logger.info(f"Unsubscribing from topic: {topic}")
-        if topic in self._subscriptions:
+        callbacks = self._subscriptions.get(topic)
+        if not callbacks:
+            return
+
+        removed_all = False
+
+        if callback is None:
+            removed_all = True
             self._subscriptions.pop(topic, None)
-        if self._client and self._state == BusConnectionState.CONNECTED:
+        else:
+            try:
+                callbacks.remove(callback)
+            except ValueError:
+                self.logger.debug(
+                    "Callback not found for topic '%s' during unsubscribe.",
+                    topic)
+            else:
+                if not callbacks:
+                    removed_all = True
+                    self._subscriptions.pop(topic, None)
+
+        if removed_all and self._client and self._state == BusConnectionState.CONNECTED:
             try:
                 self._client.unsubscribe(topic)
             except Exception as exc:
@@ -212,8 +243,16 @@ class MqttBus(MessageBusInterface):
             payload_str = msg.payload.decode('utf-8')
             global_signals.message_received.emit(msg.topic, payload_str)
             payload = json.loads(payload_str)
-            if msg.topic in self._subscriptions:
-                self._subscriptions[msg.topic](payload)
+            callbacks = self._subscriptions.get(msg.topic)
+            if callbacks:
+                for callback in list(callbacks):
+                    try:
+                        callback(payload)
+                    except Exception as exc:
+                        self.logger.error(
+                            "Error in callback for topic '%s': %s",
+                            msg.topic,
+                            exc)
             else:
                 self.logger.warning(
                     f"Received message on unsubscribed topic: {msg.topic}")
@@ -269,7 +308,7 @@ class MessageBusManager:
         self._config_manager: ConfigManager | None = None
         self._logger = logging.getLogger(self.__class__.__name__)
         self._bus: MessageBusInterface | None = None
-        self._subscriptions: Dict[str, Callable] = {}
+        self._subscriptions: Dict[str, List[Callable]] = {}
         self._service_manager = service_manager
         self._active_service_type = 'mqtt'
         self._set_config_manager(config_manager=config_manager,
@@ -315,8 +354,9 @@ class MessageBusManager:
                             on_state_change=self._handle_state_change)
 
         # Re-apply all existing subscriptions to the new bus instance
-        for topic, callback in self._subscriptions.items():
-            self._bus.subscribe(topic, callback)
+        for topic, callbacks in self._subscriptions.items():
+            for callback in callbacks:
+                self._bus.subscribe(topic, callback)
 
     def get_active_service_type(self) -> str:
         """Returns the type of the currently active service."""
@@ -383,16 +423,39 @@ class MessageBusManager:
         Subscribes to a topic through the bus and stores the subscription
         to re-apply it if the bus service is switched.
         """
-        self._subscriptions[topic] = callback
-        if self._bus:
-            self._bus.subscribe(topic, callback)
+        callbacks = self._subscriptions.setdefault(topic, [])
+        if callback not in callbacks:
+            callbacks.append(callback)
+            if self._bus:
+                self._bus.subscribe(topic, callback)
 
-    def unsubscribe(self, topic: str):
+    def unsubscribe(self, topic: str, callback: Callable | None = None):
         """Unsubscribes from a topic and removes internal bookkeeping."""
-        if topic in self._subscriptions:
+        callbacks = self._subscriptions.get(topic)
+        if not callbacks:
+            if self._bus:
+                if callback is None:
+                    self._bus.unsubscribe(topic)
+                else:
+                    self._bus.unsubscribe(topic, callback)
+            return
+
+        if callback is None:
             self._subscriptions.pop(topic, None)
-        if self._bus:
-            self._bus.unsubscribe(topic)
+            if self._bus:
+                self._bus.unsubscribe(topic)
+            return
+
+        removed_callback = False
+        if callback in callbacks:
+            callbacks.remove(callback)
+            removed_callback = True
+            if self._bus:
+                self._bus.unsubscribe(topic, callback)
+        if not callbacks:
+            self._subscriptions.pop(topic, None)
+            if self._bus and not removed_callback:
+                self._bus.unsubscribe(topic)
 
     def switch_service(self, service_type: str):
         """

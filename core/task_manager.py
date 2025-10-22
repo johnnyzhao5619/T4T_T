@@ -198,10 +198,16 @@ class TaskManager:
         self.tasks[task_name]['event_wrapper'] = callback
 
     def _unsubscribe_event_task(self, task_name: str, emit_status: bool = True):
-        topic = self._event_task_topics.pop(task_name, None)
-        if topic:
-            message_bus_manager.unsubscribe(topic)
         task_info = self.tasks.get(task_name)
+        topic = self._event_task_topics.pop(task_name, None)
+        wrapper = task_info.get('event_wrapper') if task_info else None
+
+        if topic:
+            if wrapper:
+                message_bus_manager.unsubscribe(topic, wrapper)
+            else:
+                message_bus_manager.unsubscribe(topic)
+
         if not task_info:
             return
         task_info.pop('event_wrapper', None)
@@ -562,7 +568,11 @@ class TaskManager:
             event_topic = None
             if old_name in self._event_task_topics:
                 event_topic = self._event_task_topics.pop(old_name)
-                message_bus_manager.unsubscribe(event_topic)
+                wrapper = task_data.get('event_wrapper')
+                if wrapper:
+                    message_bus_manager.unsubscribe(event_topic, wrapper)
+                else:
+                    message_bus_manager.unsubscribe(event_topic)
                 task_data.pop('event_wrapper', None)
 
             self.tasks[new_name] = task_data
