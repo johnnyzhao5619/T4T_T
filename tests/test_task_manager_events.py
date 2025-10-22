@@ -58,22 +58,36 @@ class DummySignals:
 
 class FakeBusManager:
     def __init__(self):
-        self.subscriptions: dict[str, Callable[[dict], None]] = {}
-        self.subscribe_calls: list[str] = []
-        self.unsubscribe_calls: list[str] = []
+        self.subscriptions: dict[str, list[Callable[[dict], None]]] = {}
+        self.subscribe_calls: list[tuple[str, Callable[[dict], None]]] = []
+        self.unsubscribe_calls: list[tuple[str, Callable[[dict], None] | None]] = []
 
-    def subscribe(self, topic: str, callback):
-        self.subscriptions[topic] = callback
-        self.subscribe_calls.append(topic)
+    def subscribe(self, topic: str, callback: Callable[[dict], None]):
+        callbacks = self.subscriptions.setdefault(topic, [])
+        if callback not in callbacks:
+            callbacks.append(callback)
+            self.subscribe_calls.append((topic, callback))
 
-    def unsubscribe(self, topic: str):
-        if topic in self.subscriptions:
+    def unsubscribe(self, topic: str, callback: Callable[[dict], None] | None = None):
+        callbacks = self.subscriptions.get(topic)
+        if not callbacks:
+            self.unsubscribe_calls.append((topic, callback))
+            return
+
+        if callback is None:
             self.subscriptions.pop(topic, None)
-        self.unsubscribe_calls.append(topic)
+            self.unsubscribe_calls.append((topic, None))
+            return
+
+        if callback in callbacks:
+            callbacks.remove(callback)
+            self.unsubscribe_calls.append((topic, callback))
+            if not callbacks:
+                self.subscriptions.pop(topic, None)
 
     def publish(self, topic: str, payload: dict):
-        callback = self.subscriptions.get(topic)
-        if callback:
+        callbacks = self.subscriptions.get(topic, [])
+        for callback in list(callbacks):
             callback(payload)
 
 
@@ -198,6 +212,40 @@ def test_start_all_tasks_does_not_duplicate_event_subscription(prepared_manager,
     manager.start_all_tasks()
 
     assert fake_bus.subscribe_calls == subscribe_calls_before
+
+
+def test_multiple_event_tasks_share_topic(prepared_manager, monkeypatch):
+    manager, fake_bus, _ = prepared_manager
+
+    tasks_dir = Path(manager.tasks['EventTask']['path']).parent
+    _create_event_task(tasks_dir, name="SecondTask", topic="test/topic")
+
+    manager.load_tasks()
+
+    calls: list[str] = []
+
+    def fake_execute(self, task_name, inputs):
+        calls.append(task_name)
+
+    monkeypatch.setattr(TaskManager, "_execute_task_logic", fake_execute)
+
+    fake_bus.publish("test/topic", {"trigger": "initial"})
+    assert set(calls) == {"EventTask", "SecondTask"}
+
+    updated_config = manager.get_task_config("EventTask")
+    updated_config["enabled"] = False
+    success, _ = manager.save_task_config("EventTask", updated_config)
+    assert success
+
+    calls.clear()
+    fake_bus.publish("test/topic", {"trigger": "after-disable"})
+    assert calls == ["SecondTask"]
+
+    second_config = manager.get_task_config("SecondTask")
+    second_config["enabled"] = False
+    success, _ = manager.save_task_config("SecondTask", second_config)
+    assert success
+    assert "test/topic" not in fake_bus.subscriptions
 
 
 def test_stop_all_tasks_unsubscribes_event_tasks(prepared_manager, monkeypatch):
