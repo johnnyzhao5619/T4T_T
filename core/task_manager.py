@@ -50,6 +50,7 @@ class TaskManager:
         self.state_manager = StateManager()
         self.apscheduler = BackgroundScheduler()
         self.tasks = {}
+        self._event_task_topics: dict[str, str] = {}
 
         try:
             self.apscheduler.start()
@@ -66,7 +67,12 @@ class TaskManager:
         Load all task instances from the tasks directory.
         Each task is expected to have a subfolder with main.py and config.yaml.
         """
+        # Ensure existing event subscriptions are cleaned up before reloading
+        for existing_task in list(self._event_task_topics.keys()):
+            self._unsubscribe_event_task(existing_task, emit_status=False)
+
         self.tasks.clear()
+        self._event_task_topics.clear()
         if not os.path.exists(self.tasks_dir):
             os.makedirs(self.tasks_dir)
             logger.info(f"Tasks directory created at '{self.tasks_dir}'")
@@ -179,6 +185,60 @@ class TaskManager:
 
         return trigger_type, trigger_params
 
+    def _get_event_topic(self, config: dict) -> tuple[bool, str | None]:
+        """Returns whether the task is an active event task and its topic."""
+        trigger_type, trigger_params = self._parse_trigger(config)
+        topic = trigger_params.get('topic') if trigger_type == 'event' else None
+        is_enabled = bool(config.get('enabled') and topic)
+        return is_enabled, topic
+
+    def _register_event_subscription(self, task_name: str, topic: str,
+                                     callback: Callable[[dict], None]):
+        self._event_task_topics[task_name] = topic
+        self.tasks[task_name]['event_wrapper'] = callback
+
+    def _unsubscribe_event_task(self, task_name: str, emit_status: bool = True):
+        topic = self._event_task_topics.pop(task_name, None)
+        if topic:
+            message_bus_manager.unsubscribe(topic)
+        task_info = self.tasks.get(task_name)
+        if not task_info:
+            return
+        task_info.pop('event_wrapper', None)
+        task_info['status'] = 'stopped'
+        if emit_status:
+            global_signals.task_status_changed.emit(task_name, 'stopped')
+
+    def _subscribe_event_task(self, task_name: str, topic: str,
+                              emit_status: bool = True):
+        wrapper_func = self._create_event_wrapper(task_name)
+        self._register_event_subscription(task_name, topic, wrapper_func)
+        message_bus_manager.subscribe(topic, wrapper_func)
+        self.tasks[task_name]['status'] = 'listening'
+        if emit_status:
+            global_signals.task_status_changed.emit(task_name, 'listening')
+
+    def _update_event_subscription(self, task_name: str, enabled: bool,
+                                   topic: str | None,
+                                   emit_status: bool = True):
+        existing_topic = self._event_task_topics.get(task_name)
+
+        if not enabled or not topic:
+            if existing_topic:
+                self._unsubscribe_event_task(task_name, emit_status=emit_status)
+            return
+
+        if existing_topic == topic and 'event_wrapper' in self.tasks[task_name]:
+            self.tasks[task_name]['status'] = 'listening'
+            if emit_status:
+                global_signals.task_status_changed.emit(task_name, 'listening')
+            return
+
+        if existing_topic:
+            self._unsubscribe_event_task(task_name, emit_status=emit_status)
+
+        self._subscribe_event_task(task_name, topic, emit_status=emit_status)
+
     def _initialize_tasks(self):
         """
         Initializes loaded tasks, scheduling them or subscribing to events
@@ -203,12 +263,9 @@ class TaskManager:
                     logger.error(msg, task_name)
                     continue
 
-                wrapper_func = self._create_event_wrapper(task_name)
-                message_bus_manager.subscribe(topic, wrapper_func)
-                self.tasks[task_name]['status'] = 'listening'
+                self._subscribe_event_task(task_name, topic)
                 logger.info(
                     f"Task '{task_name}' is now listening on topic: '{topic}'")
-                global_signals.task_status_changed.emit(task_name, 'listening')
             else:
                 logger.warning(
                     f"Task '{task_name}' has an unknown trigger type: "
@@ -223,8 +280,17 @@ class TaskManager:
         def wrapper(payload: dict):
             logger.info(
                 f"Event received for task '{task_name}', processing...")
-            task_info = self.tasks[task_name]
-            config = task_info['config_data']
+            task_info = self.tasks.get(task_name)
+            if not task_info:
+                logger.warning(
+                    f"Event received for removed task '{task_name}', ignoring.")
+                return
+
+            config = task_info.get('config_data', {})
+            if not config.get('enabled', False):
+                logger.info(
+                    f"Task '{task_name}' is disabled, ignoring incoming event.")
+                return
 
             # 1. Cycle detection
             hops = payload.get('__hops', 0)
@@ -449,6 +515,7 @@ class TaskManager:
 
         try:
             task_path = self.tasks[task_name]['path']
+            self._unsubscribe_event_task(task_name)
             shutil.rmtree(task_path)
             del self.tasks[task_name]
             logger.info(f"Task {task_name} deleted.")
@@ -491,7 +558,20 @@ class TaskManager:
             task_data['path'] = new_path
             task_data['config'] = os.path.join(new_path, "config.yaml")
             task_data['script'] = os.path.join(new_path, "main.py")
+
+            event_topic = None
+            if old_name in self._event_task_topics:
+                event_topic = self._event_task_topics.pop(old_name)
+                message_bus_manager.unsubscribe(event_topic)
+                task_data.pop('event_wrapper', None)
+
             self.tasks[new_name] = task_data
+
+            if event_topic:
+                enabled, topic = self._get_event_topic(task_data.get(
+                    'config_data', {}))
+                if enabled and topic:
+                    self._subscribe_event_task(new_name, topic)
 
             logger.info(
                 f"Task '{old_name}' successfully renamed to '{new_name}'.")
@@ -571,6 +651,7 @@ class TaskManager:
         if new_name and new_name != task_name:
             if self.rename_task(task_name, new_name):
                 final_task_name = new_name
+                task_name = new_name
             else:
                 # If renaming fails, abort the save.
                 return False, task_name
@@ -582,6 +663,9 @@ class TaskManager:
 
             # Update the in-memory cache
             self.tasks[final_task_name]['config_data'] = config_data
+
+            enabled, topic = self._get_event_topic(config_data)
+            self._update_event_subscription(final_task_name, enabled, topic)
 
             # Update logger level if debug setting changed
             task_logger = self.tasks[final_task_name].get('logger')
@@ -744,6 +828,15 @@ class TaskManager:
             return False
 
         try:
+            task_info = self.tasks[task_name]
+            trigger_type, _ = self._parse_trigger(
+                task_info.get('config_data', {}))
+            if trigger_type == 'event':
+                self._unsubscribe_event_task(task_name, emit_status=False)
+                task_info['status'] = 'stopped'
+                global_signals.task_status_changed.emit(task_name, 'stopped')
+                return True
+
             job = self.apscheduler.get_job(task_name)
             if job:
                 self.apscheduler.remove_job(task_name)
