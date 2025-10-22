@@ -520,8 +520,28 @@ class TaskManager:
             return False
 
         try:
-            task_path = self.tasks[task_name]['path']
-            self._unsubscribe_event_task(task_name)
+            task_info = self.tasks[task_name]
+            task_path = task_info['path']
+            config_data = task_info.get('config_data', {})
+
+            job = self.apscheduler.get_job(task_name)
+            if job:
+                try:
+                    self.apscheduler.remove_job(task_name)
+                    logger.info(
+                        f"Task '{task_name}' removed from scheduler before deletion.")
+                except Exception as exc:
+                    logger.error(
+                        f"Failed to remove scheduled job for task '{task_name}': {exc}")
+
+            task_info['status'] = 'stopped'
+
+            trigger_type, _ = self._parse_trigger(config_data)
+            if trigger_type == 'event':
+                self._unsubscribe_event_task(task_name)
+            else:
+                global_signals.task_status_changed.emit(task_name, 'stopped')
+
             shutil.rmtree(task_path)
             del self.tasks[task_name]
             logger.info(f"Task {task_name} deleted.")

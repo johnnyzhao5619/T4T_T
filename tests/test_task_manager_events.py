@@ -1,8 +1,9 @@
 import os
 import sys
+import time
 import types
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple
 
 import pytest
 
@@ -91,11 +92,22 @@ class FakeBusManager:
             callback(payload)
 
 
-def _create_event_task(tasks_dir: Path, name: str = "EventTask",
-                       topic: str = "test/topic", enabled: bool = True):
-    task_dir = tasks_dir / name
+def _write_task_files(task_dir: Path, config: dict) -> None:
     task_dir.mkdir()
 
+    script_content = "def run(context, inputs):\n    return inputs\n"
+
+    import yaml
+
+    with open(task_dir / "config.yaml", "w", encoding="utf-8") as f:
+        yaml.safe_dump(config, f)
+
+    with open(task_dir / "main.py", "w", encoding="utf-8") as f:
+        f.write(script_content)
+
+
+def _create_event_task(tasks_dir: Path, name: str = "EventTask",
+                       topic: str = "test/topic", enabled: bool = True):
     config = {
         "name": name,
         "module_type": "test",
@@ -106,23 +118,25 @@ def _create_event_task(tasks_dir: Path, name: str = "EventTask",
         }
     }
 
-    script_content = "def run(context, inputs):\n    return inputs\n"
-
-    import yaml
-    with open(task_dir / "config.yaml", "w", encoding="utf-8") as f:
-        yaml.safe_dump(config, f)
-
-    with open(task_dir / "main.py", "w", encoding="utf-8") as f:
-        f.write(script_content)
+    _write_task_files(tasks_dir / name, config)
 
 
-@pytest.fixture()
-def prepared_manager(tmp_path, monkeypatch):
-    tasks_dir = tmp_path / "tasks"
-    tasks_dir.mkdir()
+def _create_interval_task(tasks_dir: Path, name: str = "ScheduledTask",
+                          seconds: int = 1, enabled: bool = True):
+    config = {
+        "name": name,
+        "module_type": "test",
+        "enabled": enabled,
+        "trigger": {
+            "type": "interval",
+            "seconds": seconds
+        }
+    }
 
-    _create_event_task(tasks_dir)
+    _write_task_files(tasks_dir / name, config)
 
+
+def _create_manager(monkeypatch, tasks_dir: Path) -> Tuple[TaskManager, FakeBusManager, DummySignals]:
     fake_bus = FakeBusManager()
     dummy_signals = DummySignals()
     monkeypatch.setattr("core.task_manager.message_bus_manager", fake_bus)
@@ -132,7 +146,40 @@ def prepared_manager(tmp_path, monkeypatch):
     manager = TaskManager(scheduler_manager=scheduler,
                           tasks_dir=str(tasks_dir))
 
+    return manager, fake_bus, dummy_signals
+
+
+@pytest.fixture()
+def prepared_manager(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    _create_event_task(tasks_dir)
+
+    manager, fake_bus, dummy_signals = _create_manager(monkeypatch, tasks_dir)
+
     yield manager, fake_bus, dummy_signals
+
+    manager.shutdown()
+
+
+@pytest.fixture()
+def scheduled_manager(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    execution_calls: list[str] = []
+
+    def fake_execute(self, task_name, inputs):
+        execution_calls.append(task_name)
+
+    monkeypatch.setattr(TaskManager, "_execute_task_logic", fake_execute)
+
+    _create_interval_task(tasks_dir)
+
+    manager, fake_bus, dummy_signals = _create_manager(monkeypatch, tasks_dir)
+
+    yield manager, execution_calls, dummy_signals
 
     manager.shutdown()
 
@@ -178,6 +225,28 @@ def test_event_task_removed_after_delete(prepared_manager, monkeypatch):
 
     fake_bus.publish("test/topic", {"after": "delete"})
     assert not calls
+
+
+def test_scheduled_task_deleted_removes_job_and_stops_triggers(
+        scheduled_manager):
+    manager, execution_calls, dummy_signals = scheduled_manager
+
+    job = manager.apscheduler.get_job("ScheduledTask")
+    assert job is not None
+
+    call_count_before = len(execution_calls)
+
+    assert manager.delete_task("ScheduledTask")
+
+    assert manager.apscheduler.get_job("ScheduledTask") is None
+    assert "ScheduledTask" not in manager.tasks
+
+    time.sleep(1.5)
+
+    assert len(execution_calls) == call_count_before
+    assert dummy_signals.task_status_changed.emitted
+    assert dummy_signals.task_status_changed.emitted[-1][0] == (
+        "ScheduledTask", "stopped")
 
 
 def test_event_task_renamed_updates_subscription(prepared_manager, monkeypatch):
