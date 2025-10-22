@@ -103,12 +103,12 @@ class TaskDetailTabWidget(QWidget):
         self.task_config_widget.mark_as_saved()
 
     def save_config(self):
+        config_data = None
+
         try:
             # Determine active editor and get config data
             if self.config_tabs.currentWidget() == self.json_editor_widget:
                 config_data = self.json_editor_widget.get_config()
-                if config_data is None:
-                    return
             else:
                 if not self.task_config_widget.validate_config():
                     errors = self.task_config_widget.get_errors()
@@ -119,7 +119,17 @@ class TaskDetailTabWidget(QWidget):
                         f"{_('validation_error_message')}\n{error_msg}")
                     return
                 config_data = self.task_config_widget.get_config()
+        except Exception as e:
+            QMessageBox.critical(self, _("error_title"),
+                                 f"{_('config_save_failed_message')}:\n{e}")
+            logger.error(
+                f"Error saving config for task '{self.task_name}': {e}")
+            return
 
+        if config_data is None:
+            return
+
+        try:
             # Save the configuration
             success, final_task_name = self.task_manager.save_task_config(
                 self.task_name, config_data)
