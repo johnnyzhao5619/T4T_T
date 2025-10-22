@@ -587,6 +587,34 @@ class TaskManager:
             task_data['config'] = os.path.join(new_path, "config.yaml")
             task_data['script'] = os.path.join(new_path, "main.py")
 
+            old_logger = task_data.get('logger')
+            if isinstance(old_logger, logging.Logger):
+                for existing_filter in list(getattr(old_logger, 'filters', [])):
+                    if isinstance(existing_filter, TaskContextFilter):
+                        old_logger.removeFilter(existing_filter)
+
+                new_logger = logging.getLogger(f"task.{new_name}")
+                new_logger.setLevel(old_logger.level)
+                new_logger.propagate = old_logger.propagate
+
+                for handler in getattr(old_logger, 'handlers', []):
+                    if handler not in new_logger.handlers:
+                        new_logger.addHandler(handler)
+
+                for existing_filter in list(getattr(new_logger, 'filters', [])):
+                    if isinstance(existing_filter, TaskContextFilter):
+                        new_logger.removeFilter(existing_filter)
+
+                new_logger.addFilter(TaskContextFilter(new_name))
+                task_data['logger'] = new_logger
+            else:
+                task_logger = logging.getLogger(f"task.{new_name}")
+                for existing_filter in list(getattr(task_logger, 'filters', [])):
+                    if isinstance(existing_filter, TaskContextFilter):
+                        task_logger.removeFilter(existing_filter)
+                task_logger.addFilter(TaskContextFilter(new_name))
+                task_data['logger'] = task_logger
+
             event_topic = None
             if old_name in self._event_task_topics:
                 event_topic = self._event_task_topics.pop(old_name)
