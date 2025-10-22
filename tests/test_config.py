@@ -3,10 +3,13 @@ import os
 import sys
 import textwrap
 
+import pytest
+
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
-from utils.config import ConfigManager
+from core.state_manager import StateManager
+from utils.config import ConfigManager, load_yaml
 
 
 def test_defaults_when_no_file(tmp_path):
@@ -195,3 +198,45 @@ def test_lowercase_sections_are_read(tmp_path):
 
     assert manager.get('mqtt', 'host') == 'mqtt.local'
     assert manager.get('MQTT', 'host') == 'mqtt.local'
+
+
+def test_load_yaml_empty_file_returns_empty_dict(tmp_path, caplog):
+    empty_yaml = tmp_path / "empty.yaml"
+    empty_yaml.write_text("", encoding='utf-8')
+
+    with caplog.at_level(logging.INFO):
+        data = load_yaml(str(empty_yaml))
+
+    assert data == {}
+    assert any("empty" in record.message for record in caplog.records)
+
+
+def test_task_manager_loads_empty_config_without_error(tmp_path):
+    pytest.importorskip(
+        "PyQt5.QtWidgets",
+        reason="PyQt5 is required for TaskManager tests",
+        exc_type=ImportError,
+    )
+    from core.task_manager import TaskManager
+
+    tasks_dir = tmp_path / "tasks"
+    task_dir = tasks_dir / "dummy"
+    task_dir.mkdir(parents=True)
+    (task_dir / "main.py").write_text("def run():\n    pass\n", encoding='utf-8')
+    (task_dir / "config.yaml").write_text("", encoding='utf-8')
+
+    task_manager = TaskManager.__new__(TaskManager)
+    task_manager.tasks_dir = str(tasks_dir)
+    task_manager.tasks = {}
+    task_manager._event_task_topics = {}
+    task_manager.state_manager = StateManager()
+    task_manager._unsubscribe_event_task = lambda *_, **__: None
+    task_manager._initialize_tasks = lambda: None
+
+    try:
+        task_manager.load_tasks()
+    except Exception as exc:  # pragma: no cover - explicit failure path
+        pytest.fail(f"load_tasks raised an exception: {exc}")
+
+    assert "dummy" in task_manager.tasks
+    assert task_manager.tasks["dummy"]["config_data"] == {}
