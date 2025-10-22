@@ -195,7 +195,8 @@ def test_producer_consumer_flow(task_creator, active_task_manager):
     assert flag_file.exists(), "Consumer task did not create the flag file."
 
 
-def test_mqtt_reconnection_and_recovery(task_creator, test_tasks_dir, caplog):
+def test_mqtt_reconnection_and_recovery(task_creator, test_tasks_dir,
+                                        mqtt_client, caplog):
     """
     Tests the MQTT client's ability to automatically reconnect.
     """
@@ -253,7 +254,7 @@ def test_mqtt_reconnection_and_recovery(task_creator, test_tasks_dir, caplog):
     assert status_changes[-1] == BusConnectionState.CONNECTED
 
     # 4. Verify Message Flow
-    mqtt_client().publish("test/recovery", json.dumps({"data": "test"}))
+    mqtt_client.publish("test/recovery", json.dumps({"data": "test"}))
     time.sleep(1)
     assert flag_file.exists(
     ), "Consumer task was not triggered after reconnection"
