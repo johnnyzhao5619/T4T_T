@@ -5,8 +5,11 @@ from PyQt5.QtWidgets import QApplication
 from core.scheduler import SchedulerManager
 from core.task_manager import TaskManager
 from core.module_manager import ModuleManager
+from core.service_manager import service_manager
+from services.embedded_mqtt_broker import EmbeddedMQTTBroker
 from view.main_window import T4TMainWindow
 from utils.config import ConfigManager
+from utils.message_bus import message_bus_manager
 from utils.theme import switch_theme
 from utils.i18n import switch_language
 from utils.logger import LoggerManager, setup_exception_hook, get_logger
@@ -39,6 +42,12 @@ def main():
 
     # Initialize core components
     config_manager = ConfigManager(config_dir=CONFIG_DIR)
+
+    # Ensure message bus and embedded broker share the absolute config path
+    message_bus_manager.configure(config_manager=config_manager)
+    service_manager.register_service(
+        'mqtt_broker',
+        EmbeddedMQTTBroker(config_manager=config_manager))
 
     module_manager = ModuleManager()
     module_manager.set_module_path(MODULES_DIR)
