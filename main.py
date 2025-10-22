@@ -40,11 +40,13 @@ def main():
     # Initialize core components
     config_manager = ConfigManager(config_dir=CONFIG_DIR)
 
+    module_manager = ModuleManager()
+    module_manager.set_module_path(MODULES_DIR)
+
     scheduler = SchedulerManager()
     task_manager = TaskManager(scheduler_manager=scheduler,
                                tasks_dir=TASKS_DIR,
                                modules_dir=MODULES_DIR)
-    module_manager = ModuleManager(module_path=MODULES_DIR)
 
     # Load initial theme and language using the new managers
     theme_name = config_manager.get('appearance', 'theme', fallback='dark')

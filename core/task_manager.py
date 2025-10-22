@@ -43,7 +43,9 @@ class TaskManager:
                 are stored.
         """
         self.tasks_dir = tasks_dir
-        self.module_manager = ModuleManager(modules_dir)
+        resolved_modules_dir = os.path.abspath(modules_dir)
+        self.module_manager = ModuleManager()
+        self.module_manager.set_module_path(resolved_modules_dir)
         self.scheduler_manager = scheduler_manager
         self.state_manager = StateManager()
         self.apscheduler = BackgroundScheduler()
