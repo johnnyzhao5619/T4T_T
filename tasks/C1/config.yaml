@@ -4,9 +4,10 @@ enabled: true
 debug: false
 persist_state: false
 trigger:
-  schedule:
+  type: schedule
+  config:
     type: cron
-    expression: '*/1 * * * *'
+    cron_expression: '*/1 * * * *'
 inputs:
   increment_by:
     description: 单次执行要增加的计数值。如果未提供，则使用 settings 中的默认值。

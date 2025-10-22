@@ -8,10 +8,11 @@ persist_state: false
 
 # 触发器：每分钟执行一次
 trigger:
-  schedule:
+  type: schedule
+  config:
     type: cron
     # cron 表达式: '*/1 * * * *' 表示每分钟
-    expression: "*/1 * * * *"
+    cron_expression: "*/1 * * * *"
 
 # 输入：定义任务执行时可以接收的数据
 inputs:
