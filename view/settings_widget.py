@@ -89,7 +89,7 @@ class SettingsWidget(QWidget):
             self.on_language_changed)
         self.import_module_button.clicked.connect(self.import_module)
 
-        global_signals.language_changed.connect(self.retranslate_ui)
+        language_manager.language_changed.connect(self.retranslate_ui)
         global_signals.modules_updated.connect(self.populate_modules)
 
     def populate_themes(self):
@@ -187,12 +187,14 @@ class SettingsWidget(QWidget):
         self.theme_label.setText(_("theme_label"))
         self.language_label.setText(_("language_label"))
 
+        self.populate_languages()
+
         self.import_module_button.setText(_("import_module_button"))
         self.populate_modules()
 
     def __del__(self):
         try:
-            global_signals.language_changed.disconnect(self.retranslate_ui)
+            language_manager.language_changed.disconnect(self.retranslate_ui)
             global_signals.modules_updated.disconnect(self.populate_modules)
         except TypeError:
             pass  # Signals already disconnected
