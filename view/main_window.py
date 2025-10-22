@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QMenu,
 )
 from PyQt5.QtCore import Qt, QTimer, QSize, QSettings
+from core.context import TaskContext
 from view.task_list_widget import TaskListWidget
 from view.detail_area_widget import DetailAreaWidget
 from view.message_bus_monitor_widget import MessageBusMonitorWidget
@@ -172,7 +173,8 @@ class T4TMainWindow(QMainWindow):
         # Initially connect the message bus
         message_bus_manager.connect()
 
-    def execute_task_in_main_thread(self, task_name: str):
+    def execute_task_in_main_thread(self, task_name: str,
+                                    inputs: dict | None = None):
         """
         Executes a task function in the main GUI thread, triggered by a
         signal from a background worker. This is crucial for thread-unsafe
@@ -194,18 +196,21 @@ class T4TMainWindow(QMainWindow):
             if not executable_func:
                 return
 
-            log_emitter = partial(global_signals.log_message.emit, task_name)
-            task_config = task_info.get('config_data', {})
+            task_logger = task_info.get('logger', logger)
+            context = TaskContext(
+                task_name=task_name,
+                logger=task_logger,
+                config=task_info.get('config_data'),
+                task_path=task_info.get('path', ''),
+                state_manager=self.task_manager.state_manager)
 
-            # Re-create the final callable function within the main thread
-            task_callable = partial(executable_func,
-                                    config=task_config,
-                                    log_emitter=log_emitter,
-                                    debug=task_config.get('debug', False),
-                                    config_path=task_info['config'])
+            # Expose log emitter through the context for UI integration
+            context.log_emitter = partial(global_signals.log_message.emit,
+                                          task_name)
 
-            # Execute the task
-            task_callable()
+            prepared_inputs = inputs if inputs is not None else {}
+
+            executable_func(context=context, inputs=prepared_inputs)
 
         except Exception as e:
             logger.error(
