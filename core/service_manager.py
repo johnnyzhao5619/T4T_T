@@ -2,8 +2,6 @@ import enum
 import logging
 import threading
 from typing import Dict, Optional
-
-from services.embedded_mqtt_broker import EmbeddedMQTTBroker
 from utils.signals import global_signals
 from .service_interface import ServiceInterface
 
@@ -44,8 +42,40 @@ class ServiceManager:
     def register_service(self, name: str, service: ServiceInterface):
         """Registers a new service with the manager."""
         self._logger.info(f"Registering service: {name}")
+        if name in self._services:
+            self._logger.warning(
+                f"Service '{name}' already registered. Replacing existing instance.")
+            existing_service = self._services[name]
+
+            try:
+                if self._service_states.get(name) not in [ServiceState.STOPPED,
+                                                          ServiceState.FAILED]:
+                    self._set_state(name, ServiceState.STOPPING)
+                existing_service.stop()
+            except Exception as exc:  # pragma: no cover - logging path
+                self._logger.error(
+                    f"Error stopping service '{name}' before replacement: {exc}",
+                    exc_info=True)
+                self._set_state(name, ServiceState.FAILED)
+            else:
+                self._set_state(name, ServiceState.STOPPED)
+
+            disconnect = getattr(existing_service, "disconnect_signals", None)
+            if callable(disconnect):
+                try:
+                    disconnect()
+                except Exception as exc:  # pragma: no cover - logging path
+                    self._logger.error(
+                        f"Error disconnecting signals for service '{name}': {exc}",
+                        exc_info=True)
+
+            thread = self._service_threads.pop(name, None)
+            if thread and thread.is_alive():
+                thread.join(timeout=5)
+
         self._services[name] = service
         self._service_states[name] = ServiceState.STOPPED
+        self._service_threads.pop(name, None)
 
     def start_service(self, name: str):
         """Starts a registered service in a separate thread."""
@@ -133,4 +163,3 @@ class ServiceManager:
 
 # Global singleton instance
 service_manager = ServiceManager()
-service_manager.register_service('mqtt_broker', EmbeddedMQTTBroker())

@@ -61,8 +61,28 @@ class EmbeddedMQTTBroker(ServiceInterface):
             }
         }
         # Connect signals to update stats
+        self._signals_connected = False
+        self._connect_signals()
+
+    def _connect_signals(self):
+        if self._signals_connected:
+            return
         global_signals.message_published.connect(self._on_message_published)
         global_signals.message_received.connect(self._on_message_received)
+        self._signals_connected = True
+
+    def disconnect_signals(self):
+        if not self._signals_connected:
+            return
+        for signal, handler in [
+                (global_signals.message_published, self._on_message_published),
+                (global_signals.message_received, self._on_message_received)
+        ]:
+            try:
+                signal.disconnect(handler)
+            except TypeError:
+                self._logger.debug("Signal handler already disconnected")
+        self._signals_connected = False
 
     def get_connection_details(self):
         return {'host': self.host, 'port': self.port}
@@ -129,6 +149,7 @@ class EmbeddedMQTTBroker(ServiceInterface):
         Starts the embedded MQTT broker in the current thread.
         This is a blocking call.
         """
+        self._connect_signals()
         self._logger.info(
             f"Starting embedded MQTT broker on {self.host}:{self.port}...")
         self._reset_stats()
