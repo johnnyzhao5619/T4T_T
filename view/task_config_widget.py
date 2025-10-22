@@ -49,6 +49,7 @@ class TaskConfigWidget(QWidget):
         self.widgets = {}
         self.changed_widgets = set()
         self.error_widgets = {}
+        self._aux_widgets = {}
 
         # Widgets for special sections
         self.trigger_widget = None
@@ -110,6 +111,7 @@ class TaskConfigWidget(QWidget):
         self.widgets.clear()
         self.changed_widgets.clear()
         self.error_widgets.clear()
+        self._aux_widgets.clear()
         self.trigger_widget = None
         self.inputs_widget = None
 
@@ -256,7 +258,12 @@ class TaskConfigWidget(QWidget):
         combo.addItems([t.title() for t in trigger_types])
 
         stack = QStackedWidget()
-        self.trigger_widget = {"combo": combo, "stack": stack, "widgets": {}}
+        self.trigger_widget = {
+            "combo": combo,
+            "stack": stack,
+            "widgets": {},
+            "panels": {}
+        }
 
         # Create panels for each trigger type
         self._create_cron_panel(stack)
@@ -303,6 +310,7 @@ class TaskConfigWidget(QWidget):
         stack.addWidget(panel)
         self.trigger_widget["widgets"]["cron"] = cron_widget
         cron_widget.textChanged.connect(self.config_changed.emit)
+        self._register_aux_widget("trigger.cron_expression", cron_widget)
 
     def _create_interval_panel(self, stack):
         panel = QWidget()
@@ -326,6 +334,8 @@ class TaskConfigWidget(QWidget):
             "interval_minutes": minutes,
             "interval_seconds": seconds
         })
+        self.trigger_widget["panels"]["interval"] = panel
+        self._register_aux_widget("trigger.interval.panel", panel)
 
     def _create_date_panel(self, stack):
         panel = QWidget()
@@ -347,6 +357,7 @@ class TaskConfigWidget(QWidget):
         stack.addWidget(panel)
         self.trigger_widget["widgets"]["event"] = topic_widget
         topic_widget.textChanged.connect(self.config_changed.emit)
+        self._register_aux_widget("trigger.event.topic", topic_widget)
 
     def _create_inputs_widget(self, layout, inputs_data, schema):
         # Add a separator and a title for the inputs group
@@ -384,6 +395,7 @@ class TaskConfigWidget(QWidget):
         layout.addRow(inputs_content_widget)
         self.inputs_widget = table
         table.itemChanged.connect(self.config_changed.emit)
+        self._register_aux_widget("inputs.table", table)
 
     def _create_add_remove_buttons(self, layout, table):
         btn_layout = QHBoxLayout()
@@ -478,8 +490,13 @@ class TaskConfigWidget(QWidget):
         self._update_widget_style(key)
         self.config_changed.emit()
 
-    def _update_widget_style(self, key):
-        widget = self.widgets.get(key)
+    def _register_aux_widget(self, key, widget):
+        if widget:
+            self._aux_widgets[key] = widget
+
+    def _update_widget_style(self, key, widget_override=None):
+        widget = widget_override or self.widgets.get(key) or self._aux_widgets.get(
+            key)
         if not widget:
             return
 
@@ -579,16 +596,91 @@ class TaskConfigWidget(QWidget):
     def set_config(self, config_data):
         self._populate_form(config_data)
         self.changed_widgets = set(self.widgets.keys())
-        for key in self.widgets:
+        for key in set(self.widgets.keys()) | set(self._aux_widgets.keys()):
             self._update_widget_style(key)
         self.config_changed.emit()
 
     def validate_config(self):
         self.error_widgets.clear()
         is_valid = True
-        # Basic validation can be added here if needed
-        for key in self.widgets:
-            self._update_widget_style(key)
+        all_keys = set(self.widgets.keys()) | set(self._aux_widgets.keys())
+
+        def add_error(key, message, widget=None):
+            nonlocal is_valid
+            is_valid = False
+            if key not in self.error_widgets:
+                self.error_widgets[key] = message
+            self._update_widget_style(key, widget)
+
+        if self.trigger_widget:
+            combo = self.trigger_widget["combo"]
+            current_type = combo.currentText().lower()
+            trigger_widgets = self.trigger_widget["widgets"]
+
+            if current_type == "event":
+                topic_widget = trigger_widgets.get("event")
+                if topic_widget and not topic_widget.text().strip():
+                    add_error("trigger.event.topic",
+                              _("validation_trigger_event_topic_required"),
+                              topic_widget)
+            elif current_type == "cron":
+                cron_widget = trigger_widgets.get("cron")
+                cron_expression = cron_widget.text().strip() if cron_widget else ""
+                if not cron_expression:
+                    add_error("trigger.cron_expression",
+                              _("validation_trigger_cron_required"),
+                              cron_widget)
+                else:
+                    try:
+                        from apscheduler.triggers.cron import CronTrigger
+                        CronTrigger.from_crontab(cron_expression)
+                    except Exception:
+                        add_error("trigger.cron_expression",
+                                  _("validation_trigger_cron_invalid"),
+                                  cron_widget)
+            elif current_type == "interval":
+                days = trigger_widgets.get("interval_days")
+                hours = trigger_widgets.get("interval_hours")
+                minutes = trigger_widgets.get("interval_minutes")
+                seconds = trigger_widgets.get("interval_seconds")
+                values = [
+                    w.value() if w else 0 for w in
+                    (days, hours, minutes, seconds)
+                ]
+                if all(value == 0 for value in values):
+                    interval_panel = self.trigger_widget["panels"].get(
+                        "interval")
+                    add_error("trigger.interval.panel",
+                              _("validation_trigger_interval_required"),
+                              interval_panel)
+
+        if self.inputs_widget:
+            table = self.inputs_widget
+            rows = table.rowCount()
+            for row in range(rows):
+                required_widget = table.cellWidget(row, 4)
+                checkbox = required_widget.findChild(QCheckBox) if required_widget else None
+                if checkbox and checkbox.isChecked():
+                    name_item = table.item(row, 0)
+                    type_item = table.item(row, 1)
+                    if not name_item or not name_item.text().strip():
+                        add_error(
+                            "inputs.table",
+                            _("validation_inputs_required_name").format(
+                                index=row + 1),
+                            table)
+                        break
+                    if not type_item or not type_item.text().strip():
+                        add_error(
+                            "inputs.table",
+                            _("validation_inputs_required_type").format(
+                                index=row + 1),
+                            table)
+                        break
+
+        for key in all_keys:
+            if key not in self.error_widgets:
+                self._update_widget_style(key)
         return is_valid
 
     def get_errors(self):
@@ -604,5 +696,5 @@ class TaskConfigWidget(QWidget):
 
         self.changed_widgets.clear()
         self.error_widgets.clear()
-        for key in self.widgets.keys():
+        for key in set(self.widgets.keys()) | set(self._aux_widgets.keys()):
             self._update_widget_style(key)
