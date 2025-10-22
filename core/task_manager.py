@@ -903,10 +903,44 @@ class TaskManager:
 
     def start_all_tasks(self):
         """
-        Starts all enabled tasks that are not currently running.
+        Starts all enabled tasks that are not currently running or listening.
         """
-        # Reloads and initializes all tasks based on config
-        self.load_tasks()
+        for task_name, task_info in self.tasks.items():
+            config = task_info.get('config_data', {})
+            if not config.get('enabled', False):
+                continue
+
+            trigger_type, trigger_params = self._parse_trigger(config)
+
+            if trigger_type in ['cron', 'interval', 'date']:
+                if self.get_task_status(task_name) != 'running':
+                    self.start_task(task_name)
+            elif trigger_type == 'event':
+                topic = trigger_params.get('topic')
+                if not topic:
+                    logger.error(
+                        "Event task '%s' enabled but missing topic configuration.",
+                        task_name)
+                    continue
+
+                current_topic = self._event_task_topics.get(task_name)
+                already_listening = (
+                    current_topic == topic and
+                    'event_wrapper' in task_info and
+                    task_info.get('status') == 'listening')
+
+                if already_listening:
+                    continue
+
+                if current_topic and current_topic != topic:
+                    self._unsubscribe_event_task(task_name, emit_status=False)
+
+                self._subscribe_event_task(task_name, topic)
+            else:
+                logger.warning(
+                    "Task '%s' has an unknown trigger type: '%s'.",
+                    task_name,
+                    trigger_type)
 
     def pause_all_tasks(self):
         """
@@ -924,9 +958,18 @@ class TaskManager:
         Stops all currently running or paused scheduled tasks.
         """
         self.apscheduler.remove_all_jobs()
-        for task_name in self.tasks:
-            if self.tasks[task_name].get('status') in ['running', 'paused']:
-                self.tasks[task_name]['status'] = 'stopped'
+        for task_name, task_info in self.tasks.items():
+            trigger_type, _ = self._parse_trigger(
+                task_info.get('config_data', {}))
+            current_status = task_info.get('status')
+
+            if trigger_type == 'event' or current_status == 'listening':
+                # Ensure event-driven tasks are unsubscribed and emit stopped.
+                self._unsubscribe_event_task(task_name, emit_status=True)
+                continue
+
+            if current_status in ['running', 'paused']:
+                task_info['status'] = 'stopped'
                 global_signals.task_status_changed.emit(task_name, 'stopped')
         logger.info("All scheduled tasks stopped.")
 

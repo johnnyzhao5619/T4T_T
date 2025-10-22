@@ -59,12 +59,17 @@ class DummySignals:
 class FakeBusManager:
     def __init__(self):
         self.subscriptions: dict[str, Callable[[dict], None]] = {}
+        self.subscribe_calls: list[str] = []
+        self.unsubscribe_calls: list[str] = []
 
     def subscribe(self, topic: str, callback):
         self.subscriptions[topic] = callback
+        self.subscribe_calls.append(topic)
 
     def unsubscribe(self, topic: str):
-        self.subscriptions.pop(topic, None)
+        if topic in self.subscriptions:
+            self.subscriptions.pop(topic, None)
+        self.unsubscribe_calls.append(topic)
 
     def publish(self, topic: str, payload: dict):
         callback = self.subscriptions.get(topic)
@@ -105,20 +110,21 @@ def prepared_manager(tmp_path, monkeypatch):
     _create_event_task(tasks_dir)
 
     fake_bus = FakeBusManager()
+    dummy_signals = DummySignals()
     monkeypatch.setattr("core.task_manager.message_bus_manager", fake_bus)
-    monkeypatch.setattr("core.task_manager.global_signals", DummySignals())
+    monkeypatch.setattr("core.task_manager.global_signals", dummy_signals)
 
     scheduler = SchedulerManager()
     manager = TaskManager(scheduler_manager=scheduler,
                           tasks_dir=str(tasks_dir))
 
-    yield manager, fake_bus
+    yield manager, fake_bus, dummy_signals
 
     manager.shutdown()
 
 
 def test_event_task_disable_unsubscribes(prepared_manager, monkeypatch):
-    manager, fake_bus = prepared_manager
+    manager, fake_bus, dummy_signals = prepared_manager
     calls: list[str] = []
 
     def fake_execute(self, task_name, inputs):
@@ -135,13 +141,14 @@ def test_event_task_disable_unsubscribes(prepared_manager, monkeypatch):
     assert success
     assert "test/topic" not in fake_bus.subscriptions
     assert manager.tasks["EventTask"]["status"] == "stopped"
+    assert dummy_signals.task_status_changed.emitted[-1][0] == ("EventTask", "stopped")
 
     fake_bus.publish("test/topic", {"key": "value"})
     assert not calls
 
 
 def test_event_task_removed_after_delete(prepared_manager, monkeypatch):
-    manager, fake_bus = prepared_manager
+    manager, fake_bus, _ = prepared_manager
     calls: list[str] = []
 
     def fake_execute(self, task_name, inputs):
@@ -160,7 +167,7 @@ def test_event_task_removed_after_delete(prepared_manager, monkeypatch):
 
 
 def test_event_task_renamed_updates_subscription(prepared_manager, monkeypatch):
-    manager, fake_bus = prepared_manager
+    manager, fake_bus, _ = prepared_manager
     calls: list[str] = []
 
     def fake_execute(self, task_name, inputs):
@@ -180,3 +187,35 @@ def test_event_task_renamed_updates_subscription(prepared_manager, monkeypatch):
 
     fake_bus.publish("test/topic", {"after": "rename"})
     assert calls == ["RenamedTask"]
+
+
+def test_start_all_tasks_does_not_duplicate_event_subscription(prepared_manager,
+                                                               monkeypatch):
+    manager, fake_bus, _ = prepared_manager
+
+    subscribe_calls_before = list(fake_bus.subscribe_calls)
+
+    manager.start_all_tasks()
+
+    assert fake_bus.subscribe_calls == subscribe_calls_before
+
+
+def test_stop_all_tasks_unsubscribes_event_tasks(prepared_manager, monkeypatch):
+    manager, fake_bus, dummy_signals = prepared_manager
+    calls: list[str] = []
+
+    def fake_execute(self, task_name, inputs):
+        calls.append(task_name)
+
+    monkeypatch.setattr(TaskManager, "_execute_task_logic", fake_execute)
+
+    fake_bus.publish("test/topic", {"first": True})
+    assert calls == ["EventTask"]
+
+    manager.stop_all_tasks()
+
+    assert "test/topic" not in fake_bus.subscriptions
+    assert dummy_signals.task_status_changed.emitted[-1][0] == ("EventTask", "stopped")
+
+    fake_bus.publish("test/topic", {"second": True})
+    assert calls == ["EventTask"]
