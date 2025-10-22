@@ -91,10 +91,24 @@ class FakeBusManager:
             callback(payload)
 
 
+_SCRIPT_CONTENT = "def run(context, inputs):\n    return inputs\n"
+
+
+def _write_task(task_dir: Path, config: dict) -> None:
+    task_dir.mkdir()
+
+    import yaml
+
+    with open(task_dir / "config.yaml", "w", encoding="utf-8") as config_file:
+        yaml.safe_dump(config, config_file)
+
+    with open(task_dir / "main.py", "w", encoding="utf-8") as script_file:
+        script_file.write(_SCRIPT_CONTENT)
+
+
 def _create_event_task(tasks_dir: Path, name: str = "EventTask",
                        topic: str = "test/topic", enabled: bool = True):
     task_dir = tasks_dir / name
-    task_dir.mkdir()
 
     config = {
         "name": name,
@@ -106,14 +120,27 @@ def _create_event_task(tasks_dir: Path, name: str = "EventTask",
         }
     }
 
-    script_content = "def run(context, inputs):\n    return inputs\n"
+    _write_task(task_dir, config)
 
-    import yaml
-    with open(task_dir / "config.yaml", "w", encoding="utf-8") as f:
-        yaml.safe_dump(config, f)
 
-    with open(task_dir / "main.py", "w", encoding="utf-8") as f:
-        f.write(script_content)
+def _create_interval_task(tasks_dir: Path, name: str = "IntervalTask",
+                          seconds: int = 5, enabled: bool = True):
+    task_dir = tasks_dir / name
+
+    config = {
+        "name": name,
+        "module_type": "test",
+        "enabled": enabled,
+        "trigger": {
+            "type": "schedule",
+            "config": {
+                "type": "interval",
+                "seconds": seconds
+            }
+        }
+    }
+
+    _write_task(task_dir, config)
 
 
 @pytest.fixture()
@@ -133,6 +160,27 @@ def prepared_manager(tmp_path, monkeypatch):
                           tasks_dir=str(tasks_dir))
 
     yield manager, fake_bus, dummy_signals
+
+    manager.shutdown()
+
+
+@pytest.fixture()
+def prepared_schedule_manager(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    _create_interval_task(tasks_dir)
+
+    dummy_signals = DummySignals()
+    fake_bus = FakeBusManager()
+    monkeypatch.setattr("core.task_manager.global_signals", dummy_signals)
+    monkeypatch.setattr("core.task_manager.message_bus_manager", fake_bus)
+
+    scheduler = SchedulerManager()
+    manager = TaskManager(scheduler_manager=scheduler,
+                          tasks_dir=str(tasks_dir))
+
+    yield manager, dummy_signals
 
     manager.shutdown()
 
@@ -267,3 +315,63 @@ def test_stop_all_tasks_unsubscribes_event_tasks(prepared_manager, monkeypatch):
 
     fake_bus.publish("test/topic", {"second": True})
     assert calls == ["EventTask"]
+
+
+def test_save_task_config_disables_interval_task(prepared_schedule_manager):
+    manager, dummy_signals = prepared_schedule_manager
+
+    assert manager.apscheduler.get_job("IntervalTask") is not None
+
+    updated_config = manager.get_task_config("IntervalTask")
+    updated_config["enabled"] = False
+
+    success, _ = manager.save_task_config("IntervalTask", updated_config)
+
+    assert success
+    assert manager.apscheduler.get_job("IntervalTask") is None
+    assert len(manager.apscheduler.get_jobs()) == 0
+    assert manager.tasks["IntervalTask"]["status"] == "stopped"
+    assert dummy_signals.task_status_changed.emitted[-1][0] == (
+        "IntervalTask", "stopped")
+
+
+def test_save_task_config_reenables_interval_task(prepared_schedule_manager):
+    manager, dummy_signals = prepared_schedule_manager
+
+    disabled_config = manager.get_task_config("IntervalTask")
+    disabled_config["enabled"] = False
+    assert manager.save_task_config("IntervalTask", disabled_config)[0]
+    assert manager.apscheduler.get_job("IntervalTask") is None
+
+    disabled_config["enabled"] = True
+    success, _ = manager.save_task_config("IntervalTask", disabled_config)
+
+    assert success
+    job = manager.apscheduler.get_job("IntervalTask")
+    assert job is not None
+    assert len(manager.apscheduler.get_jobs()) == 1
+    assert manager.tasks["IntervalTask"]["status"] == "running"
+    assert dummy_signals.task_status_changed.emitted[-1][0] == (
+        "IntervalTask", "running")
+
+
+def test_save_task_config_updates_interval_trigger(prepared_schedule_manager):
+    manager, dummy_signals = prepared_schedule_manager
+
+    original_job = manager.apscheduler.get_job("IntervalTask")
+    original_interval = original_job.trigger.interval.total_seconds()
+
+    updated_config = manager.get_task_config("IntervalTask")
+    updated_config["trigger"]["config"]["seconds"] = int(original_interval) + 4
+
+    success, _ = manager.save_task_config("IntervalTask", updated_config)
+
+    assert success
+    refreshed_job = manager.apscheduler.get_job("IntervalTask")
+    assert refreshed_job is not None
+    assert len(manager.apscheduler.get_jobs()) == 1
+    assert refreshed_job.trigger.interval.total_seconds() == pytest.approx(
+        int(original_interval) + 4)
+    assert manager.tasks["IntervalTask"]["status"] == "running"
+    assert dummy_signals.task_status_changed.emitted[-1][0] == (
+        "IntervalTask", "running")

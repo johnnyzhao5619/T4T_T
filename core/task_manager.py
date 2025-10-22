@@ -2,12 +2,14 @@ import os
 import logging
 import shutil
 import importlib.util
+from copy import deepcopy
 from typing import Any, Callable
 from datetime import datetime
 from functools import partial
 
 from core.context import TaskContext, TaskContextFilter
 
+from apscheduler.jobstores.base import ConflictingIdError
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -608,8 +610,8 @@ class TaskManager:
             logger.error(f"Task '{task_name}' not found.")
             return None
 
-        # Return a copy to prevent modification of the in-memory cache
-        return self.tasks[task_name].get('config_data', {}).copy()
+        # Return a deep copy to prevent modification of the in-memory cache
+        return deepcopy(self.tasks[task_name].get('config_data', {}))
 
     def get_task_schema(self, task_name: str) -> dict:
         """
@@ -667,6 +669,9 @@ class TaskManager:
                 return False, task_name
 
         try:
+            previous_config = deepcopy(
+                self.tasks[final_task_name].get('config_data', {}))
+
             # Use the potentially new task name to get the config file path
             config_file = self.tasks[final_task_name]['config']
             save_yaml(config_file, config_data)
@@ -674,8 +679,61 @@ class TaskManager:
             # Update the in-memory cache
             self.tasks[final_task_name]['config_data'] = config_data
 
+            trigger_type, trigger_params = self._parse_trigger(config_data)
+            previous_trigger_type, previous_trigger_params = self._parse_trigger(
+                previous_config)
+
             enabled, topic = self._get_event_topic(config_data)
             self._update_event_subscription(final_task_name, enabled, topic)
+
+            if trigger_type in {'cron', 'interval', 'date'}:
+                job = self.apscheduler.get_job(final_task_name)
+                job_exists = job is not None
+                enabled_now = bool(config_data.get('enabled'))
+                enabled_before = bool(previous_config.get('enabled'))
+                schedule_changed = (
+                    trigger_type != previous_trigger_type or
+                    trigger_params != previous_trigger_params
+                )
+
+                if not enabled_now and job_exists:
+                    try:
+                        self.apscheduler.remove_job(final_task_name)
+                        logger.info(
+                            "Task '%s' removed from scheduler after disable.",
+                            final_task_name)
+                    except Exception as exc:  # pragma: no cover - defensive
+                        logger.error(
+                            "Failed to remove job for task '%s': %s",
+                            final_task_name, exc)
+                    self.tasks[final_task_name]['status'] = 'stopped'
+                    global_signals.task_status_changed.emit(
+                        final_task_name, 'stopped')
+                elif enabled_now and (
+                        schedule_changed or not enabled_before or not job_exists):
+                    if job_exists:
+                        try:
+                            self.apscheduler.remove_job(final_task_name)
+                            logger.debug(
+                                "Removed existing schedule for task '%s' before "
+                                "rebuilding.", final_task_name)
+                        except Exception as exc:  # pragma: no cover - defensive
+                            logger.error(
+                                "Failed to clear existing job for task '%s': %s",
+                                final_task_name, exc)
+                    try:
+                        if not self.start_task(final_task_name):
+                            logger.warning(
+                                "Task '%s' schedule rebuild did not succeed.",
+                                final_task_name)
+                    except ConflictingIdError as exc:
+                        logger.error(
+                            "Conflicting job id encountered when scheduling "
+                            "task '%s': %s", final_task_name, exc)
+                    except Exception as exc:  # pragma: no cover - defensive
+                        logger.error(
+                            "Unexpected error when rebuilding schedule for task "
+                            "'%s': %s", final_task_name, exc)
 
             # Update logger level if debug setting changed
             task_logger = self.tasks[final_task_name].get('logger')
