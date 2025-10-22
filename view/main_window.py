@@ -386,13 +386,13 @@ class T4TMainWindow(QMainWindow):
                                               color_key='success'))
         self.start_action.setIcon(get_icon('fa5s.play', color_key='success'))
         self.pause_action.setIcon(get_icon('fa5s.pause', color_key='warning'))
-        self.stop_action.setIcon(get_icon('fa5s.stop', color_key='danger'))
+        self.stop_action.setIcon(get_icon('fa5s.stop', color_key='error'))
         self.start_all_action.setIcon(
             get_icon('fa5s.play-circle', color_key='success'))
         self.pause_all_action.setIcon(
             get_icon('fa5s.pause-circle', color_key='warning'))
         self.stop_all_action.setIcon(
-            get_icon('fa5s.stop-circle', color_key='danger'))
+            get_icon('fa5s.stop-circle', color_key='error'))
         self.logs_action.setIcon(get_icon('fa5s.file-alt', color_key='info'))
         self.dev_guide_action.setIcon(get_icon('fa5s.book', color_key='info'))
         self.monitor_action.setIcon(
@@ -456,14 +456,14 @@ class T4TMainWindow(QMainWindow):
             },
             BusConnectionState.DISCONNECTED.value: {
                 "icon": "fa5s.unlink",
-                "color_key": "danger",
+                "color_key": "error",
                 "text": _("status_disconnected")
             },
         }
         visual_config = status_map.get(
             status_str, {
                 "icon": "fa5s.question-circle",
-                "color_key": "danger",
+                "color_key": "error",
                 "text": "Unknown"
             })
 

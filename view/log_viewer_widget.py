@@ -44,7 +44,7 @@ class LogViewerWidget(QWidget):
 
         self.delete_log_button = QPushButton(_("delete_log_button"))
         self.delete_log_button.setIcon(
-            get_icon("fa5s.trash-alt", color_key='danger'))
+            get_icon("fa5s.trash-alt", color_key='error'))
         self.delete_log_button.clicked.connect(self.delete_selected_log)
         control_layout.addWidget(self.delete_log_button)
 
