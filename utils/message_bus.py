@@ -413,11 +413,20 @@ class MessageBusManager:
         """Returns the type of the currently active service."""
         return self._active_service_type
 
-    def _handle_state_change(self, new_state: BusConnectionState):
+    def _handle_state_change(self,
+                              new_state: BusConnectionState,
+                              message: Optional[str] = None):
         """
         Emits a global signal when the bus state changes.
+
+        Args:
+            new_state (BusConnectionState): The new connection state.
+            message (Optional[str]): Optional message to emit with the state
+                change. When omitted, a default message describing the state
+                transition is used.
         """
-        message = f"Message bus state changed to {new_state.value}."
+        if message is None:
+            message = f"Message bus state changed to {new_state.value}."
         global_signals.message_bus_status_changed.emit(new_state.value,
                                                        message)
 
@@ -476,16 +485,23 @@ class MessageBusManager:
                     wait_event.set()
 
                 if not wait_event.wait(SERVICE_START_TIMEOUT_SECONDS):
-                    self._logger.error(
+                    error_message = (
                         "Timed out after %.1f seconds waiting for 'mqtt_broker' "
-                        "to reach RUNNING state.",
-                        SERVICE_START_TIMEOUT_SECONDS)
+                        "service to reach RUNNING state."
+                        % SERVICE_START_TIMEOUT_SECONDS)
+                    self._logger.error(error_message)
+                    self._handle_state_change(
+                        BusConnectionState.DISCONNECTED,
+                        error_message)
                     return
 
             if failure_state is not None and failure_state != ServiceState.RUNNING:
-                self._logger.error(
-                    "Service 'mqtt_broker' entered %s state before connection.",
+                error_message = (
+                    "Service 'mqtt_broker' entered %s state before connection." %
                     failure_state.value)
+                self._logger.error(error_message)
+                self._handle_state_change(BusConnectionState.DISCONNECTED,
+                                          error_message)
                 return
         finally:
             try:

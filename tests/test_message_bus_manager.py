@@ -10,6 +10,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from core.service_manager import ServiceState
+from utils.message_bus import BusConnectionState
 from utils.signals import global_signals
 
 
@@ -123,6 +124,13 @@ def service_state_signal(monkeypatch):
     return signal
 
 
+@pytest.fixture
+def message_bus_status_signal(monkeypatch):
+    signal = SimpleSignal()
+    monkeypatch.setattr(global_signals, 'message_bus_status_changed', signal, raising=False)
+    return signal
+
+
 def test_connect_waits_for_embedded_broker(monkeypatch, stub_bus_class,
                                            service_state_signal):
     from utils.message_bus import MessageBusManager
@@ -144,3 +152,93 @@ def test_connect_waits_for_embedded_broker(monkeypatch, stub_bus_class,
     assert fake_service_manager.running_event.wait(0.5)
     assert stub_bus.connect_calls == 1
     assert not stub_bus.connected_before_running
+
+
+def test_connect_emits_disconnect_on_timeout(monkeypatch, stub_bus_class,
+                                             service_state_signal,
+                                             message_bus_status_signal):
+    from utils.message_bus import MessageBusManager
+
+    monkeypatch.setattr('utils.message_bus.SERVICE_START_TIMEOUT_SECONDS', 0,
+                        raising=False)
+
+    class NeverRunningServiceManager:
+        def __init__(self):
+            self._state = ServiceState.STOPPED
+            self.start_calls = 0
+            self._service = object()
+
+        def get_service_state(self, name: str):
+            return self._state
+
+        def get_service(self, name: str):
+            return self._service
+
+        def start_service(self, name: str):
+            self.start_calls += 1
+            self._state = ServiceState.STARTING
+
+    config_manager = FakeConfigManager(mode='embedded')
+    manager = MessageBusManager(config_manager=config_manager)
+    manager._service_manager = NeverRunningServiceManager()
+
+    events = []
+    message_bus_status_signal.connect(lambda status, message: events.append((status, message)))
+
+    manager.connect()
+
+    assert events, "Expected a disconnect event when service start times out"
+    status, message = events[-1]
+    assert status == BusConnectionState.DISCONNECTED.value
+    assert "Timed out" in message
+
+    stub_bus = stub_bus_class[0]
+    assert stub_bus.connect_calls == 0
+
+
+def test_connect_emits_disconnect_on_failed_service(monkeypatch, stub_bus_class,
+                                                    service_state_signal,
+                                                    message_bus_status_signal):
+    from utils.message_bus import MessageBusManager
+
+    failure_event = threading.Event()
+
+    class FailingServiceManager:
+        def __init__(self):
+            self._state = ServiceState.STOPPED
+            self._service = object()
+
+        def get_service_state(self, name: str):
+            return self._state
+
+        def get_service(self, name: str):
+            return self._service
+
+        def start_service(self, name: str):
+            self._state = ServiceState.STARTING
+
+            def _fail():
+                time.sleep(0.01)
+                self._state = ServiceState.FAILED
+                failure_event.set()
+                global_signals.service_state_changed.emit(name, ServiceState.FAILED)
+
+            threading.Thread(target=_fail, daemon=True).start()
+
+    config_manager = FakeConfigManager(mode='embedded')
+    manager = MessageBusManager(config_manager=config_manager)
+    manager._service_manager = FailingServiceManager()
+
+    events = []
+    message_bus_status_signal.connect(lambda status, message: events.append((status, message)))
+
+    manager.connect()
+
+    assert failure_event.wait(1.0), "Expected service failure event to be emitted"
+    assert events, "Expected a disconnect event when service fails to start"
+    status, message = events[-1]
+    assert status == BusConnectionState.DISCONNECTED.value
+    assert "entered FAILED state" in message or "FAILED" in message
+
+    stub_bus = stub_bus_class[0]
+    assert stub_bus.connect_calls == 0
