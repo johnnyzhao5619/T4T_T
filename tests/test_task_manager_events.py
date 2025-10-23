@@ -4,10 +4,11 @@ import sys
 import time
 import types
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Any, Callable, Tuple
 
 import pytest
 import yaml
+from apscheduler.triggers.cron import CronTrigger
 
 PyQt5 = types.ModuleType("PyQt5")
 QtCore = types.ModuleType("PyQt5.QtCore")
@@ -150,6 +151,35 @@ def _create_interval_task(tasks_dir: Path, name: str = "IntervalTask",
     _write_task_files(task_dir, config)
 
 
+def _create_cron_task(tasks_dir: Path,
+                      name: str = "CronTask",
+                      cron_expression: str = "*/5 * * * *",
+                      timezone: str | None = "UTC",
+                      enabled: bool = True,
+                      **additional_config):
+    task_dir = tasks_dir / name
+    cron_config: dict[str, Any] = {
+        "type": "cron",
+        "cron_expression": cron_expression,
+    }
+    if timezone is not None:
+        cron_config["timezone"] = timezone
+    if additional_config:
+        cron_config.update(additional_config)
+
+    config = {
+        "name": name,
+        "module_type": "test",
+        "enabled": enabled,
+        "trigger": {
+            "type": "schedule",
+            "config": cron_config
+        }
+    }
+
+    _write_task_files(task_dir, config)
+
+
 def _create_persistent_task(tasks_dir: Path, name: str = "PersistentTask",
                             state: dict | None = None):
     task_dir = tasks_dir / name
@@ -245,6 +275,35 @@ def test_initialize_tasks_autostart_only_once(tmp_path, monkeypatch):
 
     try:
         assert start_calls == ["AutoTask"]
+    finally:
+        manager.shutdown()
+
+
+def test_start_task_cron_with_timezone_and_options(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    _create_cron_task(tasks_dir,
+                      cron_expression="*/5 * * * *",
+                      timezone="UTC",
+                      misfire_grace_time=15)
+
+    dummy_signals = DummySignals()
+    fake_bus = FakeBusManager()
+    monkeypatch.setattr("core.task_manager.global_signals", dummy_signals)
+    monkeypatch.setattr("core.task_manager.message_bus_manager", fake_bus)
+
+    scheduler = SchedulerManager()
+    manager = TaskManager(scheduler_manager=scheduler,
+                          tasks_dir=str(tasks_dir))
+
+    try:
+        job = manager.apscheduler.get_job("CronTask")
+        assert job is not None
+        assert isinstance(job.trigger, CronTrigger)
+        assert str(job.trigger.timezone) == "UTC"
+        assert job.misfire_grace_time == 15
+        assert manager.tasks["CronTask"]["status"] == "running"
     finally:
         manager.shutdown()
 
