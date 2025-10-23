@@ -1,4 +1,5 @@
 import logging
+from contextlib import contextmanager
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLineEdit, QCheckBox,
                              QLabel, QScrollArea, QComboBox, QSpinBox,
                              QHBoxLayout, QFrame, QStackedWidget, QTableWidget,
@@ -50,6 +51,7 @@ class TaskConfigWidget(QWidget):
         self.changed_widgets = set()
         self.error_widgets = {}
         self._aux_widgets = {}
+        self._suspend_change_notifications = False
 
         # Widgets for special sections
         self.trigger_widget = None
@@ -229,7 +231,7 @@ class TaskConfigWidget(QWidget):
         """
         debug_checkbox = QCheckBox()
         debug_checkbox.setChecked(is_checked)
-        debug_checkbox.stateChanged.connect(self.config_changed.emit)
+        debug_checkbox.stateChanged.connect(self._emit_config_changed)
 
         layout.addRow(_("debug_mode_label"), debug_checkbox)
         self.widgets['debug'] = debug_checkbox
@@ -272,7 +274,7 @@ class TaskConfigWidget(QWidget):
         self._create_event_panel(stack)
 
         combo.currentIndexChanged.connect(stack.setCurrentIndex)
-        combo.currentIndexChanged.connect(self.config_changed.emit)
+        combo.currentIndexChanged.connect(self._emit_config_changed)
 
         trigger_layout.addWidget(combo)
         trigger_layout.addWidget(stack)
@@ -354,7 +356,7 @@ class TaskConfigWidget(QWidget):
         layout.addRow(QLabel(_("cron_expression_label")), cron_widget)
         stack.addWidget(panel)
         self.trigger_widget["widgets"]["cron"] = cron_widget
-        cron_widget.textChanged.connect(self.config_changed.emit)
+        cron_widget.textChanged.connect(self._emit_config_changed)
         self._register_aux_widget("trigger.cron_expression", cron_widget)
 
     def _create_interval_panel(self, stack):
@@ -367,7 +369,7 @@ class TaskConfigWidget(QWidget):
         seconds = QSpinBox()
         for w in [days, hours, minutes, seconds]:
             w.setRange(0, 99999)
-            w.valueChanged.connect(self.config_changed.emit)
+            w.valueChanged.connect(self._emit_config_changed)
         layout.addRow(_("days_label"), days)
         layout.addRow(_("hours_label"), hours)
         layout.addRow(_("minutes_label"), minutes)
@@ -391,7 +393,7 @@ class TaskConfigWidget(QWidget):
         layout.addRow(_("run_date_label"), date_widget)
         stack.addWidget(panel)
         self.trigger_widget["widgets"]["date"] = date_widget
-        date_widget.dateTimeChanged.connect(self.config_changed.emit)
+        date_widget.dateTimeChanged.connect(self._emit_config_changed)
 
     def _create_event_panel(self, stack):
         panel = QWidget()
@@ -401,7 +403,7 @@ class TaskConfigWidget(QWidget):
         layout.addRow(QLabel(_("topic_label")), topic_widget)
         stack.addWidget(panel)
         self.trigger_widget["widgets"]["event"] = topic_widget
-        topic_widget.textChanged.connect(self.config_changed.emit)
+        topic_widget.textChanged.connect(self._emit_config_changed)
         self._register_aux_widget("trigger.event.topic", topic_widget)
 
     def _create_inputs_widget(self, layout, inputs_data, schema):
@@ -439,7 +441,7 @@ class TaskConfigWidget(QWidget):
 
         layout.addRow(inputs_content_widget)
         self.inputs_widget = table
-        table.itemChanged.connect(self.config_changed.emit)
+        table.itemChanged.connect(self._emit_config_changed)
         self._register_aux_widget("inputs.table", table)
 
     def _create_add_remove_buttons(self, layout, table):
@@ -484,13 +486,13 @@ class TaskConfigWidget(QWidget):
         check_box_layout.setAlignment(Qt.AlignCenter)
         check_box_layout.setContentsMargins(0, 0, 0, 0)
         table.setCellWidget(row_position, 4, check_box_widget)
-        check_box.stateChanged.connect(self.config_changed.emit)
+        check_box.stateChanged.connect(self._emit_config_changed)
 
     def _remove_selected_input_row(self, table):
         current_row = table.currentRow()
         if current_row >= 0:
             table.removeRow(current_row)
-            self.config_changed.emit()
+            self._emit_config_changed()
 
     def _create_input_widget(self, key, value, input_type, param_schema):
         if input_type == "boolean":
@@ -531,13 +533,30 @@ class TaskConfigWidget(QWidget):
         return "string"
 
     def _on_widget_change(self, key):
+        if self._suspend_change_notifications:
+            return
         self.changed_widgets.add(key)
         self._update_widget_style(key)
-        self.config_changed.emit()
+        self._emit_config_changed()
 
     def _register_aux_widget(self, key, widget):
         if widget:
             self._aux_widgets[key] = widget
+
+    def _emit_config_changed(self, *args, **_kwargs):
+        if not self._suspend_change_notifications:
+            self.config_changed.emit()
+
+    @contextmanager
+    def _maybe_block_signals(self, widget, should_block):
+        if not widget or not should_block:
+            yield
+            return
+        previous_state = widget.blockSignals(True)
+        try:
+            yield
+        finally:
+            widget.blockSignals(previous_state)
 
     def _update_widget_style(self, key, widget_override=None):
         widget = widget_override or self.widgets.get(key) or self._aux_widgets.get(
@@ -551,6 +570,147 @@ class TaskConfigWidget(QWidget):
         elif key in self.changed_widgets:
             style = "border: 1px solid orange;"
         widget.setStyleSheet(style)
+
+    def _refresh_form_widgets(self, config_data, mark_changed):
+        if not isinstance(config_data, dict):
+            config_data = {}
+
+        if 'debug' in self.widgets:
+            self.set_field_value('debug', bool(config_data.get('debug', False)),
+                                 mark_changed=mark_changed)
+
+        flat_values = {}
+
+        def collect_values(data, prefix=""):
+            for key, value in data.items():
+                if key in {"trigger", "inputs"}:
+                    continue
+                full_key = f"{prefix}.{key}" if prefix else key
+                if full_key == 'debug' and not prefix:
+                    continue
+                if isinstance(value, dict):
+                    collect_values(value, full_key)
+                else:
+                    flat_values[full_key] = value
+
+        collect_values(config_data)
+
+        for key, value in flat_values.items():
+            if key in self.widgets:
+                self.set_field_value(key, value, mark_changed=mark_changed)
+
+        self._refresh_trigger_widget(config_data.get('trigger'),
+                                     mark_changed=mark_changed)
+        self._refresh_inputs_widget(config_data.get('inputs'),
+                                    mark_changed=mark_changed)
+
+    def _refresh_trigger_widget(self, trigger_data, mark_changed):
+        if not self.trigger_widget:
+            return
+
+        combo = self.trigger_widget.get("combo")
+        if not combo:
+            return
+        trigger_types = [combo.itemText(i).lower() for i in range(combo.count())]
+
+        trigger_dict = trigger_data if isinstance(trigger_data, dict) else {}
+        raw_type = str(trigger_dict.get("type", "")).lower()
+        config_section = trigger_dict.get("config")
+        config = config_section if isinstance(config_section, dict) else {}
+        schedule_section = trigger_dict.get("schedule")
+        schedule_config = (schedule_section if isinstance(schedule_section, dict)
+                           else {})
+
+        fallback_type = None
+        if isinstance(config, dict):
+            fallback_type = config.get("type")
+        if not fallback_type:
+            if isinstance(schedule_section, dict):
+                fallback_type = schedule_section.get("type")
+            elif isinstance(schedule_section, str):
+                fallback_type = schedule_section
+        fallback_type = str(fallback_type).lower() if fallback_type else None
+
+        selected_type = raw_type if raw_type in trigger_types else None
+        if not selected_type and fallback_type in trigger_types:
+            selected_type = fallback_type
+        if not selected_type and trigger_types:
+            selected_type = trigger_types[0]
+
+        if selected_type in trigger_types:
+            target_index = trigger_types.index(selected_type)
+            with self._maybe_block_signals(combo, not mark_changed):
+                combo.setCurrentIndex(target_index)
+            stack = self.trigger_widget.get("stack")
+            if stack:
+                stack.setCurrentIndex(target_index)
+        else:
+            target_index = combo.currentIndex()
+            selected_type = trigger_types[target_index] if trigger_types else None
+
+        if not config and schedule_config and fallback_type == selected_type:
+            config = schedule_config
+        if not isinstance(config, dict):
+            config = {}
+
+        widgets = self.trigger_widget.get("widgets", {})
+
+        if selected_type == "cron":
+            cron_widget = widgets.get("cron")
+            if cron_widget:
+                cron_expression = config.get("cron_expression", "")
+                with self._maybe_block_signals(cron_widget, not mark_changed):
+                    cron_widget.setText(str(cron_expression))
+        elif selected_type == "interval":
+            interval_fields = {
+                "days": "interval_days",
+                "hours": "interval_hours",
+                "minutes": "interval_minutes",
+                "seconds": "interval_seconds",
+            }
+            for field, widget_key in interval_fields.items():
+                widget = widgets.get(widget_key)
+                if not widget:
+                    continue
+                value = config.get(field, 0)
+                with self._maybe_block_signals(widget, not mark_changed):
+                    widget.setValue(int(value) if value is not None else 0)
+        elif selected_type == "date":
+            date_widget = widgets.get("date")
+            if date_widget:
+                run_date = config.get("run_date")
+                if run_date:
+                    parsed_date = QDateTime.fromString(str(run_date), Qt.ISODate)
+                    if (not parsed_date.isValid()
+                            and hasattr(Qt, "ISODateWithMs")):
+                        parsed_date = QDateTime.fromString(
+                            str(run_date), Qt.ISODateWithMs)
+                    if parsed_date.isValid():
+                        with self._maybe_block_signals(date_widget,
+                                                       not mark_changed):
+                            date_widget.setDateTime(parsed_date)
+        elif selected_type == "event":
+            event_widget = widgets.get("event")
+            if event_widget:
+                topic = ""
+                if isinstance(config, dict):
+                    topic = config.get("topic", "")
+                if not topic:
+                    topic = trigger_dict.get("topic", "")
+                with self._maybe_block_signals(event_widget, not mark_changed):
+                    event_widget.setText(str(topic))
+
+    def _refresh_inputs_widget(self, inputs_data, mark_changed):
+        if not self.inputs_widget:
+            return
+
+        table = self.inputs_widget
+        inputs_list = inputs_data if isinstance(inputs_data, list) else []
+
+        with self._maybe_block_signals(table, not mark_changed):
+            table.setRowCount(0)
+            for item_data in inputs_list:
+                self._add_input_row(table, item_data)
 
     def get_config(self):
         config_data = {}
@@ -687,8 +847,22 @@ class TaskConfigWidget(QWidget):
 
         return raw_value
 
-    def set_config(self, config_data):
-        self._populate_form(config_data)
+    def set_config(self, config_data, mark_changed: bool = True):
+        if not isinstance(config_data, dict):
+            config_data = {}
+
+        previous_suppression = self._suspend_change_notifications
+        if not mark_changed:
+            self._suspend_change_notifications = True
+
+        try:
+            if mark_changed or not self.widgets:
+                self._populate_form(config_data)
+            else:
+                self._refresh_form_widgets(config_data, mark_changed=False)
+        finally:
+            if not mark_changed:
+                self._suspend_change_notifications = previous_suppression
 
         all_keys = set(self.widgets.keys()) | set(self._aux_widgets.keys())
 
@@ -696,7 +870,7 @@ class TaskConfigWidget(QWidget):
             self.changed_widgets = set(self.widgets.keys())
             for key in all_keys:
                 self._update_widget_style(key)
-            self.config_changed.emit()
+            self._emit_config_changed()
         else:
             self.changed_widgets.clear()
             self.error_widgets.clear()

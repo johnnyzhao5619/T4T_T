@@ -175,6 +175,42 @@ def test_switch_tabs_keeps_save_disabled_and_import_triggers(monkeypatch, tmp_pa
         qapp.processEvents()
 
         assert widget.save_button.isEnabled()
+        assert widget.task_config_widget.widgets["enabled"].isChecked() == \
+            imported_config["enabled"]
+    finally:
+        widget.deleteLater()
+
+
+def test_json_editor_changes_refresh_form(qapp):
+    manager = _TaskManagerStub()
+    widget = TaskDetailTabWidget("demo", manager)
+
+    try:
+        json_index = widget.config_tabs.indexOf(widget.json_editor_widget)
+        form_index = widget.config_tabs.indexOf(widget.task_config_widget)
+
+        widget.config_tabs.setCurrentIndex(json_index)
+        qapp.processEvents()
+
+        updated_config = manager.get_task_config("demo")
+        updated_config["name"] = "DemoTaskUpdated"
+        updated_config["enabled"] = not updated_config["enabled"]
+
+        widget.json_editor_widget.editor.setPlainText(
+            json.dumps(updated_config, indent=4, sort_keys=True)
+        )
+        qapp.processEvents()
+
+        widget.config_tabs.setCurrentIndex(form_index)
+        qapp.processEvents()
+
+        assert widget.task_config_widget.widgets["name"].text() == \
+            "DemoTaskUpdated"
+        assert widget.task_config_widget.widgets["enabled"].isChecked() == \
+            updated_config["enabled"]
+        assert not widget.task_config_widget.changed_widgets
+        assert not widget.task_config_widget.error_widgets
+        assert not widget.save_button.isEnabled()
     finally:
         widget.deleteLater()
 
