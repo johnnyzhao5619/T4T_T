@@ -1,3 +1,4 @@
+import logging
 import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -154,6 +155,56 @@ def test_validate_required_input_name(qapp):
         assert widget.validate_config()
         assert "inputs.table" not in widget.get_errors()
         assert widget.inputs_widget.styleSheet() == ""
+    finally:
+        widget.deleteLater()
+
+
+def test_inputs_default_value_parsing(qapp):
+    widget = _create_widget({
+        "inputs": [{
+            "name": "count",
+            "type": "integer",
+            "description": "",
+            "default": 5,
+            "required": False
+        }, {
+            "name": "enabled",
+            "type": "boolean",
+            "description": "",
+            "default": True,
+            "required": True
+        }]
+    })
+    try:
+        config = widget.get_config()
+        inputs_by_name = {item["name"]: item for item in config["inputs"]}
+
+        assert isinstance(inputs_by_name["count"]["default"], int)
+        assert inputs_by_name["count"]["default"] == 5
+
+        assert isinstance(inputs_by_name["enabled"]["default"], bool)
+        assert inputs_by_name["enabled"]["default"] is True
+    finally:
+        widget.deleteLater()
+
+
+def test_inputs_default_value_parse_failure_preserves_text(qapp, caplog):
+    widget = _create_widget({
+        "inputs": [{
+            "name": "feature_flag",
+            "type": "boolean",
+            "description": "",
+            "default": False,
+            "required": False
+        }]
+    })
+    try:
+        widget.inputs_widget.item(0, 3).setText("maybe")
+        with caplog.at_level(logging.WARNING):
+            config = widget.get_config()
+
+        assert config["inputs"][0]["default"] == "maybe"
+        assert "Unable to parse default value" in caplog.text
     finally:
         widget.deleteLater()
 

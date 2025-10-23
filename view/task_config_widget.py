@@ -623,20 +623,69 @@ class TaskConfigWidget(QWidget):
         inputs_list = []
         table = self.inputs_widget
         for row in range(table.rowCount()):
+            name = self._get_table_item_text(table, row, 0)
+            type_name = self._get_table_item_text(table, row, 1)
+            description = self._get_table_item_text(table, row, 2)
+            default_text = self._get_table_item_text(table, row, 3)
+
+            default_value = self._parse_input_default_value(name, type_name,
+                                                            default_text,
+                                                            row)
+
             item = {
-                "name":
-                table.item(row, 0).text(),
-                "type":
-                table.item(row, 1).text(),
-                "description":
-                table.item(row, 2).text(),
-                "default":
-                table.item(row, 3).text(),
-                "required":
-                table.cellWidget(row, 4).findChild(QCheckBox).isChecked()
+                "name": name,
+                "type": type_name,
+                "description": description,
+                "default": default_value,
+                "required": table.cellWidget(row, 4).findChild(
+                    QCheckBox).isChecked()
             }
             inputs_list.append(item)
         return inputs_list
+
+    @staticmethod
+    def _get_table_item_text(table, row, column):
+        item = table.item(row, column)
+        return item.text() if item else ""
+
+    def _parse_input_default_value(self, name, type_name, raw_value, row):
+        type_key = (type_name or "").strip().lower()
+        if not type_key:
+            return raw_value
+
+        if raw_value is None:
+            return None
+
+        if isinstance(raw_value, str):
+            text_value = raw_value
+        else:
+            text_value = str(raw_value)
+
+        stripped_value = text_value.strip()
+
+        if stripped_value == "":
+            return raw_value
+
+        try:
+            if type_key in {"integer", "int"}:
+                return int(stripped_value)
+            if type_key in {"number", "float"}:
+                return float(stripped_value)
+            if type_key in {"boolean", "bool"}:
+                lowered = stripped_value.lower()
+                if lowered in {"true", "1", "yes", "on"}:
+                    return True
+                if lowered in {"false", "0", "no", "off"}:
+                    return False
+                raise ValueError("Unrecognised boolean literal")
+        except ValueError:
+            logger.warning(
+                "Unable to parse default value '%s' for input '%s' (row %s) "
+                "as type '%s'. Keeping original value.", text_value,
+                name or f"#{row + 1}", row + 1, type_name)
+            return raw_value
+
+        return raw_value
 
     def set_config(self, config_data):
         self._populate_form(config_data)
