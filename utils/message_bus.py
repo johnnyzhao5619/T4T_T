@@ -3,16 +3,19 @@ import enum
 import json
 import logging
 import threading
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 import paho.mqtt.client as mqtt
 
-from core.service_manager import service_manager
+from core.service_manager import service_manager, ServiceState
 from .config import ConfigManager
 from .signals import global_signals
 
 # Default logger if none is provided
 default_logger = logging.getLogger(__name__)
+
+
+SERVICE_START_TIMEOUT_SECONDS = 10.0
 
 
 class BusConnectionState(enum.Enum):
@@ -331,6 +334,7 @@ class MessageBusManager:
         self._subscriptions: Dict[str, List[Callable]] = {}
         self._service_manager = service_manager
         self._active_service_type = 'mqtt'
+        self._warned_missing_service = False
         self._set_config_manager(config_manager=config_manager,
                                  config_dir=config_dir)
         self._initialize_bus()
@@ -378,6 +382,33 @@ class MessageBusManager:
             for callback in callbacks:
                 self._bus.subscribe(topic, callback)
 
+    def _should_manage_embedded_broker(self) -> bool:
+        """Determines whether the manager should control the embedded broker."""
+        if self._active_service_type != 'mqtt':
+            return False
+
+        if self._config_manager is None:
+            return True
+
+        mode = (self._config_manager.get('mqtt', 'mode', fallback='embedded')
+                or 'embedded').strip().lower()
+        if mode != 'embedded':
+            self._logger.info(
+                "MQTT configuration set to '%s'; assuming external broker.",
+                mode)
+            return False
+
+        service = self._service_manager.get_service('mqtt_broker')
+        if service is None:
+            if not self._warned_missing_service:
+                self._logger.warning(
+                    "Embedded MQTT mode enabled but no 'mqtt_broker' service "
+                    "is registered. Proceeding without managed startup.")
+                self._warned_missing_service = True
+            return False
+
+        return True
+
     def get_active_service_type(self) -> str:
         """Returns the type of the currently active service."""
         return self._active_service_type
@@ -405,16 +436,65 @@ class MessageBusManager:
         Ensures the embedded broker service is running and then connects the
         message bus client.
         """
-        # Start the embedded broker service
-        if self._active_service_type == 'mqtt':
-            self._service_manager.start_service('mqtt_broker')
+        if not self._bus:
+            return
 
-        # TODO: We might need a short delay or a signal-based wait here
-        # to ensure the broker is fully up before the client tries to connect.
-        # For now, we'll rely on the client's built-in reconnect logic.
-
-        if self._bus:
+        if not self._should_manage_embedded_broker():
             self._bus.connect()
+            return
+
+        wait_event = threading.Event()
+        failure_state: Optional[ServiceState] = None
+
+        def _on_service_state_changed(service_name: str,
+                                       state: ServiceState) -> None:
+            nonlocal failure_state
+            if service_name != 'mqtt_broker':
+                return
+            if state == ServiceState.RUNNING:
+                wait_event.set()
+            elif state in (ServiceState.FAILED, ServiceState.STOPPED):
+                failure_state = state
+                wait_event.set()
+
+        global_signals.service_state_changed.connect(_on_service_state_changed)
+
+        try:
+            state = self._service_manager.get_service_state('mqtt_broker')
+            if state == ServiceState.RUNNING:
+                wait_event.set()
+            else:
+                if state not in (ServiceState.STARTING, ServiceState.RUNNING):
+                    self._logger.info(
+                        "Starting embedded MQTT broker before connecting bus.")
+                    self._service_manager.start_service('mqtt_broker')
+
+                # Double-check in case the service transitioned immediately.
+                current_state = self._service_manager.get_service_state(
+                    'mqtt_broker')
+                if current_state == ServiceState.RUNNING:
+                    wait_event.set()
+
+                if not wait_event.wait(SERVICE_START_TIMEOUT_SECONDS):
+                    self._logger.error(
+                        "Timed out after %.1f seconds waiting for 'mqtt_broker' "
+                        "to reach RUNNING state.",
+                        SERVICE_START_TIMEOUT_SECONDS)
+                    return
+
+            if failure_state is not None and failure_state != ServiceState.RUNNING:
+                self._logger.error(
+                    "Service 'mqtt_broker' entered %s state before connection.",
+                    failure_state.value)
+                return
+        finally:
+            try:
+                global_signals.service_state_changed.disconnect(
+                    _on_service_state_changed)
+            except TypeError:
+                pass
+
+        self._bus.connect()
 
     def disconnect(self):
         """

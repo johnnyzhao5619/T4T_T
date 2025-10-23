@@ -177,6 +177,7 @@ T4T V2 采用 `ThreadPoolExecutor` 来管理一个工作线程池。所有的任
 * **注册策略**: 通过 `service_manager.register_service('mqtt_broker', EmbeddedMQTTBroker(...))` 注册服务。当需要重新配置或替换实例时，再次调用 `register_service` 会自动停止旧实例并解除它与 Qt 信号的绑定，避免残留线程或重复订阅。
 * **何时调用**: 推荐仅在应用启动或配置发生变化时调用 `register_service`。这样可以确保新的配置被正确加载，同时防止旧实例继续响应消息。
 * **清理保证**: `register_service` 内部会在替换前调用旧实例的 `stop()` 和 `disconnect_signals()`，并等待相关线程结束。重启或重新配置时无需额外手动清理。
+* **连接流程**: `MessageBusManager.connect()` 会在启动消息总线前检查 `ServiceState`。当 MQTT 模式配置为嵌入式时，它会确保 `mqtt_broker` 服务处于 `RUNNING` 状态：如果服务尚未启动则调用 `start_service`，同时阻塞等待 `global_signals.service_state_changed` 发出状态变更通知。若在默认超时时间内未等到 `RUNNING`，会记录易读的错误日志并跳过连接，避免重复启动或无限等待。
 
 ---
 
