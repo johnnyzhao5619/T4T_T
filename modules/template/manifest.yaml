@@ -1,64 +1,64 @@
-# 模块清单 V2
-# 这是定义模块行为和元数据的核心文件。
+# Module manifest V2
+# This file defines the core behaviour and metadata for the module.
 
-# name: 任务的唯一名称，将显示在UI中。
+# name: Unique task name displayed in the UI.
 name: My New Task
 
-# module_type: 模块的类型，与模块目录名对应。
+# module_type: Module type matching the directory name.
 module_type: template
 
-# enabled: 是否默认启用此任务。
+# enabled: Controls whether the task is enabled by default.
 enabled: true
 
-# debug: 是否默认开启Debug模式，提供更详细的日志。
+# debug: Enables verbose logging by default when set to true.
 debug: false
 
-# trigger: 定义任务如何被触发。
-# trigger 可以是 'schedule'（基于时间）或 'event'（基于事件）。
+# trigger: Defines how the task is triggered.
+# The trigger can be 'schedule' (time-based) or 'event' (event-driven).
 trigger:
-  # --- 示例 1: 基于时间的调度器 ---
-  # 使用 'schedule' 在固定的时间间隔或按 cron 表达式执行任务。
-  # 这适用于需要定期运行的后台任务，如数据同步、健康检查等。
+  # --- Example 1: Time-based scheduler ---
+  # Use 'schedule' to run the task at fixed intervals or according to a cron expression.
+  # Suitable for periodic background tasks such as data synchronisation or health checks.
   type: schedule
   config:
-    # type 可以是 'interval' 或 'cron'。
+    # type can be either 'interval' or 'cron'.
     type: interval
-    # interval 的单位：'seconds', 'minutes', 'hours', 'days'。
+    # Supported interval units: 'seconds', 'minutes', 'hours', 'days'.
     minutes: 5
-  # --- 示例 2: 基于事件的触发器 ---
-  # 使用 'event' 监听特定的系统事件。当事件发生时，任务会被执行。
-  # 这适用于响应式任务，如“当用户上传文件时触发”。
+  # --- Example 2: Event-driven trigger ---
+  # Use 'event' to listen for system events and execute the task when they occur.
+  # Ideal for reactive scenarios such as responding when a user uploads a file.
   # type: event
   # config:
   #   topic: "user/file_uploaded"
-  #   max_hops: 5  # 可选，限制事件链路的最大跳数，防止循环触发。
+  #   max_hops: 5  # Optional: limit the maximum hop count to prevent loops.
 
-# inputs: 定义任务执行时需要从触发事件的 payload 中接收的数据。
+# inputs: Describe the payload data required when the task runs.
 inputs:
-  # key 是输入字段的名称。
+  # Keys represent input field names.
   user_id:
-    # description: 字段的描述，将显示在UI中。
-    description: "触发此任务的用户的唯一标识符。"
-    # required: 如果为 true，系统将在执行任务前验证 payload 中是否存在此字段。
-    # 如果验证失败，任务将不会执行，并会记录一条错误。
-    # 这对于确保任务获得必要数据至关重要。
+    # description: Field description shown in the UI.
+    description: "Unique identifier for the user who triggered this task."
+    # required: When true, the system validates that the payload contains the field before execution.
+    # If validation fails, the task will not run and an error is recorded.
+    # This ensures the task receives the necessary data.
     required: true
-    # default: 如果 payload 中未提供该字段，则使用的默认值。
-    # 只有在 required 为 false 时才有效。
+    # default: Fallback value when the payload omits this field.
+    # Only used when 'required' is false.
     default: "guest"
   message:
-    description: "要处理的消息内容。"
+    description: "Message content to process."
     required: false
 
-# settings: 定义模块的自定义配置参数。
-# 这些参数在任务的整个生命周期中保持不变，除非手动修改。
+# settings: Define module-specific configuration parameters.
+# These values remain constant throughout the task lifecycle unless updated manually.
 settings:
   example_setting: "Hello, World!"
   api_key: "YOUR_API_KEY_HERE"
 
-# assets/copy_files: 声明在实例化任务时需要从模块目录复制到任务目录的附加资源。
-# 可以列出文件或子目录的相对路径，系统会保留目录结构进行复制。
-# 例如：
+# assets/copy_files: Declare additional resources to copy from the module directory during instantiation.
+# List files or subdirectories using relative paths; the directory structure is preserved.
+# Example:
 # assets:
 #   copy_files:
 #     - resources/credentials.json

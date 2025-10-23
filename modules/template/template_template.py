@@ -1,84 +1,81 @@
 # -*- coding: utf-8 -*-
 """
-模块任务模板 V2
-这是一个新模块任务的模板。
+Module task template V2
+Starter template for building a new module task.
 
-要创建一个新模块，请复制此目录并将其重命名为您的模块名称。
-然后，将此文件名重命名以匹配目录名。
+To create a new module, copy this directory and rename it to match your module name.
+Then rename this file so it matches the directory name.
 """
 
 
 def run(context, inputs):
     """
-    这是模块任务的主入口点。
-    当满足 manifest.yaml 中定义的触发条件时，系统会调用此函数。
+    Entry point for the module task.
+    The system invokes this function when the trigger defined in manifest.yaml is satisfied.
 
     Args:
-        context: 一个包含任务上下文信息的对象。它提供了对日志、配置和状态管理的访问。
-                 可访问的属性包括：
-                 - context.logger: 一个日志记录器实例，用于向UI和日志文件发送消息。
-                   用法:
-                       context.logger.info("这是一条信息日志")
-                       context.logger.warning("这是一条警告日志")
-                       context.logger.error("这是一条错误日志")
-                       context.logger.debug("这是一条调试日志")
+        context: Provides task context information, including logging, configuration,
+                 and state helpers. Key attributes include:
+                 - context.logger: Logger instance that reports to the UI and log files.
+                   Usage:
+                       context.logger.info("This is an info log")
+                       context.logger.warning("This is a warning log")
+                       context.logger.error("This is an error log")
+                       context.logger.debug("This is a debug log")
 
-                 - context.task_name (str): 当前任务的名称，来自 manifest.yaml。
-                   用法:
+                 - context.task_name (str): Task name from manifest.yaml.
+                   Usage:
                        task_name = context.task_name
-                       context.logger.info(f"任务 '{task_name}' 已启动")
+                       context.logger.info(f"Task '{task_name}' started")
 
-                 - context.config (dict): 一个包含此任务完整配置的字典，
-                                          内容来自 manifest.yaml。
-                   用法:
+                 - context.config (dict): Task configuration dictionary sourced from manifest.yaml.
+                   Usage:
                        api_key = context.config.get("settings", {}).get("api_key")
 
-                 - context.get_state(key, default=None): 从持久化存储中获取一个状态值。
-                   用法:
+                 - context.get_state(key, default=None): Fetch a persisted state value.
+                   Usage:
                        last_run = context.get_state("last_run_timestamp")
 
-                 - context.update_state(key, value): 更新或添加一个状态值到
-                   持久化存储。
-                   用法:
+                 - context.update_state(key, value): Persist or update a state value.
+                   Usage:
                        from datetime import datetime
                        context.update_state("last_run_timestamp", datetime.now().isoformat())
 
-        inputs (dict): 一个包含从触发事件的 payload 中映射过来的数据
-                       的字典。
-                       这些输入字段在 manifest.yaml 的 'inputs' 部分定义。
-                       如果一个输入被标记为 'required: true'，系统会确保它
-                       在调用此函数之前存在。
-                       用法:
+        inputs (dict): Data mapped from the triggering payload.
+                       Inputs are declared in the 'inputs' section of manifest.yaml.
+                       When an input is marked 'required: true', the system validates
+                       its presence before invoking this function.
+                       Usage:
                            user_id = inputs.get("user_id")
                            if user_id:
-                               context.logger.info(f"处理用户 {user_id} 的请求")
+                               context.logger.info(f"Processing request for user {user_id}")
     """
     task_name = context.task_name
-    context.logger.info(f"任务 '{task_name}' 已启动。")
+    context.logger.info(f"Task '{task_name}' has started.")
 
-    # --- 核心任务逻辑 ---
-    # 在此替换为您的任务的实际逻辑。
+    # --- Core task logic ---
+    # Replace this block with the actual implementation of your task.
     try:
-        # 示例：访问 inputs 和 settings
-        context.logger.info(f"收到的输入: {inputs}")
+        # Example: Access inputs and settings
+        context.logger.info(f"Received inputs: {inputs}")
 
-        message = inputs.get("message", "没有提供消息")
-        context.logger.info(f"收到的消息是: '{message}'")
+        message = inputs.get("message", "No message provided")
+        context.logger.info(f"Incoming message: '{message}'")
 
-        # 示例：访问 manifest.yaml 中的自定义设置
+        # Example: Read custom settings declared in manifest.yaml
         settings = context.config.get('settings', {})
-        example_setting = settings.get('example_setting', '默认值')
-        context.logger.info(f"'example_setting' 的值是: '{example_setting}'")
+        example_setting = settings.get('example_setting', 'default value')
+        context.logger.info(f"'example_setting' is set to: '{example_setting}'")
 
-        # 示例：使用状态管理
+        # Example: Use state management
         run_count = context.get_state("run_count", 0) + 1
         context.update_state("run_count", run_count)
-        context.logger.info(f"这是任务第 {run_count} 次运行。")
+        context.logger.info(f"This is run number {run_count} for the task.")
 
-        context.logger.info(f"任务 '{task_name}' 成功完成。")
+        context.logger.info(f"Task '{task_name}' completed successfully.")
 
     except Exception as e:
-        # 关键：处理异常以防止整个应用程序因单个任务失败而崩溃。
-        context.logger.error(f"任务 '{task_name}' 发生错误: {e}", exc_info=True)
+        # Key point: handle exceptions so a single task failure does not crash the application.
+        context.logger.error(f"Task '{task_name}' encountered an error: {e}", exc_info=True)
 
-    context.logger.info(f"任务 '{task_name}' 已结束。")
+    context.logger.info(f"Task '{task_name}' has finished.")

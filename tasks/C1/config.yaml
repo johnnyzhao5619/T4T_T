@@ -10,7 +10,7 @@ trigger:
     cron_expression: '*/1 * * * *'
 inputs:
   increment_by:
-    description: 单次执行要增加的计数值。如果未提供，则使用 settings 中的默认值。
+    description: Increment applied during a single run. If omitted, the default from settings is used.
     required: false
 settings:
   increment_by: 1
