@@ -31,6 +31,7 @@ trigger:
   # type: event
   # config:
   #   topic: "user/file_uploaded"
+  #   max_hops: 5  # 可选，限制事件链路的最大跳数，防止循环触发。
 
 # inputs: 定义任务执行时需要从触发事件的 payload 中接收的数据。
 inputs:

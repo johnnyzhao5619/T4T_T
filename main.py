@@ -57,7 +57,8 @@ def main():
     scheduler = SchedulerManager()
     task_manager = TaskManager(scheduler_manager=scheduler,
                                tasks_dir=TASKS_DIR,
-                               modules_dir=MODULES_DIR)
+                               modules_dir=MODULES_DIR,
+                               config_manager=config_manager)
 
     # Load initial theme and language using the new managers
     theme_name = config_manager.get('appearance', 'theme', fallback='dark')
