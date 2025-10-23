@@ -215,6 +215,73 @@ def test_json_editor_changes_refresh_form(qapp):
         widget.deleteLater()
 
 
+def test_cron_trigger_roundtrip_preserves_extra_fields(monkeypatch, qapp):
+    manager = _TaskManagerStub()
+    manager._configs["demo"]["trigger"] = {
+        "type": "cron",
+        "config": {
+            "type": "cron",
+            "cron_expression": "0 12 * * *",
+            "timezone": "UTC",
+            "start_date": "2024-01-01T00:00:00"
+        }
+    }
+
+    widget = TaskDetailTabWidget("demo", manager)
+
+    try:
+        monkeypatch.setattr(QMessageBox, "critical", lambda *args, **kwargs: None)
+        monkeypatch.setattr(QMessageBox, "information", lambda *args, **kwargs: None)
+        monkeypatch.setattr(QMessageBox, "warning", lambda *args, **kwargs: None)
+
+        json_index = widget.config_tabs.indexOf(widget.json_editor_widget)
+        form_index = widget.config_tabs.indexOf(widget.task_config_widget)
+
+        cron_widget = widget.task_config_widget.trigger_widget["widgets"]["cron"]
+        assert cron_widget.text() == "0 12 * * *"
+        assert widget.task_config_widget.trigger_widget["cron_extras"] == {
+            "type": "cron",
+            "timezone": "UTC",
+            "start_date": "2024-01-01T00:00:00"
+        }
+
+        widget.config_tabs.setCurrentIndex(json_index)
+        qapp.processEvents()
+
+        updated_config = manager.get_task_config("demo")
+        updated_config["trigger"]["config"]["cron_expression"] = "*/5 * * * *"
+
+        widget.json_editor_widget.editor.setPlainText(
+            json.dumps(updated_config, indent=4, sort_keys=True))
+        qapp.processEvents()
+
+        widget.config_tabs.setCurrentIndex(form_index)
+        qapp.processEvents()
+
+        assert cron_widget.text() == "*/5 * * * *"
+        assert widget.task_config_widget.trigger_widget["cron_extras"] == {
+            "type": "cron",
+            "timezone": "UTC",
+            "start_date": "2024-01-01T00:00:00"
+        }
+
+        widget.save_button.setEnabled(True)
+        widget.save_config()
+        qapp.processEvents()
+
+        assert manager.save_calls, "Expected configuration to be saved"
+        saved_config = manager.save_calls[-1][1]
+        assert saved_config["trigger"]["type"] == "cron"
+        assert saved_config["trigger"]["config"]["cron_expression"] == \
+            "*/5 * * * *"
+        assert saved_config["trigger"]["config"]["timezone"] == "UTC"
+        assert saved_config["trigger"]["config"]["start_date"] == \
+            "2024-01-01T00:00:00"
+        assert saved_config["trigger"]["config"]["type"] == "cron"
+    finally:
+        widget.deleteLater()
+
+
 def test_on_task_renamed_reloads_when_clean(monkeypatch, qapp):
     manager = _TaskManagerStub()
     widget = TaskDetailTabWidget("demo", manager)

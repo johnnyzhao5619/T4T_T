@@ -126,6 +126,65 @@ def test_trigger_cron_expression_fallback_on_expression_key(qapp):
         widget.deleteLater()
 
 
+def test_trigger_cron_preserves_additional_fields(qapp):
+    initial_config = {
+        "trigger": {
+            "type": "cron",
+            "config": {
+                "type": "cron",
+                "expression": "0 12 * * *",
+                "timezone": "UTC",
+                "start_date": "2024-01-01T00:00:00"
+            }
+        }
+    }
+    widget = _create_widget(initial_config)
+
+    try:
+        cron_widget = widget.trigger_widget["widgets"]["cron"]
+        assert cron_widget.text() == "0 12 * * *"
+        assert widget.trigger_widget["cron_extras"] == {
+            "type": "cron",
+            "timezone": "UTC",
+            "start_date": "2024-01-01T00:00:00"
+        }
+
+        updated_config = {
+            "trigger": {
+                "type": "cron",
+                "config": {
+                    "type": "cron",
+                    "cron_expression": "30 8 * * *",
+                    "timezone": "Asia/Shanghai",
+                    "start_date": "2024-01-01T00:00:00"
+                }
+            }
+        }
+
+        widget.set_config(updated_config, mark_changed=False)
+        assert cron_widget.text() == "30 8 * * *"
+        assert widget.trigger_widget["cron_extras"] == {
+            "type": "cron",
+            "timezone": "Asia/Shanghai",
+            "start_date": "2024-01-01T00:00:00"
+        }
+
+        cron_widget.setText("45 10 * * *")
+        saved_config = widget.get_config()
+
+        assert saved_config["trigger"]["type"] == "cron"
+        assert saved_config["trigger"]["config"]["cron_expression"] == \
+            "45 10 * * *"
+        assert saved_config["trigger"]["config"]["timezone"] == \
+            "Asia/Shanghai"
+        assert saved_config["trigger"]["config"]["start_date"] == \
+            "2024-01-01T00:00:00"
+        assert saved_config["trigger"]["config"]["type"] == "cron"
+        assert "expression" not in saved_config["trigger"]["config"]
+    finally:
+        widget.deleteLater()
+
+
 def test_validate_interval_requires_positive_value(qapp):
     widget = _create_widget({
         "trigger": {
