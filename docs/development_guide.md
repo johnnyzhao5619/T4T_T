@@ -173,6 +173,24 @@ assets:
 
 > ℹ️ **Tip**: If the module does not require additional assets, set `assets.copy_files` to an empty list (or omit the section entirely) to keep the manifest clean.
 
+### 3.4. Manifest 字段参考
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `name` | `str` | 模块在 UI 中展示的名称，建议保持唯一性。 |
+| `module_type` | `str` | 对应模块目录名，决定了 Task Manager 实例化时加载的脚本。 |
+| `version` | `str` | 语义化版本号，配合 `CHANGELOG` 跟踪功能演进。 |
+| `description` | `str` | 可选，提供用户在 UI 中查看的简介。 |
+| `enabled` | `bool` | 新建任务时是否默认启用该模块。 |
+| `debug` | `bool` | 打开后会为该任务附加更详细的日志输出。 |
+| `trigger.type` | `str` | `schedule` / `event`，指定触发机制。 |
+| `trigger.config` | `dict` | 触发器细节，例如 `cron` 字段或 `topic`、`max_hops`。 |
+| `inputs` | `list` or `dict` | 定义运行所需的输入参数、必填项与默认值。 |
+| `settings` | `dict` | 任务生命周期内保持不变的配置，适合存放 API Key、阈值等。 |
+| `assets.copy_files` | `list[str]` | 任务实例化时需要复制的额外资源路径。 |
+
+> ✅ **最佳实践**：随着模块迭代，保持 `version` 与 `CHANGELOG` 同步更新，并在 `description` 中明确兼容的消息主题或使用场景，有助于后续维护。
+
 ---
 
 ## 4. Core Concepts Explained
@@ -190,6 +208,14 @@ At the heart of the system is a lightweight **Message Bus** (implemented with MQ
 *   **Role**: The message bus is the cornerstone of the system's event-driven architecture. One task can publish a message to a topic (e.g., `task/A/completed`), and any number of other tasks can subscribe to that topic to be triggered when the message arrives. This pattern dramatically increases the system's flexibility and scalability.
 
 To keep the embedded MQTT broker and the client connection in sync, `MessageBusManager.connect()` inspects the `ServiceState` exposed by the `ServiceManager`. When the configuration requests the embedded broker, the manager starts `mqtt_broker` (if needed) and waits for a `global_signals.service_state_changed` notification that the service is `RUNNING`. If the broker does not reach that state within the default timeout, a clear error is logged and the MQTT client connection is skipped to avoid redundant restarts or indefinite blocking.
+
+### 4.3. Event Trigger Best Practices
+
+1. **限定主题命名**：使用层级化命名（如 `devices/<room>/<sensor>`）便于通过通配符订阅与权限隔离。
+2. **使用 `max_hops`**：在 `trigger.config` 中设置合理跳数上限，防止任务之间互相触发造成无限循环。
+3. **结构化 Payload**：约定 JSON 字段名称，与 `inputs` 中的 `name` 保持一致，避免在 `run` 函数中大量判空。
+4. **幂等性设计**：任务应允许重复接收相同事件（例如通过事件 ID 去重），确保在消息重发或网络抖动时保持一致性。
+5. **监控与告警**：订阅 `global_signals.message_published` 可实现自定义监控（见 `utils/message_bus.py`），将异常频率的主题输出到日志或外部告警系统。
 
 ---
 
@@ -258,3 +284,17 @@ def run(context, inputs):
 ```
 
 This example demonstrates how to leverage the features of the V2 architecture—a declarative `manifest.yaml`, robust input validation, and context-aware logging—to create a module that is concise, reliable, and easy to maintain.
+
+---
+
+## 6. Testing & Debugging Workflow
+
+1. **单元测试**：项目提供基于 `pytest` 的测试套件（参见 `tests/` 目录）。新增模块后，建议为关键逻辑补充测试用例，并运行：
+   ```bash
+   pytest
+   ```
+   重点关注 `test_task_manager_events.py`、`test_message_bus_manager.py` 等用例，确保事件触发链路与消息总线交互正常。
+2. **集成测试**：通过 `test_e2e_v2.py` 验证模块在完整生命周期内的表现（注册、调度、执行、日志输出）。
+3. **实时调试**：使用 `context.logger` 输出结构化日志，默认写入 `logs/t4t.log`，可结合外部日志分析工具观察行为趋势。
+4. **服务状态确认**：调试消息总线或嵌入式 Broker 时，订阅 `global_signals.service_state_changed`（见 `core/service_manager.py`）以获取精确的状态回调，避免误判连接问题。
+5. **UI 调试**：若涉及前端组件，配合 `tests/test_task_list_widget.py` 等 UI 测试验证交互逻辑，并在开发模式下启用 PyQt 的 `QT_DEBUG_PLUGINS=1` 环境变量定位缺失插件。
