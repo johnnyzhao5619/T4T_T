@@ -6,4 +6,5 @@ apscheduler
 qtawesome
 amqtt
 pyqtgraph
+pyautogui
 markdown==3.4.4

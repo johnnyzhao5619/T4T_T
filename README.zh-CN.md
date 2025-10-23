@@ -53,6 +53,7 @@
 
 *   **后端**: Python 3
 *   **UI**: PyQt5
+*   **桌面自动化**: PyAutoGUI
 *   **核心架构**: 事件驱动、发布/订阅模式
 *   **并发**: `ThreadPoolExecutor`
 *   **消息队列**: Paho-MQTT

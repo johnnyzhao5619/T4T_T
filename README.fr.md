@@ -53,6 +53,7 @@ Le projet suit une architecture en couches, séparant clairement la présentatio
 
 *   **Backend**: Python 3
 *   **UI**: PyQt5
+*   **Automatisation du bureau**: PyAutoGUI
 *   **Architecture de base**: Événementielle, Publication/Abonnement
 *   **Concurrence**: `ThreadPoolExecutor`
 *   **File d'attente de messages**: Paho-MQTT

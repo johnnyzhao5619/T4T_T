@@ -53,6 +53,7 @@ The project follows a layered architecture, clearly separating presentation, bus
 
 *   **Backend**: Python 3
 *   **UI**: PyQt5
+*   **Desktop Automation**: PyAutoGUI
 *   **Core Architecture**: Event-Driven, Publish/Subscribe
 *   **Concurrency**: `ThreadPoolExecutor`
 *   **Message Queue**: Paho-MQTT
