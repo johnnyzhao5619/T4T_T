@@ -17,25 +17,25 @@ def run(context, inputs):
                        it might contain an optional 'increment_by' value.
     """
     task_name = context.task_name
-    context.logger.info(f"任务 '{task_name}' 正在运行。")
+    context.logger.info(f"Task '{task_name}' is running.")
 
     try:
-        # 从 'inputs' 或 'settings' 获取增量值，'inputs' 优先
-        # 这允许事件动态地覆盖默认增量
+        # Read the increment from 'inputs' when available, otherwise fall back to the settings value
+        # This lets event payloads override the default increment dynamically
         default_increment = context.config.get('settings', {})\
                                           .get('increment_by', 1)
         increment_by = inputs.get('increment_by', default_increment)
 
-        # 使用 context.get_state 获取当前计数值，如果不存在则默认为 0
+        # Retrieve the current count; default to 0 if no state has been stored yet
         current_count = context.get_state('count', 0)
 
-        # 执行核心逻辑
+        # Execute the core logic
         new_count = current_count + increment_by
-        context.logger.info(f"计数值更新为: {new_count}")
+        context.logger.info(f"Counter updated to: {new_count}")
 
-        # 使用 context.update_state 持久化新的计数值
+        # Persist the updated count for the next run
         context.update_state('count', new_count)
-        context.logger.info(f"已成功保存新的计数值 ({new_count})。")
+        context.logger.info(f"Successfully saved the updated count ({new_count}).")
 
     except Exception as e:
-        context.logger.error(f"计数器任务 '{task_name}' 发生错误: {e}", exc_info=True)
+        context.logger.error(f"Counter task '{task_name}' encountered an error: {e}", exc_info=True)

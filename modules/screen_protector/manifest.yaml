@@ -1,4 +1,4 @@
-# 屏幕保护模块清单 V2
+# Screen protector module manifest V2
 
 name: ScreenProtector
 module_type: screen_protector
@@ -6,17 +6,17 @@ enabled: false
 debug: false
 persist_state: false
 
-# 触发器：每5秒执行一次，以频繁检查鼠标活动
+# Trigger: Execute every 5 seconds to check mouse activity frequently
 trigger:
   type: schedule
   config:
     type: interval
     seconds: 5
 
-# 输入：此模块不接收任何外部输入。
+# Inputs: This module does not consume external data.
 inputs: {}
 
-# 设置：定义鼠标移动的范围
+# Settings: Configure the mouse movement range
 settings:
   mouse_jiggle_range_min: 10
   mouse_jiggle_range_max: 50
