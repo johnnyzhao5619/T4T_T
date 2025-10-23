@@ -249,3 +249,24 @@ def run(context, inputs):
 ```
 
 这个示例展示了如何利用 V2 架构的特性——声明式的 `manifest.yaml`、健壮的输入验证和上下文感知的日志记录——来创建一个简洁、可靠且易于维护的模块。
+
+---
+
+## 7. 许可与分发清单
+
+* **附带 MIT 条款**：任何交付物都必须包含仓库根目录的 `LICENSE` 文件。请在 PyInstaller 配置（详见 README 指引）或未来的打包脚本中显式添加该文件。
+* **明确 PyQt5 合规策略**：PyQt5 在未购买商业许可时以 GPL v3 方式发布。若以 MIT 许可分发项目，请确保：
+  * 按 GPL 要求公开全部源代码并满足传染性条款，或
+  * 从 Riverbank Computing 获取商业许可。
+  请在部署说明中记录所采用的策略，方便下游使用者理解授权边界。
+* **第三方依赖概览**：当前运行时依赖及其许可证如下：
+  * psutil – BSD 3-Clause
+  * PyYAML – MIT
+  * paho-mqtt – Eclipse Distribution License 1.0
+  * APScheduler – MIT
+  * qtawesome – MIT
+  * amqtt – MIT
+  * pyqtgraph – MIT
+  * PyAutoGUI – BSD 3-Clause
+  * Markdown 3.4.4 – BSD 3-Clause
+  这些许可证与 MIT 兼容，但在新增依赖时应重新审查。

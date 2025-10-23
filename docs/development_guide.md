@@ -300,3 +300,24 @@ This example demonstrates how to leverage the features of the v1.0 architecture�
 4. **Service state verification**: While debugging the message bus or embedded broker, subscribe to `global_signals.service_state_changed` (see `core/service_manager.py`) for precise callbacks, and listen to `global_signals.message_published` to monitor event flow and hop counts.
 5. **UI debugging**: For front-end components, rely on tests such as `tests/test_task_list_widget.py` and enable PyQt's `QT_DEBUG_PLUGINS=1` in development to spot missing plugins. Use `pytest -k widget` to focus on specific widgets when necessary.
 6. **Breakpoint inspection**: Use `pdb.set_trace()` or remote debugging via VSCode/PyCharm inside module code; the thread pool pauses the relevant worker without freezing the main UI.
+
+---
+
+## 7. Licensing & Distribution Checklist
+
+* **Ship the MIT terms**: Every deliverable must include the repository's top-level `LICENSE` file. Add it explicitly to PyInstaller specs (see README instructions) and any future packaging configuration.
+* **Document PyQt5 obligations**: PyQt5 is released under GPL v3 unless you hold a commercial license. When releasing under MIT, either:
+  * publish the full source code and comply with GPL reciprocity, or
+  * obtain a commercial license from Riverbank Computing.
+  Record the chosen approach in deployment notes so downstream operators understand their responsibilities.
+* **Third-party overview**: The current runtime dependencies and their licenses are:
+  * psutil – BSD 3-Clause
+  * PyYAML – MIT
+  * paho-mqtt – Eclipse Distribution License 1.0
+  * APScheduler – MIT
+  * qtawesome – MIT
+  * amqtt – MIT
+  * pyqtgraph – MIT
+  * PyAutoGUI – BSD 3-Clause
+  * Markdown 3.4.4 – BSD 3-Clause
+  These are all compatible with MIT distribution. Re-run this audit when adding dependencies.

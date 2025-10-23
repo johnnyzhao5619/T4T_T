@@ -120,9 +120,10 @@ Together, these components keep background services stable and message flows tra
      --add-data "modules:modules" \
      --add-data "themes:themes" \
      --add-data "i18n:i18n" \
-     --add-data "config:config"
-   ```
-3. Distribute `dist/T4T` (or the generated `.app`/`.exe`) along with the `config/`, `tasks/`, `logs/` directories and any custom module resources.
+     --add-data "config:config" \
+     --add-data "LICENSE:."
+  ```
+3. Distribute `dist/T4T` (or the generated `.app`/`.exe`) along with the `config/`, `tasks/`, `logs/` directories and any custom module resources. Always include the top-level `LICENSE` file with the build artifacts so downstream users retain the legal terms.
 4. When enabling the embedded MQTT broker, document in deployment scripts or runbooks:
    * Port availability checks and firewall rules.
    * Whether the service should start with the OS or be launched manually before use.
@@ -158,3 +159,22 @@ Contributions of any kind are welcome! Whether it's bug reports, feature suggest
 5. Open a pull request
 
 ---
+
+## 📄 License and Third-Party Notices
+
+T4T is distributed under the [MIT License](./LICENSE). Always bundle this license file with any source archive or binary package that you ship.
+
+| Dependency | License | Notes |
+| --- | --- | --- |
+| PyQt5 | GPL v3 / Commercial | Bundling PyQt5 under MIT requires either holding a commercial license from Riverbank Computing or complying with the GPL's reciprocal terms. |
+| psutil | BSD 3-Clause | Compatible with MIT distribution. |
+| PyYAML | MIT | Compatible with MIT distribution. |
+| paho-mqtt | Eclipse Distribution License 1.0 | Compatible with MIT distribution. |
+| APScheduler | MIT | Compatible with MIT distribution. |
+| qtawesome | MIT | Compatible with MIT distribution. |
+| amqtt | MIT | Compatible with MIT distribution. |
+| pyqtgraph | MIT | Compatible with MIT distribution. |
+| PyAutoGUI | BSD 3-Clause | Compatible with MIT distribution. |
+| Markdown 3.4.4 | BSD 3-Clause | Compatible with MIT distribution. |
+
+Record the licensing position you take for PyQt5 (GPL-compliant source distribution or commercial entitlement) in downstream deployment documentation to maintain clarity for operators.
