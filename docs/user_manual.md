@@ -10,7 +10,7 @@ Welcome to T4T V2, a powerful and flexible automation tool. Whether you want to 
 
 ## 2. Main Interface Overview
 
-![T4T Main Interface](https://your-image-host.com/main-window.png) *(Please replace with an actual screenshot of the interface)*
+The main window is organized into clear zones: the left task list for browsing jobs, the right detail tabs for configuration and monitoring, the top toolbar with quick actions, and the bottom status bar showing system health and message bus connectivity.
 
 *   **Task List (Left Panel)**: Centrally displays all your tasks. The status of each task (Running, Paused, Listening, or Stopped) is visible at a glance.
 *   **Detail Area (Right Panel)**: A tabbed area for configuring new tasks, modifying existing ones, viewing real-time logs, and adjusting application settings.
