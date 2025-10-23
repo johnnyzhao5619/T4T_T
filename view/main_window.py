@@ -569,6 +569,11 @@ class T4TMainWindow(QMainWindow):
                 logger.info(f"Task {task_name} started or resumed.")
             else:
                 logger.error(f"Failed to start or resume task {task_name}.")
+                if status != 'paused':
+                    QMessageBox.critical(
+                        self,
+                        _("error"),
+                        _("validation_trigger_cron_required"))
         else:
             logger.warning("No task selected to start.")
 

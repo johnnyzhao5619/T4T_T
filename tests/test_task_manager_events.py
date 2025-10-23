@@ -343,45 +343,25 @@ def test_start_task_cron_with_timezone_and_options(tmp_path, monkeypatch):
         manager.shutdown()
 
 
-def test_load_task_executable_uses_cache_until_script_changes(tmp_path, monkeypatch):
+def test_start_task_cron_missing_expression_returns_false(tmp_path, monkeypatch):
     tasks_dir = tmp_path / "tasks"
     tasks_dir.mkdir()
 
-    _create_event_task(tasks_dir, name="CacheTask")
+    _create_cron_task(tasks_dir,
+                      cron_expression=" ",
+                      enabled=False)
 
-    manager, _, _ = _create_manager(monkeypatch, tasks_dir)
-
-    script_path = tasks_dir / "CacheTask" / "main.py"
-    import_calls = 0
-    original_spec = importlib.util.spec_from_file_location
-
-    def tracking_spec(*args, **kwargs):
-        nonlocal import_calls
-        import_calls += 1
-        return original_spec(*args, **kwargs)
-
-    monkeypatch.setattr(importlib.util, "spec_from_file_location", tracking_spec)
+    manager, _, dummy_signals = _create_manager(monkeypatch, tasks_dir)
 
     try:
-        first_run = manager._load_task_executable(str(script_path))
-        assert callable(first_run)
-        assert first_run(context=None, inputs={}) == {}
-
-        second_run = manager._load_task_executable(str(script_path))
-        assert second_run is first_run
-        assert import_calls == 1
-
-        script_path.write_text(
-            "def run(context, inputs):\n    return 'updated'\n",
-            encoding="utf-8",
-        )
-        stat_result = script_path.stat()
-        os.utime(script_path, (stat_result.st_atime, stat_result.st_mtime + 1))
-
-        refreshed_run = manager._load_task_executable(str(script_path))
-        assert import_calls == 2
-        assert refreshed_run is not first_run
-        assert refreshed_run(context=None, inputs={}) == "updated"
+        result = manager.start_task("CronTask")
+        assert result is False
+        assert manager.apscheduler.get_job("CronTask") is None
+        assert manager.tasks["CronTask"]["status"] == "stopped"
+        assert len(dummy_signals.task_failed.emitted) == 1
+        args, _ = dummy_signals.task_failed.emitted[-1]
+        assert args[0] == "CronTask"
+        assert "cron" in args[2].lower()
     finally:
         manager.shutdown()
 

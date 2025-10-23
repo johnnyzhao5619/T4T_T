@@ -1162,6 +1162,19 @@ class TaskManager:
         config = task_info['config_data']
         trigger_type, trigger_params = self._parse_trigger(config)
 
+        def emit_schedule_failure(message: str,
+                                  *,
+                                  exc: Exception | None = None) -> bool:
+            """Emit a scheduling failure message and keep the task stopped."""
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            if exc is not None:
+                logger.error(message, exc_info=True)
+            else:
+                logger.error(message)
+            global_signals.task_failed.emit(task_name, timestamp, message)
+            task_info['status'] = 'stopped'
+            return False
+
         if not is_scheduled_trigger(trigger_type):
             if trigger_type == 'event':
                 logger.info(
@@ -1213,23 +1226,33 @@ class TaskManager:
                 if isinstance(raw_expression, str):
                     cron_expression = raw_expression.strip()
                 elif raw_expression is not None:
-                    cron_expression = str(raw_expression)
+                    cron_expression = str(raw_expression).strip()
+
+                if raw_expression is not None and not cron_expression:
+                    message = (
+                        f"Task '{task_name}' cron_expression is missing or empty. "
+                        "Please provide a valid cron expression."
+                    )
+                    return emit_schedule_failure(message)
 
                 used_cron_expression = bool(cron_expression)
 
                 if used_cron_expression:
                     timezone = params.get('timezone')
-                    if timezone:
-                        trigger = CronTrigger.from_crontab(cron_expression,
-                                                           timezone=timezone)
-                    else:
-                        trigger = CronTrigger.from_crontab(cron_expression)
+                    try:
+                        if timezone:
+                            trigger = CronTrigger.from_crontab(
+                                cron_expression, timezone=timezone)
+                        else:
+                            trigger = CronTrigger.from_crontab(cron_expression)
+                    except Exception as exc:
+                        message = (
+                            f"Failed to parse cron expression for task "
+                            f"'{task_name}': {exc}"
+                        )
+                        return emit_schedule_failure(message, exc=exc)
+
                     trigger_kwargs_for_add_job.clear()
-                elif raw_expression is not None:
-                    logger.warning(
-                        f"Task '{task_name}' has an empty cron_expression and "
-                        "will not be scheduled.")
-                    return True
 
                 trigger_kwargs_for_add_job.pop('cron_expression', None)
                 trigger_kwargs_for_add_job.pop('expression', None)
@@ -1253,6 +1276,7 @@ class TaskManager:
             global_signals.task_status_changed.emit(task_name, 'running')
             return True
         except Exception as e:
+            task_info['status'] = 'stopped'
             logger.error(f"Failed to schedule task '{task_name}': {e}")
             return False
 
