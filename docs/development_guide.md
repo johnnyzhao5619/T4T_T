@@ -40,7 +40,7 @@ The `context` object is the bridge for your task to interact with the T4T system
 | Attribute   | Type       | Description                                                                 |
 | :---------- | :--------- | :-------------------------------------------------------------------------- |
 | `task_name` | `str`      | The name of the currently executing task instance.                          |
-| `logger`    | `function` | A callable logger used to send messages to the task's dedicated log view.   |
+| `logger`    | `logging.Logger` | Standard Python logger instance for task-scoped logs; use `.info()`, `.warning()`, `.error()`, `.debug()` as needed. |
 
 **Code Example: Using the Contextual Logger**
 
@@ -48,14 +48,14 @@ Using `context.logger` instead of `print()` is a best practice because it associ
 
 ```python
 def run(context, inputs):
-    context.logger("INFO", f"Task '{context.task_name}' has started.")
-    
+    context.logger.info(f"Task '{context.task_name}' has started.")
+
     try:
         # ... core logic ...
         result = "Operation successful"
-        context.logger("SUCCESS", f"Processing complete: {result}")
+        context.logger.info(f"Processing complete: {result}")
     except Exception as e:
-        context.logger("ERROR", f"Task execution failed: {e}")
+        context.logger.error(f"Task execution failed: {e}")
 ```
 
 ### 2.2. Input Data (`inputs`)
@@ -246,14 +246,14 @@ def run(context, inputs):
     temperature = inputs['current_temp']
     device_id = inputs.get('device_id', 'Unknown Device') # Use .get() for optional fields
 
-    logger("INFO", f"[{task_name}] Received temperature data from '{device_id}': {temperature}°C")
+    logger.info(f"[{task_name}] Received temperature data from '{device_id}': {temperature}°C")
 
     if temperature > 30.0:
-        logger("WARNING", f"[{task_name}] High temperature alert! Temperature reached {temperature}°C.")
+        logger.warning(f"[{task_name}] High temperature alert! Temperature reached {temperature}°C.")
     elif temperature < 5.0:
-        logger("WARNING", f"[{task_name}] Low temperature alert! Temperature dropped to {temperature}°C.")
+        logger.warning(f"[{task_name}] Low temperature alert! Temperature dropped to {temperature}°C.")
     else:
-        logger("INFO", f"[{task_name}] Temperature '{temperature}°C' is within the normal range.")
+        logger.info(f"[{task_name}] Temperature '{temperature}°C' is within the normal range.")
 
 ```
 

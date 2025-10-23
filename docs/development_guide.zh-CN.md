@@ -40,7 +40,7 @@ def run(context, inputs):
 | 属性 | 类型 | 描述 |
 | :--- | :--- | :--- |
 | `task_name` | `str` | 当前执行的任务实例的名称。 |
-| `logger` | `function` | 一个可调用的日志记录器，用于将消息发送到该任务的专属日志视图中。 |
+| `logger` | `logging.Logger` | 标准 Python 日志记录器，可使用 `.info()`、`.warning()`、`.error()`、`.debug()` 等方法输出任务级日志。 |
 
 **代码示例：使用上下文日志**
 
@@ -48,14 +48,14 @@ def run(context, inputs):
 
 ```python
 def run(context, inputs):
-    context.logger("INFO", f"任务 '{context.task_name}' 已启动。")
-    
+    context.logger.info(f"任务 '{context.task_name}' 已启动。")
+
     try:
         # ... 核心逻辑 ...
         result = "操作成功"
-        context.logger("SUCCESS", f"处理完成: {result}")
+        context.logger.info(f"处理完成: {result}")
     except Exception as e:
-        context.logger("ERROR", f"任务执行失败: {e}")
+        context.logger.error(f"任务执行失败: {e}")
 
 ```
 
@@ -237,14 +237,14 @@ def run(context, inputs):
     temperature = inputs['current_temp']
     device_id = inputs.get('device_id', '未知设备') # .get() 用于可选字段
 
-    logger("INFO", f"[{task_name}] 从 '{device_id}' 收到温度数据: {temperature}°C")
+    logger.info(f"[{task_name}] 从 '{device_id}' 收到温度数据: {temperature}°C")
 
     if temperature > 30.0:
-        logger("WARNING", f"[{task_name}] 高温警报！温度已达到 {temperature}°C。")
+        logger.warning(f"[{task_name}] 高温警报！温度已达到 {temperature}°C。")
     elif temperature < 5.0:
-        logger("WARNING", f"[{task_name}] 低温警报！温度已降至 {temperature}°C。")
+        logger.warning(f"[{task_name}] 低温警报！温度已降至 {temperature}°C。")
     else:
-        logger("INFO", f"[{task_name}] 温度 '{temperature}°C' 在正常范围内。")
+        logger.info(f"[{task_name}] 温度 '{temperature}°C' 在正常范围内。")
 
 ```
 
