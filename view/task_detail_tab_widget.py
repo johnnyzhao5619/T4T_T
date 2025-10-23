@@ -178,6 +178,9 @@ class TaskDetailTabWidget(QWidget):
                     return
                 self.task_config_widget.set_config(
                     config_data, mark_changed=False)
+                logger.debug(
+                    "Config form synchronised from JSON editor for task '%s'.",
+                    self.task_name)
         except Exception as e:
             logger.warning(
                 f"Could not sync config editors for task '{self.task_name}':"
