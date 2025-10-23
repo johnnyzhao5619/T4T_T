@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#1e1e1e"/>
+  <rect x="40" y="40" width="1200" height="60" rx="8" fill="#2f3136"/>
+  <rect x="40" y="620" width="1200" height="60" rx="8" fill="#2f3136"/>
+  <rect x="40" y="120" width="280" height="480" rx="12" fill="#2b2d31" stroke="#4e5157" stroke-width="3"/>
+  <rect x="340" y="120" width="900" height="280" rx="12" fill="#24262a" stroke="#4e5157" stroke-width="3"/>
+  <rect x="340" y="420" width="900" height="180" rx="12" fill="#24262a" stroke="#4e5157" stroke-width="3"/>
+  <text x="70" y="80" fill="#f3f4f6" font-size="28" font-family="Arial" font-weight="600">工具栏：新增 / 启动 / 暂停 / 停止 / 调试</text>
+  <text x="70" y="660" fill="#f3f4f6" font-size="24" font-family="Arial" font-weight="600">状态栏：消息总线连接 · 线程池容量 · 当前语言与主题</text>
+  <text x="70" y="180" fill="#f3f4f6" font-size="30" font-family="Arial" font-weight="600">任务列表</text>
+  <text x="70" y="220" fill="#d1d5db" font-size="22" font-family="Arial">• 支持按状态筛选任务</text>
+  <text x="70" y="250" fill="#d1d5db" font-size="22" font-family="Arial">• 右键菜单可删除 / 克隆 / 导出配置</text>
+  <text x="70" y="280" fill="#d1d5db" font-size="22" font-family="Arial">• 双击快速进入详情面板</text>
+  <text x="360" y="180" fill="#f3f4f6" font-size="30" font-family="Arial" font-weight="600">任务详情标签</text>
+  <text x="360" y="220" fill="#d1d5db" font-size="22" font-family="Arial">• 配置触发器、输入参数、服务依赖</text>
+  <text x="360" y="250" fill="#d1d5db" font-size="22" font-family="Arial">• 支持 JSON/YAML 表单编辑与验证</text>
+  <text x="360" y="280" fill="#d1d5db" font-size="22" font-family="Arial">• 可手动触发事件并查看返回值</text>
+  <text x="360" y="470" fill="#f3f4f6" font-size="30" font-family="Arial" font-weight="600">实时日志与调度历史</text>
+  <text x="360" y="510" fill="#d1d5db" font-size="22" font-family="Arial">• 查看任务输出、异常堆栈与上下文 ID</text>
+  <text x="360" y="540" fill="#d1d5db" font-size="22" font-family="Arial">• 支持关键字过滤与导出日志</text>
+  <text x="360" y="570" fill="#d1d5db" font-size="22" font-family="Arial">• 右上角可清空单任务日志</text>
+  <text x="980" y="80" fill="#f3f4f6" font-size="28" font-family="Arial" font-weight="600">UI 操作示例</text>
+  <text x="980" y="110" fill="#9ca3af" font-size="18" font-family="Arial">（界面关键区域示意）</text>
+</svg>
