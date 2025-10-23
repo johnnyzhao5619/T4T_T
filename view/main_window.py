@@ -145,6 +145,9 @@ class T4TMainWindow(QMainWindow):
         self.config_manager = config_manager
         self._mqtt_stats_slot_connected = False
 
+        # Ensure icons follow the currently active theme before building UI
+        set_icon_theme(theme_manager.current_theme_name)
+
         # Setup UI
         self.setup_ui()
         self.retranslate_ui()  # Set initial text
