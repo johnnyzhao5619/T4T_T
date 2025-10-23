@@ -268,7 +268,17 @@ class TaskManager:
                               emit_status: bool = True):
         wrapper_func = self._create_event_wrapper(task_name)
         self._register_event_subscription(task_name, topic, wrapper_func)
-        message_bus_manager.subscribe(topic, wrapper_func)
+
+        try:
+            message_bus_manager.subscribe(topic, wrapper_func)
+        except Exception:
+            self._event_task_topics.pop(task_name, None)
+            task_info = self.tasks.get(task_name)
+            if task_info:
+                task_info.pop('event_wrapper', None)
+                task_info['status'] = 'stopped'
+            raise
+
         self.tasks[task_name]['status'] = 'listening'
         if emit_status:
             global_signals.task_status_changed.emit(task_name, 'listening')
@@ -311,16 +321,10 @@ class TaskManager:
                 # For scheduled tasks, use the existing start_task method
                 self.start_task(task_name)
             elif trigger_type == 'event':
-                topic = trigger_params.get('topic')
-                if not topic:
-                    msg = ("Event task '%s' is enabled but missing a 'topic' "
-                           "in its trigger configuration.")
-                    logger.error(msg, task_name)
-                    continue
-
-                self._subscribe_event_task(task_name, topic)
-                logger.info(
-                    f"Task '{task_name}' is now listening on topic: '{topic}'")
+                if not self.start_task(task_name):
+                    logger.error(
+                        "Failed to start event-driven task '%s' during initialization.",
+                        task_name)
             else:
                 logger.warning(
                     f"Task '{task_name}' has an unknown trigger type: "
@@ -1180,9 +1184,51 @@ class TaskManager:
 
         if not is_scheduled_trigger(trigger_type):
             if trigger_type == 'event':
+                topic = trigger_params.get('topic')
+                if not topic:
+                    message = (
+                        f"Task '{task_name}' is configured as event-driven but lacks "
+                        "a 'topic' value."
+                    )
+                    logger.error(message)
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    global_signals.task_failed.emit(task_name, timestamp, message)
+                    task_info['status'] = 'stopped'
+                    return False
+
+                existing_topic = self._event_task_topics.get(task_name)
+                already_listening = (
+                    existing_topic == topic and
+                    'event_wrapper' in task_info and
+                    task_info.get('status') == 'listening'
+                )
+
+                if already_listening:
+                    logger.info(
+                        "Task '%s' is already listening on topic '%s'.",
+                        task_name,
+                        topic)
+                    return True
+
+                if existing_topic and existing_topic != topic:
+                    self._unsubscribe_event_task(task_name, emit_status=False)
+
+                try:
+                    self._subscribe_event_task(task_name, topic)
+                except Exception as exc:
+                    message = (
+                        f"Failed to subscribe task '{task_name}' to topic '{topic}': {exc}"
+                    )
+                    logger.error(message, exc_info=True)
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    global_signals.task_failed.emit(task_name, timestamp, message)
+                    task_info['status'] = 'stopped'
+                    self._event_task_topics.pop(task_name, None)
+                    task_info.pop('event_wrapper', None)
+                    return False
+
                 logger.info(
-                    f"Task '{task_name}' is event-driven and does not "
-                    "require scheduling.")
+                    f"Task '{task_name}' is now listening on topic: '{topic}'")
                 return True
 
             logger.error(
@@ -1386,26 +1432,10 @@ class TaskManager:
                 if self.get_task_status(task_name) != 'running':
                     self.start_task(task_name)
             elif trigger_type == 'event':
-                topic = trigger_params.get('topic')
-                if not topic:
-                    logger.error(
-                        "Event task '%s' enabled but missing topic configuration.",
-                        task_name)
+                if self.get_task_status(task_name) == 'listening':
                     continue
 
-                current_topic = self._event_task_topics.get(task_name)
-                already_listening = (
-                    current_topic == topic and
-                    'event_wrapper' in task_info and
-                    task_info.get('status') == 'listening')
-
-                if already_listening:
-                    continue
-
-                if current_topic and current_topic != topic:
-                    self._unsubscribe_event_task(task_name, emit_status=False)
-
-                self._subscribe_event_task(task_name, topic)
+                self.start_task(task_name)
             else:
                 logger.warning(
                     "Task '%s' has an unknown trigger type: '%s'.",
