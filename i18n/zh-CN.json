@@ -85,6 +85,8 @@
   "new_task_module_label": "模块类型:",
   "create_task_button": "创建任务",
   "task_name_required_error": "任务名称是必填项。",
+  "task_name_separator_error": "任务名称不能包含路径分隔符。",
+  "task_name_outside_dir_error": "任务名称规范化后必须位于任务目录内。",
   "module_type_required_error": "必须选择一个模块类型。",
   "task_created_success_message": "任务 '{task_name}' 创建成功。",
   "task_created_fail_message": "创建任务 '{task_name}' 失败。",

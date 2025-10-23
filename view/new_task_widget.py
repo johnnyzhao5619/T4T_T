@@ -52,9 +52,17 @@ class NewTaskWidget(QWidget):
         task_name = self.task_name_input.text().strip()
         module_type = self.module_type_combo.currentText()
 
-        if not task_name:
-            QMessageBox.warning(self, _("validation_error_title"),
-                                _("task_name_required_error"))
+        is_valid, error_code = self.task_manager.validate_task_name(task_name)
+        if not is_valid:
+            error_messages = {
+                'empty': _("task_name_required_error"),
+                'separator': _("task_name_separator_error"),
+                'outside': _("task_name_outside_dir_error"),
+            }
+            message = error_messages.get(error_code,
+                                         _("task_created_fail_message")
+                                         .format(task_name=task_name))
+            QMessageBox.warning(self, _("validation_error_title"), message)
             return
 
         if not module_type:
