@@ -93,8 +93,8 @@ class MqttBus(MessageBusInterface):
     def _init_client(self):
         """Initializes the MQTT client."""
         client_id = self._config.get('client_id', '')
-        self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,
-                                   client_id=client_id)
+        self._client = mqtt.Client(client_id=client_id,
+                                   callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
         self._client.on_message = self._on_message
