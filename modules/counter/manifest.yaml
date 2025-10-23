@@ -1,4 +1,4 @@
-# 计数器模块清单 V2
+# Counter module manifest V2
 
 name: Counter_Task
 module_type: counter
@@ -6,23 +6,23 @@ enabled: true
 debug: false
 persist_state: false
 
-# 触发器：每分钟执行一次
+# Trigger: execute once per minute
 trigger:
   type: schedule
   config:
     type: cron
-    # cron 表达式: '*/1 * * * *' 表示每分钟
+    # Cron expression: '*/1 * * * *' runs once every minute
     cron_expression: "*/1 * * * *"
 
-# 输入：定义任务执行时可以接收的数据
+# Inputs: describe the data available when the task runs
 inputs:
   increment_by:
-    description: "单次执行要增加的计数值。如果未提供，则使用 settings 中的默认值。"
+    description: "Increment to apply during a single run. If omitted, the default from settings is used."
     required: false
-    # 注意：这里没有 'default'，因为默认值来自 settings
+    # Note: there is no 'default' here because the value comes from settings
 
-# 设置：定义模块的静态配置
+# Settings: define static module configuration
 settings:
-  # increment_by 是一个可配置的默认值
+  # increment_by is a configurable default value
   increment_by: 1
-  # 注意：'current_count' 已被移除，因为它现在通过 context.get_state/update_state 进行管理
+  # Note: 'current_count' was removed because it is managed through context.get_state/update_state
