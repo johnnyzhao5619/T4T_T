@@ -94,6 +94,21 @@ Les contributions de toute nature sont les bienvenues ! Qu'il s'agisse de rappor
 
 ---
 
-## 📄 Licence
+## 📄 Licence et avis tiers
 
-Ce projet est sous licence [MIT](LICENSE).
+Ce projet est distribué sous la licence [MIT](LICENSE). Incluez toujours le fichier `LICENSE` de la racine lors de toute publication du code source ou d'un paquet binaire.
+
+| Dépendance | Licence | Remarques |
+| --- | --- | --- |
+| PyQt5 | GPL v3 / Licence commerciale | Une distribution MIT qui embarque PyQt5 doit disposer d'une licence commerciale Riverbank ou respecter les obligations de la GPL (publication intégrale du code source, etc.). |
+| psutil | BSD 3-Clause | Compatible avec une distribution MIT. |
+| PyYAML | MIT | Compatible avec une distribution MIT. |
+| paho-mqtt | Eclipse Distribution License 1.0 | Compatible avec une distribution MIT. |
+| APScheduler | MIT | Compatible avec une distribution MIT. |
+| qtawesome | MIT | Compatible avec une distribution MIT. |
+| amqtt | MIT | Compatible avec une distribution MIT. |
+| pyqtgraph | MIT | Compatible avec une distribution MIT. |
+| PyAutoGUI | BSD 3-Clause | Compatible avec une distribution MIT. |
+| Markdown 3.4.4 | BSD 3-Clause | Compatible avec une distribution MIT. |
+
+Documentez dans vos notes de diffusion ou guides de déploiement la stratégie retenue pour PyQt5 (conformité GPL ou licence commerciale) afin que les utilisateurs connaissent clairement le périmètre d'autorisation.
