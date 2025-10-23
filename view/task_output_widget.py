@@ -59,7 +59,14 @@ class TaskOutputWidget(QWidget):
             self.log_output_area.append(message)
 
     def __del__(self):
+        self._disconnect_signals()
+
+    def _disconnect_signals(self):
         try:
             global_signals.log_message.disconnect(self.append_log)
         except TypeError:
             pass
+
+    def closeEvent(self, event):
+        self._disconnect_signals()
+        super().closeEvent(event)

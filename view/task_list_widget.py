@@ -306,3 +306,21 @@ class TaskListWidget(QTreeWidget):
         else:
             logger.warning(
                 f"Could not find item for task '{old_name}' to rename.")
+
+    def _disconnect_signals(self):
+        signal_slot_pairs = [
+            (global_signals.task_manager_updated, self.refresh_tasks),
+            (global_signals.task_status_changed, self._on_task_status_changed),
+            (global_signals.task_renamed, self._on_task_renamed),
+            (global_signals.task_succeeded, self._on_task_succeeded),
+            (global_signals.task_failed, self._on_task_failed),
+        ]
+        for signal, slot in signal_slot_pairs:
+            try:
+                signal.disconnect(slot)
+            except TypeError:
+                pass
+
+    def closeEvent(self, event):
+        self._disconnect_signals()
+        super().closeEvent(event)

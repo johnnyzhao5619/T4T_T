@@ -166,6 +166,23 @@ class MessageBusMonitorWidget(QWidget):
         global_signals.message_received.connect(self.on_message_received)
         global_signals.mqtt_stats_updated.connect(self._on_stats_updated)
 
+    def _disconnect_signals(self):
+        signal_slot_pairs = [
+            (global_signals.service_state_changed, self.on_service_state_changed),
+            (global_signals.message_published, self.on_message_published),
+            (global_signals.message_received, self.on_message_received),
+            (global_signals.mqtt_stats_updated, self._on_stats_updated),
+        ]
+        for signal, slot in signal_slot_pairs:
+            try:
+                signal.disconnect(slot)
+            except TypeError:
+                pass
+
+    def closeEvent(self, event):
+        self._disconnect_signals()
+        super().closeEvent(event)
+
     def _on_stats_updated(self, stats: dict):
         self.clients_label.setText(str(stats.get('client_count', 0)))
         self.msg_in_label.setText(f"{stats.get('msg_recv_rate', 0.0):.1f}")

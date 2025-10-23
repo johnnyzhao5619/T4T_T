@@ -193,8 +193,19 @@ class SettingsWidget(QWidget):
         self.populate_modules()
 
     def __del__(self):
-        try:
-            language_manager.language_changed.disconnect(self.retranslate_ui)
-            global_signals.modules_updated.disconnect(self.populate_modules)
-        except TypeError:
-            pass  # Signals already disconnected
+        self._disconnect_signals()
+
+    def _disconnect_signals(self):
+        signal_slot_pairs = [
+            (language_manager.language_changed, self.retranslate_ui),
+            (global_signals.modules_updated, self.populate_modules),
+        ]
+        for signal, slot in signal_slot_pairs:
+            try:
+                signal.disconnect(slot)
+            except TypeError:
+                pass  # Signals already disconnected
+
+    def closeEvent(self, event):
+        self._disconnect_signals()
+        super().closeEvent(event)

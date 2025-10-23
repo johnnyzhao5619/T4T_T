@@ -161,3 +161,18 @@ class SettingsDialog(QDialog):
         self.findChild(QGroupBox, "module_management_group_title").setTitle(
             _("module_management_group_title"))
         self.populate_modules()
+
+    def _disconnect_signals(self):
+        signal_slot_pairs = [
+            (language_manager.language_changed, self.retranslate_ui),
+            (global_signals.modules_updated, self.populate_modules),
+        ]
+        for signal, slot in signal_slot_pairs:
+            try:
+                signal.disconnect(slot)
+            except TypeError:
+                pass
+
+    def closeEvent(self, event):
+        self._disconnect_signals()
+        super().closeEvent(event)
