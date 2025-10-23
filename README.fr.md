@@ -69,7 +69,7 @@ Le projet suit une architecture en couches, séparant clairement la présentatio
 1.  **Clonez le dépôt**
     ```bash
     git clone https://github.com/your-repo/T4T.git
-    cd T4T
+    cd T4T_T
     ```
 
 2.  **Installez les dépendances**
