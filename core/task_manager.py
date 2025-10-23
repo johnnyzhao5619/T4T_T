@@ -557,20 +557,69 @@ class TaskManager:
 
             save_yaml(config_dest, config_data)
 
-            # Special handling for 'DataSync' module type
-            if module_type == "DataSync":
-                # These files should exist in a predefined location, e.g.,
-                # 'templates/auth', For now, we'll assume they are in the
-                # module directory for simplicity
-                module_dir = os.path.dirname(templates['py_template'])
-                creds_src = os.path.join(module_dir, "credentials.json")
-                token_src = os.path.join(module_dir, "token.json")
-                if os.path.exists(creds_src):
-                    shutil.copy(creds_src,
-                                os.path.join(task_path, "credentials.json"))
-                if os.path.exists(token_src):
-                    shutil.copy(token_src,
-                                os.path.join(task_path, "token.json"))
+            # Copy declared asset files or directories, if any
+            module_dir = os.path.dirname(templates['py_template'])
+
+            def _collect_assets(values):
+                collected: list[str] = []
+                if isinstance(values, str):
+                    collected.append(values)
+                elif isinstance(values, (list, tuple, set)):
+                    for item in values:
+                        if isinstance(item, str):
+                            collected.append(item)
+                return collected
+
+            assets_to_copy: list[str] = []
+
+            assets_section = config_data.get('assets')
+            if isinstance(assets_section, dict):
+                assets_to_copy.extend(_collect_assets(
+                    assets_section.get('copy_files')))
+            else:
+                assets_to_copy.extend(_collect_assets(assets_section))
+
+            assets_to_copy.extend(_collect_assets(
+                config_data.get('copy_files')))
+
+            normalized_assets: list[str] = []
+            seen: set[str] = set()
+            for asset_entry in assets_to_copy:
+                normalized = os.path.normpath(asset_entry)
+                if not normalized or normalized == '.':
+                    continue
+                if os.path.isabs(normalized) or normalized.startswith('..'):
+                    logger.warning(
+                        "Skipping asset '%s' for task '%s' because it is not a"
+                        " relative path.", asset_entry, task_name)
+                    continue
+                if normalized not in seen:
+                    normalized_assets.append(normalized)
+                    seen.add(normalized)
+
+            for relative_path in normalized_assets:
+                source_path = os.path.join(module_dir, relative_path)
+                destination_path = os.path.join(task_path, relative_path)
+
+                if not os.path.exists(source_path):
+                    logger.warning(
+                        "Asset '%s' declared in module '%s' was not found at"
+                        " '%s'. Skipping.", relative_path, module_type,
+                        source_path)
+                    continue
+
+                try:
+                    if os.path.isdir(source_path):
+                        shutil.copytree(source_path, destination_path)
+                    else:
+                        os.makedirs(os.path.dirname(destination_path),
+                                    exist_ok=True)
+                        shutil.copy2(source_path, destination_path)
+                except Exception as copy_error:
+                    logger.error(
+                        "Failed to copy asset '%s' for task '%s': %s",
+                        relative_path, task_name, copy_error)
+                    raise
 
             logger.info(f"Task '{task_name}' created successfully"
                         f" from module '{module_type}'.")

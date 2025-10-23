@@ -158,6 +158,21 @@ inputs:
     required: false # This field is optional
 ```
 
+### 3.3. Declaring Additional Assets (`assets.copy_files`)
+
+Some modules depend on extra files (for example credentials, templates, or binary resources) besides the default `manifest.yaml` and task script. Declare these assets in the manifest so that the Task Manager can copy them from the module directory to each new task instance.
+
+Use the `assets.copy_files` list to describe the relative paths that should be copied. Paths must stay within the module directory (no absolute paths or `..` segments) and can point to files or directories. When a directory is listed, its entire structure is duplicated. The Task Manager preserves the relative layout when copying the resources.
+
+```yaml
+assets:
+  copy_files:
+    - resources/credentials.json   # Copies a single file
+    - templates/email/             # Copies an entire directory
+```
+
+> ℹ️ **Tip**: If the module does not require additional assets, set `assets.copy_files` to an empty list (or omit the section entirely) to keep the manifest clean.
+
 ---
 
 ## 4. Core Concepts Explained
