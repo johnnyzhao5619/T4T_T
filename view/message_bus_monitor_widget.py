@@ -11,12 +11,12 @@ from PyQt5.QtCore import Qt
 
 from core.service_manager import service_manager, ServiceState
 from utils.i18n import _, translate_service_state
-from utils.signals import global_signals
+from utils.signals import global_signals, SignalConnectionManagerMixin
 
 logger = logging.getLogger(__name__)
 
 
-class MessageBusMonitorWidget(QWidget):
+class MessageBusMonitorWidget(SignalConnectionManagerMixin, QWidget):
     """
     A widget to display real-time messages from the message bus and
     visualize MQTT broker activity.
@@ -156,15 +156,24 @@ class MessageBusMonitorWidget(QWidget):
         return graph_panel
 
     def connect_signals(self):
-        self.start_button.clicked.connect(
-            lambda: service_manager.start_service('mqtt_broker'))
-        self.stop_button.clicked.connect(
-            lambda: service_manager.stop_service('mqtt_broker'))
-        global_signals.service_state_changed.connect(
-            self.on_service_state_changed)
-        global_signals.message_published.connect(self.on_message_published)
-        global_signals.message_received.connect(self.on_message_received)
-        global_signals.mqtt_stats_updated.connect(self._on_stats_updated)
+        self._register_signal(self.start_button.clicked,
+                              self._on_start_clicked)
+        self._register_signal(self.stop_button.clicked,
+                              self._on_stop_clicked)
+        self._register_signal(global_signals.service_state_changed,
+                              self.on_service_state_changed)
+        self._register_signal(global_signals.message_published,
+                              self.on_message_published)
+        self._register_signal(global_signals.message_received,
+                              self.on_message_received)
+        self._register_signal(global_signals.mqtt_stats_updated,
+                              self._on_stats_updated)
+
+    def _on_start_clicked(self):
+        service_manager.start_service('mqtt_broker')
+
+    def _on_stop_clicked(self):
+        service_manager.stop_service('mqtt_broker')
 
     def _on_stats_updated(self, stats: dict):
         self.clients_label.setText(str(stats.get('client_count', 0)))
@@ -242,3 +251,7 @@ class MessageBusMonitorWidget(QWidget):
             self.status_label.setStyleSheet("color: #f39c12;")
             self.host_label.setText("...")
             self.port_label.setText("...")
+
+    def closeEvent(self, event):
+        self._disconnect_tracked_signals()
+        super().closeEvent(event)
