@@ -439,7 +439,7 @@ class TaskManager:
                               inputs: dict | None = None,
                               *,
                               log_emitter: Callable[[str], None] | None = None,
-                              _context=None):
+                              context=None):
         """Load the task script, construct the context, and execute it."""
         task_info = self.tasks[task_name]
         task_logger = task_info.get('logger', logger)
@@ -464,6 +464,9 @@ class TaskManager:
 
         if log_emitter is not None:
             task_context.log_emitter = log_emitter
+
+        if context is not None:
+            task_context.parent_context = context
 
         prepared_inputs = inputs if inputs is not None else {}
         return executable_func(context=task_context, inputs=prepared_inputs)
