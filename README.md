@@ -23,7 +23,12 @@
 
 ## 🧭 版本历史
 
-* **v1.0.0 (2024-06-01)**：首个公开版本，提供模块化任务体系、MQTT 消息总线集成、可视化调度器与基础服务管理。详见 [更新日志](./docs/CHANGELOG.md)。
+> 各版本的迁移指南、兼容性提示与详细改动请参阅 [更新日志](./docs/CHANGELOG.md)。
+
+* **v1.0.0 (2024-06-01)** — 首个公开版本：
+  * 构建 V2 模块/任务体系，支持热插拔模块、上下文日志与多语言主题。
+  * 引入内置 MQTT 消息总线与服务管理框架，可在外部 Broker 与嵌入式 Broker 间无缝切换。
+  * 新增线程池调度、事件跳数防护与 UI 观测组件，保障运行时可靠性与可调试性。
 
 ## 📂 Project Structure
 ```
@@ -57,13 +62,19 @@ The project follows a layered architecture, clearly separating presentation, bus
 
 ## 🛰️ 消息总线与服务管理
 
-T4T 通过 **ServiceManager** 与 **MessageBusManager** 协同管理后台服务和通信链路：
+T4T 的事件驱动能力依赖稳定的服务编排：
 
-* **ServiceManager (`core/service_manager.py`)**：统一注册、启动、停止后台服务（如内置 MQTT Broker），并向全局信号发出状态变更，保证服务生命周期的可控性。
-* **MessageBusManager (`utils/message_bus.py`)**：依据配置自动连接外部或内置 MQTT，总线状态会同步到 UI 状态栏；若启用内置 Broker，会等待 ServiceManager 报告 `RUNNING` 才发起连接，避免重复重启或连接失败。
-* **事件安全机制**：消息负载中的 `__hops` 字段可限制事件链路跳数，防止任务之间的循环触发。
+1. **ServiceManager (`core/service_manager.py`)**
+   * 声明式注册后台服务（内置 MQTT Broker、自定义采集器等）。
+   * 提供统一的 `start/stop/restart` 接口，并通过 `global_signals.service_state_changed` 广播状态，方便 UI、任务与监控工具感知变化。
+2. **MessageBusManager (`utils/message_bus.py`)**
+   * 支持外部 Broker 与嵌入式 Broker 双模式，依据配置自动连接、重连与故障告警。
+   * 与 ServiceManager 联动：仅在 Broker 服务进入 `RUNNING` 状态后建立 MQTT 会话，避免端口抢占或重复启动。
+3. **事件安全机制**
+   * 消息负载中的 `__hops` 计数可限制事件跳数，阻断循环触发。
+   * 结合 `config/config.ini` 的全局阈值与日志追踪，可快速定位异常链路并触发告警。
 
-借助这一组合，任务可以在后台服务可靠运行的前提下进行事件驱动联动，而不会影响桌面端的交互体验。
+这套组合确保后台服务稳定、消息链路透明，使事件驱动任务在桌面端保持高可靠性与可观测性。
 
 ## 🚀 Tech Stack
 
@@ -85,15 +96,21 @@ T4T 通过 **ServiceManager** 与 **MessageBusManager** 协同管理后台服务
 
 ### 运行环境
 
-* **操作系统**：Windows 10/11、macOS 12+、常见 Linux 桌面发行版（需带有图形环境）。
-* **Python**：推荐 Python 3.10 或更高版本，确保与 PyQt5 及 `threading`/`asyncio` 相关依赖兼容。
+* **操作系统**：Windows 10/11、macOS 12+、常见 Linux 桌面发行版（需具备图形界面）。
+* **Python**：推荐 Python 3.10 或更高版本；请确保虚拟环境内的 `pip`、`setuptools`、`wheel` 保持最新，避免构建时缺失资源文件。
 * **依赖组件**：
-  * GUI 运行需要系统安装 Qt 平台运行库（PyQt5 会自动打包，但在部分 Linux 发行版可能需要额外的 Qt 插件包）。
-  * 消息总线默认依赖外部 MQTT Broker，可选使用内置 `amqtt` 服务。
+  * GUI 运行依赖 Qt 平台插件；在部分 Linux 发行版上需提前安装 `libxcb`、`qt5-default` 等系统包。
+  * 消息总线默认连接外部 MQTT Broker；启用内置 `amqtt` 服务时需确认监听端口可用，并允许本地回环访问。
+  * 可选扩展：如需截图、OCR 等增强模块，可在虚拟环境中额外安装 `pillow`、`opencv-python` 等库。
 
 ### 打包指引
 
-1. 安装额外构建依赖：`pip install pyinstaller`。
+1. 创建隔离环境并安装构建依赖：
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\activate
+   pip install --upgrade pip setuptools wheel pyinstaller
+   ```
 2. 在项目根目录执行：
    ```bash
    pyinstaller main.py \
@@ -102,12 +119,15 @@ T4T 通过 **ServiceManager** 与 **MessageBusManager** 协同管理后台服务
      --windowed \
      --add-data "modules:modules" \
      --add-data "themes:themes" \
-     --add-data "i18n:i18n"
+     --add-data "i18n:i18n" \
+     --add-data "config:config"
    ```
-3. 将 `dist/T4T`（或 `.app`/`.exe`）连同 `config/`、`tasks/` 等运行时目录打包分发。
-4. 若计划内置 MQTT Broker，需在 `config/config.ini` 中开启 `embedded_broker.enabled=true`，并在安装脚本中配置开机自启或运行前检查端口占用。
+3. 将 `dist/T4T`（或 `.app`/`.exe`）连同 `config/`、`tasks/`、`logs/` 目录及自定义模块资源一并打包分发。
+4. 若启用内置 MQTT Broker，请在部署脚本或运维手册中新增：
+   * 端口占用检测与防火墙策略说明；
+   * 服务随系统启动或运行前手动启动的操作步骤。
 
-> 💡 **提示**：建议在干净的虚拟环境中执行上述命令，并在目标平台上进行一次完整运行测试，以验证消息总线连接、界面字体以及多语言资源是否正常加载。
+> 💡 **提示**：建议在目标平台执行一次全流程自检（含消息总线连接、主题切换、模块执行）后再交付，可显著降低部署后返工成本。
 
 ## Quick Start
 

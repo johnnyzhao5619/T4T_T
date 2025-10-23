@@ -102,13 +102,17 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
    pip install -r requirements.txt
    ```
 3. **Configure Message Bus**
-   * Edit `config/config.ini` → `[MessageBus]` section, set `host`, `port`, and credentials.
-   * For embedded broker mode, set `embedded_broker.enabled = true` and keep default port (`1883`) unused.
+   * Edit `config/config.ini` → `[MessageBus]` section, set `host`, `port`, credentials, and `keepalive`.
+   * For embedded broker mode, set `embedded_broker.enabled = true`，确保端口不被占用，并确认 `services.embedded_mqtt_broker` 的日志无错误。
 4. **Launch Application**
    ```bash
    python main.py
    ```
 5. **Optional Packaging**: Refer to the README “打包与运行环境要求” section for PyInstaller steps when distributing to end users.
+6. **Post-install Checklist**:
+   * 在 UI 状态栏确认消息总线图标为绿色“Connected”。
+   * 新建一个 `schedule` 任务并手动运行，验证线程池与日志输出正常。
+   * 若启用了多语言或主题切换，切换一次确保资源加载正确。
 
 ### 7.3. Deployment Checklist
 
@@ -130,6 +134,7 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
 * **Recovery**:
   * Click the reconnect button in the status bar or restart the application after confirming the broker is reachable.
   * For persistent failures, temporarily disable event-driven tasks or switch to an external broker for verification.
+  * 若问题反复出现，可在 `config/config.ini` 中增大 `reconnect_interval` 并观察日志中的退避时间。
 
 ### 8.2. Scheduler Not Triggering
 
@@ -141,6 +146,7 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
 * **Recovery**:
   * Toggle the task off and on to force APScheduler to rebuild the job.
   * Restart the application to clear misconfigured jobs if cron expressions were corrected.
+  * 若任务依赖外部模块资源，确认 `tasks/<task_id>/` 下的配置在更新后已重新加载。
 
 ### 8.3. UI Not Responding During Task Execution
 
@@ -150,9 +156,10 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
 
 ## 9. UI 操作示例
 
-以下步骤帮助你在没有截图的情况下快速熟悉界面：
+![T4T UI 操作示例示意图](./images/ui_overview.svg)
 
-1. **任务列表**：左侧面板列出全部任务，可通过右键菜单或工具栏操作状态。
-2. **任务详情标签页**：用于配置任务、查看状态与手动触发事件。
-3. **实时日志**：展示当前选中任务的执行输出与错误日志。
-4. **系统状态栏**：集中显示消息总线连接、线程池状态以及当前主题/语言。
+1. **工具栏操作**：从顶部工具栏创建任务、批量启动/暂停或进入设置界面，建议在修改配置后立即点击“保存”按钮以触发持久化。
+2. **任务列表**：左侧列表支持状态筛选与多选操作，右键可快速克隆、删除任务或导出配置。
+3. **任务详情标签页**：右侧标签包括“配置”“状态”“日志”等，切换不同标签可查看触发器、输入参数与最近执行记录。
+4. **实时日志面板**：底部日志区实时输出上下文日志、异常堆栈与调度信息，支持关键字过滤与导出。
+5. **状态栏提示**：底部状态栏显示消息总线连接状态、线程池占用、主题/语言等信息，出现黄色警告图标时可点击查看详细错误提示。

@@ -178,7 +178,7 @@ assets:
 | 字段 | 类型 | 说明 |
 | :--- | :--- | :--- |
 | `name` | `str` | 模块在 UI 中展示的名称，建议保持唯一性。 |
-| `module_type` | `str` | 对应模块目录名，决定了 Task Manager 实例化时加载的脚本。 |
+| `module_type` | `str` | 对应模块目录名，决定了 Task Manager 实例化时加载的脚本入口。 |
 | `version` | `str` | 语义化版本号，配合 `CHANGELOG` 跟踪功能演进。 |
 | `description` | `str` | 可选，提供用户在 UI 中查看的简介。 |
 | `enabled` | `bool` | 新建任务时是否默认启用该模块。 |
@@ -186,10 +186,11 @@ assets:
 | `trigger.type` | `str` | `schedule` / `event`，指定触发机制。 |
 | `trigger.config` | `dict` | 触发器细节，例如 `cron` 字段或 `topic`、`max_hops`。 |
 | `inputs` | `list` or `dict` | 定义运行所需的输入参数、必填项与默认值。 |
-| `settings` | `dict` | 任务生命周期内保持不变的配置，适合存放 API Key、阈值等。 |
+| `settings` | `dict` | 任务生命周期内保持不变的配置，适合存放 API Key、阈值等（建议搭配 `ConfigManager` 管理加密字段）。 |
 | `assets.copy_files` | `list[str]` | 任务实例化时需要复制的额外资源路径。 |
 
 > ✅ **最佳实践**：随着模块迭代，保持 `version` 与 `CHANGELOG` 同步更新，并在 `description` 中明确兼容的消息主题或使用场景，有助于后续维护。
+> 📌 **字段验证**：建议编写针对 `manifest.yaml` 的单元测试，在加载配置后对必填字段执行断言，可及早捕获字段缺失或类型错误。
 
 ---
 
@@ -295,6 +296,7 @@ This example demonstrates how to leverage the features of the V2 architecture—
    ```
    重点关注 `test_task_manager_events.py`、`test_message_bus_manager.py` 等用例，确保事件触发链路与消息总线交互正常。
 2. **集成测试**：通过 `test_e2e_v2.py` 验证模块在完整生命周期内的表现（注册、调度、执行、日志输出）。
-3. **实时调试**：使用 `context.logger` 输出结构化日志，默认写入 `logs/t4t.log`，可结合外部日志分析工具观察行为趋势。
-4. **服务状态确认**：调试消息总线或嵌入式 Broker 时，订阅 `global_signals.service_state_changed`（见 `core/service_manager.py`）以获取精确的状态回调，避免误判连接问题。
-5. **UI 调试**：若涉及前端组件，配合 `tests/test_task_list_widget.py` 等 UI 测试验证交互逻辑，并在开发模式下启用 PyQt 的 `QT_DEBUG_PLUGINS=1` 环境变量定位缺失插件。
+3. **实时调试**：使用 `context.logger` 输出结构化日志，默认写入 `logs/t4t.log`，可结合外部日志分析工具观察行为趋势；必要时在 `manifest.yaml` 中启用 `debug: true` 提高日志粒度。
+4. **服务状态确认**：调试消息总线或嵌入式 Broker 时，订阅 `global_signals.service_state_changed`（见 `core/service_manager.py`）以获取精确的状态回调；同时监听 `global_signals.message_published` 了解事件流量与跳数。
+5. **UI 调试**：若涉及前端组件，配合 `tests/test_task_list_widget.py` 等 UI 测试验证交互逻辑，并在开发模式下启用 PyQt 的 `QT_DEBUG_PLUGINS=1` 环境变量定位缺失插件；必要时使用 `pytest -k widget` 聚焦特定组件。
+6. **断点排查**：在模块代码中可使用 `pdb.set_trace()` 或 VSCode/PyCharm 远程调试，线程池会暂停对应任务线程而不阻塞主界面。
