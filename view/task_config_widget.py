@@ -638,12 +638,21 @@ class TaskConfigWidget(QWidget):
             inputs_list.append(item)
         return inputs_list
 
-    def set_config(self, config_data):
+    def set_config(self, config_data, mark_changed: bool = True):
         self._populate_form(config_data)
-        self.changed_widgets = set(self.widgets.keys())
-        for key in set(self.widgets.keys()) | set(self._aux_widgets.keys()):
-            self._update_widget_style(key)
-        self.config_changed.emit()
+
+        all_keys = set(self.widgets.keys()) | set(self._aux_widgets.keys())
+
+        if mark_changed:
+            self.changed_widgets = set(self.widgets.keys())
+            for key in all_keys:
+                self._update_widget_style(key)
+            self.config_changed.emit()
+        else:
+            self.changed_widgets.clear()
+            self.error_widgets.clear()
+            for key in all_keys:
+                self._update_widget_style(key)
 
     def validate_config(self):
         self.error_widgets.clear()

@@ -176,7 +176,8 @@ class TaskDetailTabWidget(QWidget):
                 config_data = self.json_editor_widget.get_config()
                 if config_data is None:
                     return
-                self.task_config_widget.set_config(config_data)
+                self.task_config_widget.set_config(
+                    config_data, mark_changed=False)
         except Exception as e:
             logger.warning(
                 f"Could not sync config editors for task '{self.task_name}':"

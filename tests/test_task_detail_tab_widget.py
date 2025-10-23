@@ -7,7 +7,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 
 try:
-    from PyQt5.QtWidgets import QApplication, QLabel, QMessageBox
+    from PyQt5.QtWidgets import (QApplication, QLabel, QMessageBox,
+                                 QFileDialog)
 except ImportError as exc:  # pragma: no cover - handled via pytest skip
     pytest.skip(
         f"PyQt5 is required for TaskDetailTabWidget tests: {exc}",
@@ -131,6 +132,49 @@ def test_save_config_reload_after_rename(monkeypatch, qapp):
         failure_message = _("config_load_failed_message")
         labels = widget.task_config_widget.findChildren(QLabel)
         assert all(label.text() != failure_message for label in labels)
+    finally:
+        widget.deleteLater()
+
+
+def test_switch_tabs_keeps_save_disabled_and_import_triggers(monkeypatch, tmp_path, qapp):
+    manager = _TaskManagerStub()
+    widget = TaskDetailTabWidget("demo", manager)
+
+    try:
+        monkeypatch.setattr(QMessageBox, "critical", lambda *args, **kwargs: None)
+        monkeypatch.setattr(QMessageBox, "information", lambda *args, **kwargs: None)
+        monkeypatch.setattr(QMessageBox, "warning", lambda *args, **kwargs: None)
+
+        json_index = widget.config_tabs.indexOf(widget.json_editor_widget)
+        form_index = widget.config_tabs.indexOf(widget.task_config_widget)
+
+        widget.config_tabs.setCurrentIndex(json_index)
+        qapp.processEvents()
+
+        assert not widget.save_button.isEnabled()
+
+        widget.config_tabs.setCurrentIndex(form_index)
+        qapp.processEvents()
+
+        assert not widget.save_button.isEnabled()
+        assert not widget.task_config_widget.changed_widgets
+        assert not widget.task_config_widget.error_widgets
+
+        imported_config = manager.get_task_config("demo")
+        imported_config["enabled"] = not imported_config.get("enabled", False)
+        file_path = tmp_path / "import_config.json"
+        file_path.write_text(json.dumps(imported_config))
+
+        monkeypatch.setattr(
+            QFileDialog,
+            "getOpenFileName",
+            lambda *args, **kwargs: (str(file_path), ""),
+        )
+
+        widget.import_config()
+        qapp.processEvents()
+
+        assert widget.save_button.isEnabled()
     finally:
         widget.deleteLater()
 
