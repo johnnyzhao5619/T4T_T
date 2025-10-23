@@ -64,6 +64,8 @@ class DummySignals:
         self.task_status_changed = DummySignal()
         self.task_manager_updated = DummySignal()
         self.task_renamed = DummySignal()
+        self.task_succeeded = DummySignal()
+        self.task_failed = DummySignal()
         self.log_message = DummySignal()
 
 

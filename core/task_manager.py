@@ -26,6 +26,22 @@ logger = logging.getLogger(__name__)
 SCHEDULED_TRIGGER_TYPES = frozenset({'cron', 'interval', 'date'})
 
 
+class TaskExecutionError(RuntimeError):
+    """Base exception for recoverable task execution failures."""
+
+
+class TaskExecutableNotFoundError(TaskExecutionError):
+    """Raised when a task script does not expose a callable ``run`` function."""
+
+    def __init__(self, task_name: str, script_path: str):
+        message = ("Task '%s' cannot be executed because script '%s' does not "
+                   "define a callable 'run' function." % (task_name,
+                                                           script_path))
+        super().__init__(message)
+        self.task_name = task_name
+        self.script_path = script_path
+
+
 def is_scheduled_trigger(trigger_type: str | None) -> bool:
     """Return True when the trigger type should be handled by APScheduler."""
     return trigger_type in SCHEDULED_TRIGGER_TYPES
@@ -425,11 +441,18 @@ class TaskManager:
                               _context=None):
         """Load the task script, construct the context, and execute it."""
         task_info = self.tasks[task_name]
+        task_logger = task_info.get('logger', logger)
         executable_func = self._load_task_executable(task_info['script'])
         if not executable_func:
-            return None
+            error_message = (
+                "Task '%s' execution aborted: missing callable 'run' in script '%s'."
+                % (task_name, task_info['script'])
+            )
+            task_logger.error(error_message)
+            if task_logger is not logger:
+                logger.error(error_message)
+            raise TaskExecutableNotFoundError(task_name, task_info['script'])
 
-        task_logger = task_info.get('logger', logger)
         task_context = TaskContext(
             task_name=task_name,
             logger=task_logger,
@@ -465,16 +488,27 @@ class TaskManager:
             def task_done_callback(fut):
                 try:
                     result = fut.result()
-                    msg = f"Task completed successfully. Result: {result}"
-                    global_signals.task_succeeded.emit(task_name, timestamp,
-                                                       msg)
-                    logger.info(f"Task '{task_name}' finished successfully.")
+                except TaskExecutionError as exc:
+                    error_msg = str(exc)
+                    global_signals.task_failed.emit(task_name, timestamp, error_msg)
+                    logger.error(f"Task '{task_name}' failed: {exc}", exc_info=True)
+                    return
                 except Exception as e:
                     error_msg = f"Task execution failed: {e}"
-                    global_signals.task_failed.emit(task_name, timestamp,
-                                                    error_msg)
-                    logger.error(f"Task '{task_name}' failed: {e}",
-                                 exc_info=True)
+                    global_signals.task_failed.emit(task_name, timestamp, error_msg)
+                    logger.error(f"Task '{task_name}' failed: {e}", exc_info=True)
+                    return
+
+                if isinstance(result, TaskExecutionError):
+                    error_msg = str(result)
+                    global_signals.task_failed.emit(task_name, timestamp, error_msg)
+                    logger.error(
+                        f"Task '{task_name}' reported failure result: {result}")
+                    return
+
+                msg = f"Task completed successfully. Result: {result}"
+                global_signals.task_succeeded.emit(task_name, timestamp, msg)
+                logger.info(f"Task '{task_name}' finished successfully.")
 
             future.add_done_callback(task_done_callback)
             return future
@@ -501,23 +535,38 @@ class TaskManager:
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         if use_executor:
-            return self._execute_task_logic(task_name, prepared_inputs,
-                                            log_emitter=log_emitter)
+            if log_emitter is not None:
+                return self._execute_task_logic(task_name, prepared_inputs,
+                                                log_emitter=log_emitter)
+            return self._execute_task_logic(task_name, prepared_inputs)
 
         try:
             result = self._prepare_and_run_task(task_name,
                                                 prepared_inputs,
                                                 log_emitter=log_emitter)
-            msg = f"Task completed successfully. Result: {result}"
-            global_signals.task_succeeded.emit(task_name, timestamp, msg)
-            logger.info(f"Task '{task_name}' finished successfully.")
-            return result
+        except TaskExecutionError as exc:
+            error_msg = str(exc)
+            global_signals.task_failed.emit(task_name, timestamp, error_msg)
+            logger.error(f"Task '{task_name}' failed during synchronous execution: {exc}",
+                         exc_info=True)
+            raise
         except Exception as e:
             error_msg = f"Task execution failed: {e}"
             global_signals.task_failed.emit(task_name, timestamp, error_msg)
-            logger.error(f"Task '{task_name}' failed during synchronous "
-                         f"execution: {e}", exc_info=True)
+            logger.error(f"Task '{task_name}' failed during synchronous execution: {e}",
+                         exc_info=True)
             raise
+
+        if isinstance(result, TaskExecutionError):
+            error_msg = str(result)
+            global_signals.task_failed.emit(task_name, timestamp, error_msg)
+            logger.error(f"Task '{task_name}' reported failure result: {result}")
+            return result
+
+        msg = f"Task completed successfully. Result: {result}"
+        global_signals.task_succeeded.emit(task_name, timestamp, msg)
+        logger.info(f"Task '{task_name}' finished successfully.")
+        return result
 
     def get_task_list(self):
         """
