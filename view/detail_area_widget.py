@@ -198,6 +198,16 @@ class DetailAreaWidget(QTabWidget):
                     logger.exception(
                         "Failed to forward rename event to widget '%s'.",
                         new_name)
+
+    def _disconnect_signals(self):
+        try:
+            global_signals.task_renamed.disconnect(self.on_task_renamed)
+        except TypeError:
+            pass
+
+    def closeEvent(self, event):
+        self._disconnect_signals()
+        super().closeEvent(event)
                     if hasattr(widget, 'task_name'):
                         widget.task_name = new_name
             elif hasattr(widget, 'task_name'):

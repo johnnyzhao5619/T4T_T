@@ -43,12 +43,26 @@ class SettingsDialog(QDialog):
 
     def _update_window_title(self):
         self.setWindowTitle(_("settings_dialog_title"))
+        self.theme_label.setText(_("theme_label"))
+        self.language_label.setText(_("language_label"))
+        self.import_module_button.setText(_("import_module_button"))
+        self.findChild(QGroupBox, "appearance_language_group_title").setTitle(
+            _("appearance_language_group_title"))
+        self.findChild(QGroupBox, "module_management_group_title").setTitle(
+            _("module_management_group_title"))
+        self.populate_modules()
 
-    def __del__(self):
-        if hasattr(self, "_sections"):
-            self._sections.cleanup()
-        try:
-            language_manager.language_changed.disconnect(
-                self._update_window_title)
-        except TypeError:
-            pass
+    def _disconnect_signals(self):
+        signal_slot_pairs = [
+            (language_manager.language_changed, self.retranslate_ui),
+            (global_signals.modules_updated, self.populate_modules),
+        ]
+        for signal, slot in signal_slot_pairs:
+            try:
+                signal.disconnect(slot)
+            except TypeError:
+                pass
+
+    def closeEvent(self, event):
+        self._disconnect_signals()
+        super().closeEvent(event)

@@ -69,3 +69,48 @@ def test_update_status_handles_unregistered_service(qapp, message_bus_module):
         widget.deleteLater()
         i18n.language_manager.translations = original_translations
         i18n.language_manager.current_language = original_language
+
+
+def test_signals_disconnect_on_close(qapp, message_bus_module):
+    module = message_bus_module
+
+    signal_names = [
+        "service_state_changed",
+        "message_published",
+        "message_received",
+        "mqtt_stats_updated",
+    ]
+
+    def collect_counts():
+        return {
+            name: getattr(module.global_signals, name).receivers()
+            for name in signal_names
+        }
+
+    baseline_counts = collect_counts()
+
+    widget = module.MessageBusMonitorWidget()
+
+    try:
+        connected_counts = collect_counts()
+        for name in signal_names:
+            assert connected_counts[name] == baseline_counts[name] + 1
+
+        module.global_signals.message_received.emit("demo/topic", "payload")
+        qapp.processEvents()
+        initial_text = widget.text_browser.toPlainText()
+        assert initial_text.strip(), "Expected the widget to receive the signal"
+
+        widget.close()
+        qapp.processEvents()
+
+        closed_counts = collect_counts()
+        for name in signal_names:
+            assert closed_counts[name] == baseline_counts[name]
+
+        module.global_signals.message_received.emit("demo/topic", "payload")
+        qapp.processEvents()
+        assert widget.text_browser.toPlainText() == initial_text
+    finally:
+        widget.deleteLater()
+        qapp.processEvents()
