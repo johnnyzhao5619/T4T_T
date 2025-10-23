@@ -3,14 +3,14 @@ from PyQt5.QtWidgets import (QTreeWidget, QTreeWidgetItem, QMenu, QInputDialog,
                              QMessageBox, QLineEdit, QHeaderView)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
-from utils.signals import global_signals
+from utils.signals import global_signals, SignalConnectionManagerMixin
 from utils.icon_manager import get_icon
 from utils.i18n import _
 
 logger = logging.getLogger(__name__)
 
 
-class TaskListWidget(QTreeWidget):
+class TaskListWidget(SignalConnectionManagerMixin, QTreeWidget):
     """
     A custom widget to display and manage the list of tasks in a multi-column
     view with status indicators and a context menu.
@@ -46,12 +46,16 @@ class TaskListWidget(QTreeWidget):
 
         # Connect signals
         self.customContextMenuRequested.connect(self.show_context_menu)
-        global_signals.task_manager_updated.connect(self.refresh_tasks)
-        global_signals.task_status_changed.connect(
-            self._on_task_status_changed)
-        global_signals.task_renamed.connect(self._on_task_renamed)
-        global_signals.task_succeeded.connect(self._on_task_succeeded)
-        global_signals.task_failed.connect(self._on_task_failed)
+        self._register_signal(global_signals.task_manager_updated,
+                              self.refresh_tasks)
+        self._register_signal(global_signals.task_status_changed,
+                              self._on_task_status_changed)
+        self._register_signal(global_signals.task_renamed,
+                              self._on_task_renamed)
+        self._register_signal(global_signals.task_succeeded,
+                              self._on_task_succeeded)
+        self._register_signal(global_signals.task_failed,
+                              self._on_task_failed)
 
     def find_item_by_name(self, task_name: str) -> QTreeWidgetItem | None:
         """Find a top-level item by the task name in the first column."""

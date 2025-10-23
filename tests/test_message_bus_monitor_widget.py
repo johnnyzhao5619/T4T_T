@@ -69,3 +69,26 @@ def test_update_status_handles_unregistered_service(qapp, message_bus_module):
         widget.deleteLater()
         i18n.language_manager.translations = original_translations
         i18n.language_manager.current_language = original_language
+
+
+def test_widget_stops_receiving_signals_after_close(qapp, message_bus_module):
+    module = message_bus_module
+    widget = module.MessageBusMonitorWidget()
+
+    try:
+        module.global_signals.message_received.emit("test/topic",
+                                                    "payload-before-close")
+        qapp.processEvents()
+        initial_content = widget.text_browser.toPlainText()
+        assert "payload-before-close" in initial_content
+
+        widget.close()
+        qapp.processEvents()
+
+        module.global_signals.message_received.emit("test/topic",
+                                                    "payload-after-close")
+        qapp.processEvents()
+
+        assert widget.text_browser.toPlainText() == initial_content
+    finally:
+        widget.deleteLater()

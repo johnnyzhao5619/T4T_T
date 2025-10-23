@@ -9,11 +9,11 @@ from PyQt5.QtWidgets import (QComboBox, QFileDialog, QFormLayout, QGroupBox,
 from core.module_manager import module_manager
 from utils.icon_manager import get_icon
 from utils.i18n import _, language_manager, switch_language
-from utils.signals import global_signals
+from utils.signals import global_signals, SignalConnectionManagerMixin
 from utils.theme import switch_theme, theme_manager
 
 
-class SettingsSections(QObject):
+class SettingsSections(SignalConnectionManagerMixin, QObject):
     """Shared UI logic for settings widgets and dialogs."""
 
     def __init__(self,
@@ -77,8 +77,10 @@ class SettingsSections(QObject):
         self.language_combo.currentTextChanged.connect(
             self._on_language_changed)
         self.import_module_button.clicked.connect(self.import_module)
-        language_manager.language_changed.connect(self.retranslate)
-        global_signals.modules_updated.connect(self.populate_modules)
+        self._register_signal(language_manager.language_changed,
+                              self.retranslate)
+        self._register_signal(global_signals.modules_updated,
+                              self.populate_modules)
 
         self._initialized = True
 
@@ -176,13 +178,7 @@ class SettingsSections(QObject):
         self.populate_modules()
 
     def cleanup(self) -> None:
-        for signal, handler in (
-                (language_manager.language_changed, self.retranslate),
-                (global_signals.modules_updated, self.populate_modules)):
-            try:
-                signal.disconnect(handler)
-            except TypeError:
-                pass
+        self._disconnect_tracked_signals()
 
     def _on_theme_changed(self, theme_name: str) -> None:
         if not theme_name:

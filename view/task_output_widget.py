@@ -2,12 +2,12 @@ import logging
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QTextEdit, QComboBox, QLineEdit)
 from utils.i18n import _
-from utils.signals import global_signals
+from utils.signals import global_signals, SignalConnectionManagerMixin
 
 logger = logging.getLogger(__name__)
 
 
-class TaskOutputWidget(QWidget):
+class TaskOutputWidget(SignalConnectionManagerMixin, QWidget):
     """
     A widget to display task output, including logs, with controls for
     filtering and debugging.
@@ -17,7 +17,7 @@ class TaskOutputWidget(QWidget):
         super().__init__(parent)
         self.task_name = task_name
         self.init_ui()
-        global_signals.log_message.connect(self.append_log)
+        self._register_signal(global_signals.log_message, self.append_log)
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -58,8 +58,3 @@ class TaskOutputWidget(QWidget):
             # Here you would implement the filtering logic before appending
             self.log_output_area.append(message)
 
-    def __del__(self):
-        try:
-            global_signals.log_message.disconnect(self.append_log)
-        except TypeError:
-            pass

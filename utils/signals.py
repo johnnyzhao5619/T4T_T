@@ -11,6 +11,38 @@ easier to maintain.
 from PyQt5.QtCore import QObject, pyqtSignal
 
 
+class SignalConnectionManagerMixin:
+    """Mixin to track and clean up Qt signal connections."""
+
+    def __init__(self, *args, **kwargs):
+        self._signal_connections: list[tuple[object, object]] = []
+        super().__init__(*args, **kwargs)
+        try:
+            # Ensure automatic cleanup when the QObject is destroyed.
+            self.destroyed.connect(self._disconnect_tracked_signals)
+        except AttributeError:
+            # Some subclasses might not expose ``destroyed`` (e.g. during
+            # early initialization); fallback cleanup relies on explicit calls.
+            pass
+
+    def _register_signal(self, signal, slot, *, connect: bool = True):
+        """Register a signal/slot pair for later cleanup."""
+        if connect:
+            signal.connect(slot)
+        self._signal_connections.append((signal, slot))
+        return slot
+
+    def _disconnect_tracked_signals(self, *_, **__):
+        """Disconnect all tracked signal/slot pairs."""
+        while self._signal_connections:
+            signal, slot = self._signal_connections.pop()
+            try:
+                signal.disconnect(slot)
+            except (TypeError, RuntimeError):
+                # Ignore if already disconnected or QObject was deleted.
+                continue
+
+
 class GlobalSignals(QObject):
     """
     A singleton class for application-wide signals.

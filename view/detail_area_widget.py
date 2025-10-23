@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
 from core.task_manager import TaskManager
 from utils.i18n import _
 from utils.icon_manager import get_icon
-from utils.signals import global_signals
+from utils.signals import global_signals, SignalConnectionManagerMixin
 from view.help_widget import HelpWidget
 from view.log_viewer_widget import LogViewerWidget
 from view.new_task_widget import NewTaskWidget
@@ -37,7 +37,7 @@ class WelcomeWidget(QWidget):
         layout.addWidget(text_label)
 
 
-class DetailAreaWidget(QTabWidget):
+class DetailAreaWidget(SignalConnectionManagerMixin, QTabWidget):
     """
     A custom QTabWidget to display and manage task details in a dynamic,
     closable tab interface, with left-aligned tabs.
@@ -52,7 +52,8 @@ class DetailAreaWidget(QTabWidget):
         self.setTabsClosable(True)
         self.setMovable(True)
         self.tabCloseRequested.connect(self.close_task_tab)
-        global_signals.task_renamed.connect(self.on_task_renamed)
+        self._register_signal(global_signals.task_renamed,
+                              self.on_task_renamed)
 
         # Set tab bar alignment to the left
         self.setStyleSheet("QTabWidget::tab-bar { alignment: left; }")
