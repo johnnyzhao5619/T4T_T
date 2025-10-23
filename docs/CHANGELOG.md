@@ -1,16 +1,16 @@
-# T4T 更新日志
+# T4T Change Log
 
 ## v1.0.0 - 2024-06-01
 
 ### Added
-- 发布全新的 V2 模块体系，支持通过 `manifest.yaml` 声明触发器与输入参数。
-- 引入内置 MQTT 消息总线与事件驱动调度，兼容外部 Broker 与嵌入式服务管理。
-- 桌面端 UI 全面升级，提供任务列表、详情标签页、实时日志面板与多语言主题切换。
-- 新增线程池执行器与上下文日志能力，确保任务执行互不阻塞并可追踪。
+- Introduced the v1.0 modular task architecture with `manifest.yaml` support for declaring triggers and input parameters.
+- Added the built-in MQTT message bus and event-driven scheduling, compatible with external brokers and the embedded service manager.
+- Refreshed the desktop UI with task lists, detail tabs, live log panels, and theme/language switching.
+- Delivered the thread-pool executor and context-aware logging to keep task execution non-blocking and traceable.
 
 ### Fixed
-- 统一任务生命周期管理，修复旧版本中任务重复调度导致的阻塞问题。
-- 改进消息发布循环检测，避免事件链路中出现无限递归。
+- Unified task lifecycle management to resolve duplicate scheduling that previously caused blocking behavior.
+- Improved message publish loop detection to avoid infinite recursion in event pipelines.
 
 ### Changed
-- 调整配置目录结构，集中管理 `config/`、`tasks/` 与主题资源，便于打包与部署。
+- Reorganized the configuration directory layout so `config/`, `tasks/`, and theme assets are managed together for easier packaging and deployment.

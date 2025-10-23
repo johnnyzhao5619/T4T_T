@@ -2,13 +2,13 @@
 
 ---
 
-# T4T Developer Guide (V2)
+# T4T Developer Guide (v1.0)
 
-Welcome to the world of T4T V2 module development! This document will guide you through the new event-driven architecture, core concepts, and how to build a fully functional V2 module.
+Welcome to the world of T4T v1.0 module development! This document will guide you through the event-driven architecture, core concepts, and how to build a fully functional v1.0 module.
 
-## 1. V2 Module Structure Overview
+## 1. v1.0 Module Structure Overview
 
-A V2 module consists of two core files that together define its behavior and metadata.
+A v1.0 module consists of two core files that together define its behavior and metadata.
 
 *   **`manifest.yaml`**: This is the module's "ID card." It is a declarative configuration file used to define the module's name, trigger mechanism, input parameters, and other metadata. The system parses this file to understand how and when to execute your task.
 *   **Task Script (`__init__.py` or other specified script)**: This is the module's "brain," containing the actual business logic. Its core is a function named `run`, which the system calls when the trigger condition is met.
@@ -17,12 +17,12 @@ A V2 module consists of two core files that together define its behavior and met
 
 ## 2. Writing the Task Script (The `run` function)
 
-The entry point for a V2 module is a `run` function with a standard signature. This function's design follows the principle of "dependency injection," making testing and code reuse simpler.
+The entry point for a v1.0 module is a `run` function with a standard signature. This function's design follows the principle of "dependency injection," making testing and code reuse simpler.
 
 ```python
 def run(context, inputs):
     """
-    A standard V2 task function.
+    A standard v1.0 task function.
 
     :param context: A context object injected by the system, providing access to core services like logging and the message bus.
     :param inputs: A dictionary containing the input data required by the task.
@@ -69,11 +69,11 @@ The `inputs` parameter is a dictionary containing all the data needed for the ta
 
 ## 3. The Manifest File (`manifest.yaml`)
 
-`manifest.yaml` is the core of a V2 module, defining its behavior in a clear, human-readable way.
+`manifest.yaml` is the core of a v1.0 module, defining its behavior in a clear, human-readable way.
 
 ### 3.1. The Trigger (`trigger`)
 
-The `trigger` field defines the condition that starts the task. T4T V2 supports two main types of triggers.
+The `trigger` field defines the condition that starts the task. T4T v1.0 supports two main types of triggers.
 
 #### a) Schedule Trigger (`schedule`)
 
@@ -173,24 +173,24 @@ assets:
 
 > ℹ️ **Tip**: If the module does not require additional assets, set `assets.copy_files` to an empty list (or omit the section entirely) to keep the manifest clean.
 
-### 3.4. Manifest 字段参考
+### 3.4. Manifest Field Reference
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | `str` | 模块在 UI 中展示的名称，建议保持唯一性。 |
-| `module_type` | `str` | 对应模块目录名，决定了 Task Manager 实例化时加载的脚本入口。 |
-| `version` | `str` | 语义化版本号，配合 `CHANGELOG` 跟踪功能演进。 |
-| `description` | `str` | 可选，提供用户在 UI 中查看的简介。 |
-| `enabled` | `bool` | 新建任务时是否默认启用该模块。 |
-| `debug` | `bool` | 打开后会为该任务附加更详细的日志输出。 |
-| `trigger.type` | `str` | `schedule` / `event`，指定触发机制。 |
-| `trigger.config` | `dict` | 触发器细节，例如 `cron` 字段或 `topic`、`max_hops`。 |
-| `inputs` | `list` or `dict` | 定义运行所需的输入参数、必填项与默认值。 |
-| `settings` | `dict` | 任务生命周期内保持不变的配置，适合存放 API Key、阈值等（建议搭配 `ConfigManager` 管理加密字段）。 |
-| `assets.copy_files` | `list[str]` | 任务实例化时需要复制的额外资源路径。 |
+| `name` | `str` | Display name shown in the UI; keep it unique for clarity. |
+| `module_type` | `str` | Matches the module directory name so the Task Manager can load the correct script. |
+| `version` | `str` | Semantic version that should stay aligned with the `CHANGELOG`. |
+| `description` | `str` | Optional short summary shown to end users in the UI. |
+| `enabled` | `bool` | Whether the module is enabled by default when creating new tasks. |
+| `debug` | `bool` | Enables verbose logging for the task when set to `true`. |
+| `trigger.type` | `str` | Either `schedule` or `event`, defining the trigger mechanism. |
+| `trigger.config` | `dict` | Trigger-specific details, such as cron fields or `topic`/`max_hops`. |
+| `inputs` | `list` or `dict` | Declares required inputs, default values, and validation metadata. |
+| `settings` | `dict` | Immutable configuration for the task lifecycle—ideal for API keys or thresholds (consider `ConfigManager` for secrets). |
+| `assets.copy_files` | `list[str]` | Extra resource paths to copy when instantiating a task. |
 
-> ✅ **最佳实践**：随着模块迭代，保持 `version` 与 `CHANGELOG` 同步更新，并在 `description` 中明确兼容的消息主题或使用场景，有助于后续维护。
-> 📌 **字段验证**：建议编写针对 `manifest.yaml` 的单元测试，在加载配置后对必填字段执行断言，可及早捕获字段缺失或类型错误。
+> ✅ **Best practice**: As modules evolve, keep `version` synced with the `CHANGELOG` and note compatible topics or scenarios in `description` to aid future maintenance.
+> 📌 **Field validation**: Write unit tests for `manifest.yaml` loaders so required fields are asserted during parsing and schema mistakes are caught early.
 
 ---
 
@@ -198,7 +198,7 @@ assets:
 
 ### 4.1. Concurrency Model
 
-T4T V2 uses a `ThreadPoolExecutor` to manage a pool of worker threads. All tasks (whether triggered by `schedule` or `event`) are submitted to this pool for asynchronous execution.
+T4T v1.0 uses a `ThreadPoolExecutor` to manage a pool of worker threads. All tasks (whether triggered by `schedule` or `event`) are submitted to this pool for asynchronous execution.
 
 *   **Difference from the old model**: In the old `APScheduler` model, a long-running task could block the scheduler thread. The new thread pool model ensures that each task runs in a separate thread, preventing tasks from interfering with each other and ensuring the main application UI remains responsive at all times.
 
@@ -212,15 +212,15 @@ To keep the embedded MQTT broker and the client connection in sync, `MessageBusM
 
 ### 4.3. Event Trigger Best Practices
 
-1. **限定主题命名**：使用层级化命名（如 `devices/<room>/<sensor>`）便于通过通配符订阅与权限隔离。
-2. **使用 `max_hops`**：在 `trigger.config` 中设置合理跳数上限，防止任务之间互相触发造成无限循环。
-3. **结构化 Payload**：约定 JSON 字段名称，与 `inputs` 中的 `name` 保持一致，避免在 `run` 函数中大量判空。
-4. **幂等性设计**：任务应允许重复接收相同事件（例如通过事件 ID 去重），确保在消息重发或网络抖动时保持一致性。
-5. **监控与告警**：订阅 `global_signals.message_published` 可实现自定义监控（见 `utils/message_bus.py`），将异常频率的主题输出到日志或外部告警系统。
+1. **Scoped topic naming**: Use hierarchical topics (e.g., `devices/<room>/<sensor>`) to simplify wildcard subscriptions and access control.
+2. **Leverage `max_hops`**: Set a sensible hop limit in `trigger.config` to prevent tasks from triggering each other indefinitely.
+3. **Structured payloads**: Standardize JSON field names so they match the `inputs` definitions, avoiding repetitive null checks inside `run`.
+4. **Design for idempotency**: Allow tasks to process duplicate events (e.g., deduplicate by event ID) so retries or network jitter do not break consistency.
+5. **Monitoring and alerts**: Subscribe to `global_signals.message_published` (see `utils/message_bus.py`) to pipe abnormal topic frequency into logs or external alerting systems.
 
 ---
 
-## 5. A Complete V2 Module Example
+## 5. A Complete v1.0 Module Example
 
 Let's bring all these concepts together in a complete, event-driven module. This module will listen to an MQTT topic, validate the incoming temperature data, and log messages at different levels based on the temperature value.
 
@@ -284,19 +284,19 @@ def run(context, inputs):
 
 ```
 
-This example demonstrates how to leverage the features of the V2 architecture—a declarative `manifest.yaml`, robust input validation, and context-aware logging—to create a module that is concise, reliable, and easy to maintain.
+This example demonstrates how to leverage the features of the v1.0 architecture—a declarative `manifest.yaml`, robust input validation, and context-aware logging—to create a module that is concise, reliable, and easy to maintain.
 
 ---
 
 ## 6. Testing & Debugging Workflow
 
-1. **单元测试**：项目提供基于 `pytest` 的测试套件（参见 `tests/` 目录）。新增模块后，建议为关键逻辑补充测试用例，并运行：
+1. **Unit tests**: The project ships with a `pytest` suite (see the `tests/` directory). After adding a module, extend the tests for critical logic and run:
    ```bash
    pytest
    ```
-   重点关注 `test_task_manager_events.py`、`test_message_bus_manager.py` 等用例，确保事件触发链路与消息总线交互正常。
-2. **集成测试**：通过 `test_e2e_v2.py` 验证模块在完整生命周期内的表现（注册、调度、执行、日志输出）。
-3. **实时调试**：使用 `context.logger` 输出结构化日志，默认写入 `logs/t4t.log`，可结合外部日志分析工具观察行为趋势；必要时在 `manifest.yaml` 中启用 `debug: true` 提高日志粒度。
-4. **服务状态确认**：调试消息总线或嵌入式 Broker 时，订阅 `global_signals.service_state_changed`（见 `core/service_manager.py`）以获取精确的状态回调；同时监听 `global_signals.message_published` 了解事件流量与跳数。
-5. **UI 调试**：若涉及前端组件，配合 `tests/test_task_list_widget.py` 等 UI 测试验证交互逻辑，并在开发模式下启用 PyQt 的 `QT_DEBUG_PLUGINS=1` 环境变量定位缺失插件；必要时使用 `pytest -k widget` 聚焦特定组件。
-6. **断点排查**：在模块代码中可使用 `pdb.set_trace()` 或 VSCode/PyCharm 远程调试，线程池会暂停对应任务线程而不阻塞主界面。
+   Pay special attention to `test_task_manager_events.py` and `test_message_bus_manager.py` to verify event chains and message bus integration.
+2. **Integration tests**: Execute `test_e2e_v2.py` to validate the module across registration, scheduling, execution, and logging.
+3. **Live debugging**: Use `context.logger` for structured logs (written to `logs/t4t.log` by default) and pair with external log analysis tools. Enable `debug: true` in `manifest.yaml` when deeper verbosity is needed.
+4. **Service state verification**: While debugging the message bus or embedded broker, subscribe to `global_signals.service_state_changed` (see `core/service_manager.py`) for precise callbacks, and listen to `global_signals.message_published` to monitor event flow and hop counts.
+5. **UI debugging**: For front-end components, rely on tests such as `tests/test_task_list_widget.py` and enable PyQt's `QT_DEBUG_PLUGINS=1` in development to spot missing plugins. Use `pytest -k widget` to focus on specific widgets when necessary.
+6. **Breakpoint inspection**: Use `pdb.set_trace()` or remote debugging via VSCode/PyCharm inside module code; the thread pool pauses the relevant worker without freezing the main UI.
