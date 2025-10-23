@@ -24,7 +24,6 @@ from PyQt5.QtWidgets import (
     QMenu,
 )
 from PyQt5.QtCore import Qt, QTimer, QSize, QSettings
-from core.context import TaskContext
 from view.task_list_widget import TaskListWidget
 from view.detail_area_widget import DetailAreaWidget
 from view.message_bus_monitor_widget import MessageBusMonitorWidget
@@ -179,36 +178,12 @@ class T4TMainWindow(QMainWindow):
         """
         logger.debug(
             f"Main thread received request to execute task: {task_name}")
-        task_info = self.task_manager.get_task_info(task_name)
-        if not task_info:
-            logger.error(
-                f"Cannot execute task: '{task_name}' not found in TaskManager."
-            )
-            return
-
-        # All task-loading and execution now happens safely in the main thread.
         try:
-            executable_func = self.task_manager._load_task_executable(
-                task_info['script'])
-            if not executable_func:
-                return
-
-            task_logger = task_info.get('logger', logger)
-            context = TaskContext(
-                task_name=task_name,
-                logger=task_logger,
-                config=task_info.get('config_data'),
-                task_path=task_info.get('path', ''),
-                state_manager=self.task_manager.state_manager)
-
-            # Expose log emitter through the context for UI integration
-            context.log_emitter = partial(global_signals.log_message.emit,
-                                          task_name)
-
-            prepared_inputs = inputs if inputs is not None else {}
-
-            executable_func(context=context, inputs=prepared_inputs)
-
+            log_emitter = partial(global_signals.log_message.emit, task_name)
+            self.task_manager.run_task(task_name,
+                                       inputs,
+                                       use_executor=False,
+                                       log_emitter=log_emitter)
         except Exception as e:
             logger.error(
                 f"An error occurred while executing task '{task_name}'"

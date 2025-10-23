@@ -5,7 +5,7 @@ import importlib.util
 from copy import deepcopy
 from typing import Any, Callable
 from datetime import datetime
-from functools import partial
+from types import SimpleNamespace
 
 from core.context import TaskContext, TaskContextFilter
 
@@ -367,7 +367,7 @@ class TaskManager:
                     payload_with_defaults[item_name] = item_def['default']
 
             # 3. Submit task for execution
-            self._execute_task_logic(task_name, payload_with_defaults)
+            self.run_task(task_name, payload_with_defaults)
 
         return wrapper
 
@@ -417,38 +417,53 @@ class TaskManager:
 
         return self.DEFAULT_EVENT_MAX_HOPS
 
-    def _execute_task_logic(self, task_name: str, inputs: dict):
-        """
-        Handles the actual loading and execution of a task, including
-        result signal emission.
-        """
+    def _prepare_and_run_task(self,
+                              task_name: str,
+                              inputs: dict | None = None,
+                              *,
+                              log_emitter: Callable[[str], None] | None = None,
+                              _context=None):
+        """Load the task script, construct the context, and execute it."""
         task_info = self.tasks[task_name]
         executable_func = self._load_task_executable(task_info['script'])
         if not executable_func:
-            return
+            return None
 
+        task_logger = task_info.get('logger', logger)
+        task_context = TaskContext(
+            task_name=task_name,
+            logger=task_logger,
+            config=task_info['config_data'],
+            task_path=task_info['path'],
+            state_manager=self.state_manager
+        )
+
+        if log_emitter is not None:
+            task_context.log_emitter = log_emitter
+
+        prepared_inputs = inputs if inputs is not None else {}
+        return executable_func(context=task_context, inputs=prepared_inputs)
+
+    def _execute_task_logic(self,
+                            task_name: str,
+                            inputs: dict,
+                            log_emitter: Callable[[str], None] | None = None):
+        """
+        Handles the asynchronous submission of a task and dispatches
+        completion signals when it finishes.
+        """
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         try:
-            task_logger = task_info.get('logger', logger)
-            context = TaskContext(
-                task_name=task_name,
-                logger=task_logger,
-                config=task_info['config_data'],
-                task_path=task_info['path'],
-                state_manager=self.state_manager  # Inject StateManager
+            future = self.scheduler_manager.submit(
+                self._prepare_and_run_task,
+                task_name,
+                inputs,
+                log_emitter=log_emitter,
+                context=SimpleNamespace(task_name=task_name)
             )
-
-            # Using partial to prepare the function call for the executor
-            task_callable = partial(executable_func)
-
-            # Submit to the thread pool and get a future
-            future = self.scheduler_manager.submit(task_callable,
-                                                   context=context,
-                                                   inputs=inputs)
 
             def task_done_callback(fut):
                 try:
-                    # Check if the task raised an exception
                     result = fut.result()
                     msg = f"Task completed successfully. Result: {result}"
                     global_signals.task_succeeded.emit(task_name, timestamp,
@@ -462,13 +477,47 @@ class TaskManager:
                                  exc_info=True)
 
             future.add_done_callback(task_done_callback)
+            return future
 
         except Exception as e:
-            # This catches errors during submission itself
             error_msg = f"Failed to submit task to executor: {e}"
             global_signals.task_failed.emit(task_name, timestamp, error_msg)
             logger.error(f"Error submitting task '{task_name}': {e}",
                          exc_info=True)
+            return None
+
+    def run_task(self,
+                 task_name: str,
+                 inputs: dict | None = None,
+                 *,
+                 use_executor: bool = True,
+                 log_emitter: Callable[[str], None] | None = None):
+        """Execute a task either asynchronously or synchronously."""
+        if task_name not in self.tasks:
+            logger.error(f"Task '{task_name}' not found.")
+            return None
+
+        prepared_inputs = inputs if inputs is not None else {}
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        if use_executor:
+            return self._execute_task_logic(task_name, prepared_inputs,
+                                            log_emitter=log_emitter)
+
+        try:
+            result = self._prepare_and_run_task(task_name,
+                                                prepared_inputs,
+                                                log_emitter=log_emitter)
+            msg = f"Task completed successfully. Result: {result}"
+            global_signals.task_succeeded.emit(task_name, timestamp, msg)
+            logger.info(f"Task '{task_name}' finished successfully.")
+            return result
+        except Exception as e:
+            error_msg = f"Task execution failed: {e}"
+            global_signals.task_failed.emit(task_name, timestamp, error_msg)
+            logger.error(f"Task '{task_name}' failed during synchronous "
+                         f"execution: {e}", exc_info=True)
+            raise
 
     def get_task_list(self):
         """
@@ -1067,7 +1116,7 @@ class TaskManager:
         def job_wrapper():
             logger.info(f"'{trigger_type}' trigger for task '{task_name}'. "
                         "Submitting to executor.")
-            self._execute_task_logic(task_name, inputs={})
+            self.run_task(task_name, inputs={})
 
         try:
             params = dict(trigger_params)
