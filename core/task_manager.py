@@ -619,6 +619,49 @@ class TaskManager:
         """
         return self.tasks.get(task_name, {})
 
+    def validate_task_name(self, task_name: str) -> tuple[bool, str | None]:
+        """Validate a task name and return an error code when invalid.
+
+        Args:
+            task_name: Proposed task name.
+
+        Returns:
+            Tuple containing a boolean indicating validity and an optional
+            error code string when invalid. Possible error codes are:
+            ``'empty'``, ``'separator'``, and ``'outside'``.
+        """
+
+        if not task_name:
+            return False, 'empty'
+
+        separators = {os.sep}
+        if os.altsep:
+            separators.add(os.altsep)
+
+        for separator in separators:
+            if separator and separator in task_name:
+                return False, 'separator'
+
+        if os.path.isabs(task_name):
+            return False, 'outside'
+
+        normalized_tasks_dir = os.path.abspath(self.tasks_dir)
+        candidate_path = os.path.abspath(os.path.join(self.tasks_dir,
+                                                      task_name))
+        try:
+            common_path = os.path.commonpath([normalized_tasks_dir,
+                                              candidate_path])
+        except ValueError:
+            return False, 'outside'
+
+        if common_path != normalized_tasks_dir:
+            return False, 'outside'
+
+        if task_name in {'.', '..'}:
+            return False, 'outside'
+
+        return True, None
+
     def create_task(self, task_name: str, module_type: str) -> bool:
         """
         Creates a new task instance from a module template.
@@ -630,8 +673,18 @@ class TaskManager:
         Returns:
             bool: True if creation was successful, False otherwise.
         """
-        if not task_name:
-            logger.error("Task name cannot be empty.")
+        is_valid_name, error_code = self.validate_task_name(task_name)
+        if not is_valid_name:
+            error_reasons = {
+                'empty': "Task name cannot be empty.",
+                'separator': ("Task name contains path separator characters "
+                              "and was rejected."),
+                'outside': ("Task name resolves outside the tasks directory "
+                            "after normalization."),
+            }
+            reason = error_reasons.get(error_code, "Invalid task name.")
+            logger.warning("Rejected task creation for name '%s': %s",
+                           task_name, reason)
             return False
 
         task_path = os.path.join(self.tasks_dir, task_name)

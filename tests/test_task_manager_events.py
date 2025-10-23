@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import logging
 import os
 import sys
 import time
@@ -14,30 +15,153 @@ from apscheduler.triggers.cron import CronTrigger
 PyQt5 = types.ModuleType("PyQt5")
 QtCore = types.ModuleType("PyQt5.QtCore")
 QtWidgets = types.ModuleType("PyQt5.QtWidgets")
+QtGui = types.ModuleType("PyQt5.QtGui")
 
 
 class _DummySignal:
-    def connect(self, *args, **kwargs):
-        return None
+    def __init__(self):
+        self._callbacks: list[Callable[..., None]] = []
 
-    def disconnect(self, *args, **kwargs):
-        return None
+    def connect(self, callback, *args, **kwargs):
+        if callback not in self._callbacks:
+            self._callbacks.append(callback)
+
+    def disconnect(self, callback=None, *args, **kwargs):
+        if callback is None:
+            self._callbacks.clear()
+            return
+        if callback in self._callbacks:
+            self._callbacks.remove(callback)
 
     def emit(self, *args, **kwargs):
+        for callback in list(self._callbacks):
+            callback(*args, **kwargs)
+
+
+class QWidget:
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+class QVBoxLayout:
+    def __init__(self, parent=None):
+        self.parent = parent
+
+    def setContentsMargins(self, *args, **kwargs):
         return None
+
+    def setAlignment(self, *args, **kwargs):
+        return None
+
+    def addWidget(self, *args, **kwargs):
+        return None
+
+
+class QFormLayout:
+    def __init__(self, parent=None):
+        self.parent = parent
+
+    def setSpacing(self, *args, **kwargs):
+        return None
+
+    def addRow(self, *args, **kwargs):
+        return None
+
+
+class QLineEdit:
+    def __init__(self):
+        self._text = ""
+        self.placeholder = ""
+
+    def setPlaceholderText(self, text):
+        self.placeholder = text
+
+    def text(self):
+        return self._text
+
+    def setText(self, text):
+        self._text = text
+
+
+class QComboBox:
+    def __init__(self):
+        self._items: list[str] = []
+        self._index = 0
+
+    def clear(self):
+        self._items = []
+        self._index = 0
+
+    def addItems(self, items):
+        self._items.extend(items)
+
+    def currentText(self):
+        if not self._items:
+            return ""
+        return self._items[self._index]
+
+    def setCurrentIndex(self, index):
+        if 0 <= index < len(self._items):
+            self._index = index
+
+
+class QPushButton:
+    def __init__(self, *args, **kwargs):
+        self.clicked = _DummySignal()
+
+    def setEnabled(self, *args, **kwargs):
+        return None
+
+
+class QGroupBox(QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class QMessageBox:
+    @staticmethod
+    def warning(*args, **kwargs):
+        return None
+
+    @staticmethod
+    def information(*args, **kwargs):
+        return None
+
+    @staticmethod
+    def critical(*args, **kwargs):
+        return None
+
+
+class QColor:
+    def __init__(self, color):
+        self.color = color
 
 
 QtCore.QObject = object
 QtCore.pyqtSignal = lambda *args, **kwargs: _DummySignal()
-QtWidgets.QMessageBox = type(
-    "QMessageBox", (), {"critical": staticmethod(lambda *args, **kwargs: None)})
+QtCore.Qt = types.SimpleNamespace(AlignTop=0)
+QtWidgets.QWidget = QWidget
+QtWidgets.QVBoxLayout = QVBoxLayout
+QtWidgets.QFormLayout = QFormLayout
+QtWidgets.QLineEdit = QLineEdit
+QtWidgets.QComboBox = QComboBox
+QtWidgets.QPushButton = QPushButton
+QtWidgets.QGroupBox = QGroupBox
+QtWidgets.QMessageBox = QMessageBox
+QtGui.QColor = QColor
 
 PyQt5.QtCore = QtCore
 PyQt5.QtWidgets = QtWidgets
+PyQt5.QtGui = QtGui
+
+qtawesome = types.ModuleType("qtawesome")
+qtawesome.icon = lambda *args, **kwargs: object()
 
 sys.modules.setdefault("PyQt5", PyQt5)
 sys.modules.setdefault("PyQt5.QtCore", QtCore)
 sys.modules.setdefault("PyQt5.QtWidgets", QtWidgets)
+sys.modules.setdefault("PyQt5.QtGui", QtGui)
+sys.modules.setdefault("qtawesome", qtawesome)
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
@@ -49,7 +173,10 @@ from core.task_manager import (
     TaskManager,
     is_scheduled_trigger,
 )
+from core.module_manager import ModuleManager
+from utils.i18n import _, language_manager
 from utils.logger import SignalHandler
+from view.new_task_widget import NewTaskWidget
 
 
 class DummySignal:
@@ -129,6 +256,61 @@ def _write_task_files(task_dir: Path, config: dict) -> None:
 
     with open(task_dir / "main.py", "w", encoding="utf-8") as script_file:
         script_file.write(_SCRIPT_CONTENT)
+
+
+def _create_module_template(modules_dir: Path,
+                            module_name: str = "sample_module") -> str:
+    module_dir = modules_dir / module_name
+    module_dir.mkdir(parents=True)
+
+    template_path = module_dir / f"{module_name}_template.py"
+    template_path.write_text(_SCRIPT_CONTENT, encoding="utf-8")
+
+    manifest_data = {
+        "name": module_name,
+        "module_type": module_name,
+        "enabled": True,
+        "trigger": {
+            "type": "event",
+            "topic": "tests/topic"
+        }
+    }
+
+    with open(module_dir / "manifest.yaml", "w", encoding="utf-8") as manifest_file:
+        yaml.safe_dump(manifest_data,
+                       manifest_file,
+                       allow_unicode=True,
+                       sort_keys=False)
+
+    return module_name
+
+
+class _DummySchedulerManager:
+    def submit(self, *args, **kwargs):
+        raise RuntimeError("Scheduler should not be used in tests.")
+
+
+@pytest.fixture
+def temp_task_manager(tmp_path):
+    modules_dir = tmp_path / "modules"
+    tasks_dir = tmp_path / "tasks"
+    module_name = _create_module_template(modules_dir)
+
+    module_manager_instance = ModuleManager()
+    default_modules_path = os.path.abspath(os.path.join(project_root,
+                                                        "modules"))
+    original_module_path = getattr(module_manager_instance, "module_path",
+                                   default_modules_path)
+
+    manager = TaskManager(_DummySchedulerManager(),
+                          tasks_dir=str(tasks_dir),
+                          modules_dir=str(modules_dir))
+
+    try:
+        yield manager, module_name
+    finally:
+        manager.apscheduler.shutdown(wait=False)
+        module_manager_instance.set_module_path(original_module_path)
 
 
 def _create_event_task(tasks_dir: Path, name: str = "EventTask",
@@ -868,3 +1050,61 @@ def test_scheduler_submit_passes_context_keyword(prepared_manager):
 
     result = future.result(timeout=3)
     assert result == payload
+
+
+def test_task_manager_rejects_task_name_with_separator(temp_task_manager, caplog):
+    manager, module_type = temp_task_manager
+
+    with caplog.at_level(logging.WARNING):
+        assert not manager.create_task("bad/name", module_type)
+
+    assert "path separator" in caplog.text
+    assert manager.get_task_count() == 0
+    assert os.listdir(manager.tasks_dir) == []
+
+
+def test_task_manager_rejects_task_name_outside_directory(temp_task_manager,
+                                                          caplog):
+    manager, module_type = temp_task_manager
+
+    with caplog.at_level(logging.WARNING):
+        assert not manager.create_task("..", module_type)
+
+    assert "outside the tasks directory" in caplog.text
+    assert manager.get_task_count() == 0
+
+
+def test_new_task_widget_warns_on_invalid_task_name(temp_task_manager,
+                                                    monkeypatch):
+    manager, module_type = temp_task_manager
+
+    assert language_manager.load_language('en')
+
+    from view import new_task_widget as new_task_widget_module
+
+    widget = NewTaskWidget(manager)
+    widget.task_name_input.setText("bad/name")
+
+    messages: list[tuple[str, str]] = []
+
+    def record_warning(parent, title, message):
+        messages.append((title, message))
+
+    monkeypatch.setattr(new_task_widget_module.QMessageBox,
+                        "warning",
+                        staticmethod(record_warning))
+
+    create_called = False
+
+    def unexpected_create(*args, **kwargs):
+        nonlocal create_called
+        create_called = True
+        return True
+
+    monkeypatch.setattr(manager, "create_task", unexpected_create)
+
+    widget.create_task()
+
+    assert not create_called
+    assert messages
+    assert messages[0][1] == _("task_name_separator_error")

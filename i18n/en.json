@@ -85,6 +85,8 @@
   "new_task_module_label": "Module Type:",
   "create_task_button": "Create Task",
   "task_name_required_error": "Task name is required.",
+  "task_name_separator_error": "Task name cannot contain path separators.",
+  "task_name_outside_dir_error": "Task name must stay inside the tasks folder.",
   "module_type_required_error": "Module type must be selected.",
   "task_created_success_message": "Task '{task_name}' created successfully.",
   "task_created_fail_message": "Failed to create task '{task_name}'.",

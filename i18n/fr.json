@@ -65,6 +65,8 @@
   "new_task_module_label": "Type de module:",
   "create_task_button": "Créer une tâche",
   "task_name_required_error": "Le nom de la tâche est requis.",
+  "task_name_separator_error": "Le nom de la tâche ne peut pas contenir de séparateurs de chemin.",
+  "task_name_outside_dir_error": "Le nom de la tâche doit rester dans le dossier des tâches après normalisation.",
   "module_type_required_error": "Le type de module doit être sélectionné.",
   "task_created_success_message": "Tâche '{task_name}' créée avec succès.",
   "task_created_fail_message": "Échec de la création de la tâche '{task_name}'.",
