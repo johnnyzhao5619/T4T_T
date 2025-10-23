@@ -2,11 +2,11 @@
 
 ---
 
-# T4T Task Management Platform - User Manual (V2)
+# T4T Task Management Platform - User Manual (v1.0)
 
 ## 1. Welcome to T4T
 
-Welcome to T4T V2, a powerful and flexible automation tool. Whether you want to execute repetitive tasks on a schedule or build complex event-driven workflows, T4T has you covered. This manual will guide you through the software's features.
+Welcome to T4T v1.0, a powerful and flexible automation tool. Whether you want to execute repetitive tasks on a schedule or build complex event-driven workflows, T4T has you covered. This manual will guide you through the software's features.
 
 ## 2. Main Interface Overview
 
@@ -57,7 +57,7 @@ On the "New Task" or "Edit Task" page, you will see the following key configurat
 
 ## 4. Event-Driven Architecture and the Message Bus
 
-The core of T4T V2 is the **Message Bus** (usually an MQTT server), which allows tasks to communicate with each other and with the outside world.
+The core of T4T v1.0 is the **Message Bus** (usually an MQTT server), which allows tasks to communicate with each other and with the outside world.
 
 *   **How It Works**: Imagine a post office system. A task (the publisher) can send a letter (a message) to a specific address (a topic). Any other task or tasks (the subscribers) interested in this address can "subscribe" to it and will receive the letter instantly upon its arrival.
 *   **Connection Status**: Be sure to pay attention to the status bar in the bottom-right corner of the main interface. A dedicated icon will show whether the application is currently connected to the message bus. **If the connection is lost, all event-driven tasks will be unable to receive events.**
@@ -103,22 +103,22 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
    ```
 3. **Configure Message Bus**
    * Edit `config/config.ini` → `[MessageBus]` section, set `host`, `port`, credentials, and `keepalive`.
-   * For embedded broker mode, set `embedded_broker.enabled = true`，确保端口不被占用，并确认 `services.embedded_mqtt_broker` 的日志无错误。
+   * For embedded broker mode, set `embedded_broker.enabled = true`, ensure the port is free, and confirm the `services.embedded_mqtt_broker` logs show no errors.
 4. **Launch Application**
    ```bash
    python main.py
    ```
-5. **Optional Packaging**: Refer to the README “打包与运行环境要求” section for PyInstaller steps when distributing to end users.
+5. **Optional Packaging**: Refer to the README “Packaging & Runtime Requirements” section for PyInstaller steps when distributing to end users.
 6. **Post-install Checklist**:
-   * 在 UI 状态栏确认消息总线图标为绿色“Connected”。
-   * 新建一个 `schedule` 任务并手动运行，验证线程池与日志输出正常。
-   * 若启用了多语言或主题切换，切换一次确保资源加载正确。
+   * Confirm the message bus icon in the UI status bar is green and displays “Connected”.
+   * Create a `schedule` task and run it manually to validate the thread pool and log output.
+   * If multilingual UI or theme switching is enabled, toggle them once to verify resources load correctly.
 
 ### 7.3. Deployment Checklist
 
-* Verify the `tasks/` directory contains only intended task instances before packaging。
-* Confirm `logs/` directory has write permissions on the target host。
-* Test at least one scheduled task and one event-driven task end-to-end after deployment。
+* Verify the `tasks/` directory contains only intended task instances before packaging.
+* Confirm the `logs/` directory has write permissions on the target host.
+* Test at least one scheduled task and one event-driven task end-to-end after deployment.
 
 ---
 
@@ -134,7 +134,7 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
 * **Recovery**:
   * Click the reconnect button in the status bar or restart the application after confirming the broker is reachable.
   * For persistent failures, temporarily disable event-driven tasks or switch to an external broker for verification.
-  * 若问题反复出现，可在 `config/config.ini` 中增大 `reconnect_interval` 并观察日志中的退避时间。
+  * If the issue repeats, increase `reconnect_interval` in `config/config.ini` and monitor the backoff timing in the logs.
 
 ### 8.2. Scheduler Not Triggering
 
@@ -146,7 +146,7 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
 * **Recovery**:
   * Toggle the task off and on to force APScheduler to rebuild the job.
   * Restart the application to clear misconfigured jobs if cron expressions were corrected.
-  * 若任务依赖外部模块资源，确认 `tasks/<task_id>/` 下的配置在更新后已重新加载。
+  * If the task depends on external module assets, verify that the configuration under `tasks/<task_id>/` has been reloaded after updates.
 
 ### 8.3. UI Not Responding During Task Execution
 
@@ -154,12 +154,12 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
 
 ---
 
-## 9. UI 操作示例
+## 9. UI Walkthrough Example
 
-![T4T UI 操作示例示意图](./images/ui_overview.svg)
+![T4T UI walkthrough illustration](./images/ui_overview.svg)
 
-1. **工具栏操作**：从顶部工具栏创建任务、批量启动/暂停或进入设置界面，建议在修改配置后立即点击“保存”按钮以触发持久化。
-2. **任务列表**：左侧列表支持状态筛选与多选操作，右键可快速克隆、删除任务或导出配置。
-3. **任务详情标签页**：右侧标签包括“配置”“状态”“日志”等，切换不同标签可查看触发器、输入参数与最近执行记录。
-4. **实时日志面板**：底部日志区实时输出上下文日志、异常堆栈与调度信息，支持关键字过滤与导出。
-5. **状态栏提示**：底部状态栏显示消息总线连接状态、线程池占用、主题/语言等信息，出现黄色警告图标时可点击查看详细错误提示。
+1. **Toolbar actions**: Use the top toolbar to create tasks, start/pause in bulk, or open settings. After editing configurations, click “Save” to persist changes immediately.
+2. **Task list**: The left pane supports status filtering and multi-selection. Right-click to clone, delete, or export task configurations quickly.
+3. **Task detail tabs**: Tabs such as “Configuration,” “State,” and “Logs” on the right reveal triggers, input parameters, and recent execution records.
+4. **Real-time log panel**: The bottom log pane streams contextual logs, exception traces, and scheduler events in real time, with keyword filtering and export capabilities.
+5. **Status bar indicators**: The bottom status bar shows message bus connectivity, thread pool usage, and theme/language information. Yellow warning icons can be clicked for detailed error messages.
