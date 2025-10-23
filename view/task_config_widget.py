@@ -236,6 +236,21 @@ class TaskConfigWidget(QWidget):
         layout.addRow(_("debug_mode_label"), debug_checkbox)
         self.widgets['debug'] = debug_checkbox
 
+    @staticmethod
+    def _resolve_cron_expression(config_section):
+        if not isinstance(config_section, dict):
+            return ""
+
+        cron_expression = config_section.get("cron_expression")
+        if cron_expression not in (None, ""):
+            return str(cron_expression)
+
+        fallback_expression = config_section.get("expression")
+        if fallback_expression in (None, ""):
+            return ""
+
+        return str(fallback_expression)
+
     def _create_trigger_widget(self, layout, trigger_data, schema):
         # Add a separator and a title for the trigger group
         label_text = schema.get("label", "Trigger")
@@ -309,9 +324,7 @@ class TaskConfigWidget(QWidget):
         combo.setCurrentIndex(trigger_types.index(selected_type))
         stack.setCurrentIndex(trigger_types.index(selected_type))
 
-        cron_expression = ""
-        if isinstance(config, dict):
-            cron_expression = config.get("cron_expression", "")
+        cron_expression = self._resolve_cron_expression(config)
         self.trigger_widget["widgets"]["cron"].setText(cron_expression)
 
         if selected_type == "interval":
@@ -658,7 +671,7 @@ class TaskConfigWidget(QWidget):
         if selected_type == "cron":
             cron_widget = widgets.get("cron")
             if cron_widget:
-                cron_expression = config.get("cron_expression", "")
+                cron_expression = self._resolve_cron_expression(config)
                 with self._maybe_block_signals(cron_widget, not mark_changed):
                     cron_widget.setText(str(cron_expression))
         elif selected_type == "interval":
