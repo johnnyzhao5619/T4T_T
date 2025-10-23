@@ -55,3 +55,13 @@ inputs:
 settings:
   example_setting: "Hello, World!"
   api_key: "YOUR_API_KEY_HERE"
+
+# assets/copy_files: 声明在实例化任务时需要从模块目录复制到任务目录的附加资源。
+# 可以列出文件或子目录的相对路径，系统会保留目录结构进行复制。
+# 例如：
+# assets:
+#   copy_files:
+#     - resources/credentials.json
+#     - templates/email/
+assets:
+  copy_files: []
