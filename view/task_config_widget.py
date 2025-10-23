@@ -645,6 +645,71 @@ class TaskConfigWidget(QWidget):
             self._update_widget_style(key)
         self.config_changed.emit()
 
+    def set_field_value(self, key, value, *, mark_changed=True):
+        """Update a form field while optionally keeping change highlights."""
+        widget = self.widgets.get(key)
+        if not widget:
+            return False
+
+        if isinstance(widget, QLineEdit):
+            previous_block_state = widget.blockSignals(True)
+            try:
+                if widget.text() == str(value):
+                    # Ensure style is refreshed when the widget is already marked.
+                    if mark_changed and key in self.changed_widgets:
+                        self._update_widget_style(key)
+                    return True
+                widget.setText(str(value))
+            finally:
+                widget.blockSignals(previous_block_state)
+        elif isinstance(widget, QCheckBox):
+            previous_block_state = widget.blockSignals(True)
+            try:
+                bool_value = bool(value)
+                if widget.isChecked() == bool_value:
+                    if mark_changed and key in self.changed_widgets:
+                        self._update_widget_style(key)
+                    return True
+                widget.setChecked(bool_value)
+            finally:
+                widget.blockSignals(previous_block_state)
+        elif isinstance(widget, QSpinBox):
+            previous_block_state = widget.blockSignals(True)
+            try:
+                int_value = int(value)
+                if widget.value() == int_value:
+                    if mark_changed and key in self.changed_widgets:
+                        self._update_widget_style(key)
+                    return True
+                widget.setValue(int_value)
+            finally:
+                widget.blockSignals(previous_block_state)
+        elif isinstance(widget, QComboBox):
+            previous_block_state = widget.blockSignals(True)
+            try:
+                text_value = str(value)
+                if widget.currentText() == text_value:
+                    if mark_changed and key in self.changed_widgets:
+                        self._update_widget_style(key)
+                    return True
+                index = widget.findText(text_value)
+                if index >= 0:
+                    widget.setCurrentIndex(index)
+                else:
+                    widget.setCurrentText(text_value)
+            finally:
+                widget.blockSignals(previous_block_state)
+        else:
+            logger.debug("Unsupported widget type for key '%s'.", key)
+            return False
+
+        if mark_changed:
+            self.changed_widgets.add(key)
+        else:
+            self.changed_widgets.discard(key)
+        self._update_widget_style(key)
+        return True
+
     def validate_config(self):
         self.error_widgets.clear()
         is_valid = True

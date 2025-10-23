@@ -191,7 +191,10 @@ def test_on_task_renamed_preserves_unsaved_changes(monkeypatch, qapp):
 
         monkeypatch.setattr(widget, "load_config", wrapped_load_config)
 
-        modified_content = "{\n  \"name\": \"demo\"\n}"
+        modified_content = json.dumps({"name": "demo"}, indent=4, sort_keys=True)
+        widget.config_tabs.setCurrentWidget(widget.json_editor_widget)
+        qapp.processEvents()
+
         widget.json_editor_widget.editor.setPlainText(modified_content)
         widget.save_button.setEnabled(True)
 
@@ -204,8 +207,42 @@ def test_on_task_renamed_preserves_unsaved_changes(monkeypatch, qapp):
         assert widget.json_editor_widget.task_name == new_name
         assert widget.output_widget.task_name == new_name
         assert widget._last_loaded_task_name == new_name
-        assert widget.json_editor_widget.editor.toPlainText() == modified_content
+        expected_content = json.dumps({"name": new_name}, indent=4, sort_keys=True)
+        assert widget.json_editor_widget.editor.toPlainText() == expected_content
         assert widget.save_button.isEnabled()
+    finally:
+        widget.deleteLater()
+
+
+def test_on_task_renamed_keeps_new_name_when_saving(monkeypatch, qapp):
+    manager = _TaskManagerStub()
+    widget = TaskDetailTabWidget("demo", manager)
+
+    try:
+        monkeypatch.setattr(QMessageBox, "critical", lambda *args, **kwargs: None)
+        monkeypatch.setattr(QMessageBox, "information", lambda *args, **kwargs: None)
+        monkeypatch.setattr(QMessageBox, "warning", lambda *args, **kwargs: None)
+
+        enabled_widget = widget.task_config_widget.widgets["enabled"]
+        enabled_widget.setChecked(not enabled_widget.isChecked())
+        qapp.processEvents()
+
+        assert widget.save_button.isEnabled()
+
+        new_name = "demo_saved"
+        config_copy = deepcopy(manager._configs["demo"])
+        config_copy["name"] = new_name
+        manager._configs[new_name] = config_copy
+
+        widget.on_task_renamed(new_name)
+        qapp.processEvents()
+
+        assert widget.task_config_widget.widgets["name"].text() == new_name
+
+        widget.save_config()
+        qapp.processEvents()
+
+        assert manager.save_calls[-1][1]["name"] == new_name
     finally:
         widget.deleteLater()
 

@@ -202,6 +202,35 @@ class TaskDetailTabWidget(QWidget):
         else:
             self._last_loaded_task_name = new_name
 
+            mark_changed = self.save_button.isEnabled()
+            self.task_config_widget.set_field_value(
+                'name', new_name, mark_changed=mark_changed)
+
+            if (self.config_tabs.currentWidget() == self.json_editor_widget):
+                json_text = self.json_editor_widget.editor.toPlainText()
+                try:
+                    config_data = json.loads(json_text)
+                except json.JSONDecodeError:
+                    config_data = None
+
+                if isinstance(config_data, dict):
+                    if config_data.get('name') != new_name:
+                        config_data['name'] = new_name
+                        updated_text = json.dumps(
+                            config_data, indent=4, sort_keys=True)
+                        editor = self.json_editor_widget.editor
+                        previous_block_state = editor.blockSignals(True)
+                        cursor = editor.textCursor()
+                        position = cursor.position()
+                        try:
+                            editor.setPlainText(updated_text)
+                        finally:
+                            editor.blockSignals(previous_block_state)
+                        cursor = editor.textCursor()
+                        cursor.setPosition(min(position,
+                                               len(updated_text)))
+                        editor.setTextCursor(cursor)
+
         if old_name != new_name and self.save_button.isEnabled():
             logger.info("Task '%s' renamed to '%s' with unsaved changes kept.",
                         old_name, new_name)
