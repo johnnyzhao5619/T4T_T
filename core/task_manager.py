@@ -83,6 +83,7 @@ class TaskManager:
         self.tasks = {}
         self._event_task_topics: dict[str, str] = {}
         self.config_manager = config_manager
+        self._script_cache: dict[str, tuple[float, Callable]] = {}
 
         try:
             self.apscheduler.start()
@@ -1106,20 +1107,40 @@ class TaskManager:
         """
         Dynamically loads a 'run' function from a given script file.
         """
+        cached_entry = self._script_cache.get(script_path)
+
+        try:
+            current_mtime = os.path.getmtime(script_path)
+        except OSError as exc:
+            if cached_entry:
+                self._script_cache.pop(script_path, None)
+            logger.error(
+                f"Failed to load task module from '{script_path}': {exc}")
+            return None
+
+        if cached_entry and cached_entry[0] == current_mtime:
+            return cached_entry[1]
+
         try:
             spec = importlib.util.spec_from_file_location(
                 "task_module", script_path)
+            if spec is None or spec.loader is None:
+                raise ImportError("Unable to create module spec or loader is missing")
+
             task_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(task_module)
 
-            if hasattr(task_module, 'run') and callable(
-                    getattr(task_module, 'run')):
-                return getattr(task_module, 'run')
-            else:
-                logger.error(f"Script '{script_path}' does not have a callable"
-                             " 'run' function.")
-                return None
+            run_callable = getattr(task_module, 'run', None)
+            if callable(run_callable):
+                self._script_cache[script_path] = (current_mtime, run_callable)
+                return run_callable
+
+            self._script_cache.pop(script_path, None)
+            logger.error(f"Script '{script_path}' does not have a callable"
+                         " 'run' function.")
+            return None
         except Exception as e:
+            self._script_cache.pop(script_path, None)
             logger.error(
                 f"Failed to load task module from '{script_path}': {e}")
             return None

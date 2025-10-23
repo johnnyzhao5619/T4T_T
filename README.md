@@ -10,14 +10,20 @@
 
 ---
 
-## ✨ Core Features
+## ✨ 核心特性清单
 
-*   **Dual-Mode Triggers**: Supports both traditional **scheduled** tasks (Cron, Interval) and powerful **event-driven** tasks.
-*   **Pluggable Module System**: Create new functional modules with a simple `manifest.yaml` and a Python script, enabling true "hot-plugging".
-*   **Message Bus Integration**: A built-in MQTT client allows for decoupled communication between tasks and with external systems (e.g., IoT devices, Web APIs).
-*   **Concurrent Execution**: Uses a `ThreadPoolExecutor` to run all tasks asynchronously, ensuring a smooth UI and non-blocking task execution.
-*   **Rich User Interface**: Provides features for task management, real-time logging, status monitoring, multi-language support, and theme switching.
-*   **Context-Aware Logging**: Logs from each task are automatically associated with the task instance for clear and easy debugging.
+| 领域 | 能力亮点 |
+| --- | --- |
+| 任务自动化 | **双触发模式**：支持 Cron/Interval 等定时任务与事件驱动任务并行使用，满足周期性与实时性的双重需求。 |
+| 模块扩展 | **模块热插拔**：通过 `manifest.yaml` + `run` 函数即可发布新模块，配置即生效，避免重复开发。 |
+| 消息联动 | **内置 MQTT 消息总线**：提供发布/订阅能力与循环跳数防护，轻松联动物联网设备或其他系统。 |
+| 并发执行 | **线程池调度**：所有任务异步执行，保证 UI 流畅与后台处理互不阻塞。 |
+| 可观测性 | **上下文日志 & 运行态监控**：日志自动归属任务实例，配合状态栏实时呈现消息总线与系统资源。 |
+| 体验友好 | **多语言 & 主题切换**：支持多语言界面、主题自定义与实时日志面板，降低学习成本。 |
+
+## 🧭 版本历史
+
+* **v1.0.0 (2024-06-01)**：首个公开版本，提供模块化任务体系、MQTT 消息总线集成、可视化调度器与基础服务管理。详见 [更新日志](./docs/CHANGELOG.md)。
 
 ## 📂 Project Structure
 ```
@@ -49,6 +55,16 @@ The project follows a layered architecture, clearly separating presentation, bus
     *   `modules/`: Contains the reusable “templates” for tasks.
     *   `tasks/`: Contains the configured instances of modules, each with its own `config.yaml`.
 
+## 🛰️ 消息总线与服务管理
+
+T4T 通过 **ServiceManager** 与 **MessageBusManager** 协同管理后台服务和通信链路：
+
+* **ServiceManager (`core/service_manager.py`)**：统一注册、启动、停止后台服务（如内置 MQTT Broker），并向全局信号发出状态变更，保证服务生命周期的可控性。
+* **MessageBusManager (`utils/message_bus.py`)**：依据配置自动连接外部或内置 MQTT，总线状态会同步到 UI 状态栏；若启用内置 Broker，会等待 ServiceManager 报告 `RUNNING` 才发起连接，避免重复重启或连接失败。
+* **事件安全机制**：消息负载中的 `__hops` 字段可限制事件链路跳数，防止任务之间的循环触发。
+
+借助这一组合，任务可以在后台服务可靠运行的前提下进行事件驱动联动，而不会影响桌面端的交互体验。
+
 ## 🚀 Tech Stack
 
 *   **Backend**: Python 3
@@ -63,6 +79,35 @@ The project follows a layered architecture, clearly separating presentation, bus
 
 *   **[User Manual](./docs/user_manual.md)**: A guide for end-users on how to operate the software.
 *   **[Development Guide](./docs/development_guide.md)**: A detailed guide for developers on how to create new V2 modules, explaining the core API and architecture.
+*   **[Change Log](./docs/CHANGELOG.md)**: 历史版本与功能演进记录。
+
+## 📦 打包与运行环境要求
+
+### 运行环境
+
+* **操作系统**：Windows 10/11、macOS 12+、常见 Linux 桌面发行版（需带有图形环境）。
+* **Python**：推荐 Python 3.10 或更高版本，确保与 PyQt5 及 `threading`/`asyncio` 相关依赖兼容。
+* **依赖组件**：
+  * GUI 运行需要系统安装 Qt 平台运行库（PyQt5 会自动打包，但在部分 Linux 发行版可能需要额外的 Qt 插件包）。
+  * 消息总线默认依赖外部 MQTT Broker，可选使用内置 `amqtt` 服务。
+
+### 打包指引
+
+1. 安装额外构建依赖：`pip install pyinstaller`。
+2. 在项目根目录执行：
+   ```bash
+   pyinstaller main.py \
+     --name T4T \
+     --noconfirm \
+     --windowed \
+     --add-data "modules:modules" \
+     --add-data "themes:themes" \
+     --add-data "i18n:i18n"
+   ```
+3. 将 `dist/T4T`（或 `.app`/`.exe`）连同 `config/`、`tasks/` 等运行时目录打包分发。
+4. 若计划内置 MQTT Broker，需在 `config/config.ini` 中开启 `embedded_broker.enabled=true`，并在安装脚本中配置开机自启或运行前检查端口占用。
+
+> 💡 **提示**：建议在干净的虚拟环境中执行上述命令，并在目标平台上进行一次完整运行测试，以验证消息总线连接、界面字体以及多语言资源是否正常加载。
 
 ## Quick Start
 
