@@ -366,6 +366,60 @@ def test_start_task_cron_missing_expression_returns_false(tmp_path, monkeypatch)
         manager.shutdown()
 
 
+def test_start_task_event_manual_subscription(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    _create_event_task(tasks_dir, enabled=False)
+
+    manager, fake_bus, dummy_signals = _create_manager(monkeypatch, tasks_dir)
+
+    try:
+        assert "test/topic" not in fake_bus.subscriptions
+        assert manager.tasks["EventTask"]["status"] == "stopped"
+        assert not dummy_signals.task_status_changed.emitted
+
+        result = manager.start_task("EventTask")
+
+        assert result is True
+        assert "test/topic" in fake_bus.subscriptions
+        assert manager.tasks["EventTask"]["status"] == "listening"
+        assert dummy_signals.task_status_changed.emitted
+        args, _ = dummy_signals.task_status_changed.emitted[-1]
+        assert args == ("EventTask", "listening")
+    finally:
+        manager.shutdown()
+
+
+def test_start_task_event_subscription_failure_reports_error(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    _create_event_task(tasks_dir, enabled=False)
+
+    manager, fake_bus, dummy_signals = _create_manager(monkeypatch, tasks_dir)
+
+    try:
+        def failing_subscribe(topic: str, callback: Callable[[dict], None]):
+            raise RuntimeError("subscription failed")
+
+        fake_bus.subscribe = failing_subscribe  # type: ignore[assignment]
+
+        result = manager.start_task("EventTask")
+
+        assert result is False
+        assert manager.tasks["EventTask"]["status"] == "stopped"
+        assert "EventTask" not in manager._event_task_topics
+        assert not fake_bus.subscriptions
+        assert dummy_signals.task_failed.emitted
+        args, _ = dummy_signals.task_failed.emitted[-1]
+        assert args[0] == "EventTask"
+        assert "subscription failed" in args[2]
+        assert not dummy_signals.task_status_changed.emitted
+    finally:
+        manager.shutdown()
+
+
 def test_event_task_disable_unsubscribes(prepared_manager, monkeypatch):
     manager, fake_bus, dummy_signals = prepared_manager
     calls: list[str] = []
