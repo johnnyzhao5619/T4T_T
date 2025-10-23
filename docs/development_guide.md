@@ -174,6 +174,8 @@ At the heart of the system is a lightweight **Message Bus** (implemented with MQ
 
 *   **Role**: The message bus is the cornerstone of the system's event-driven architecture. One task can publish a message to a topic (e.g., `task/A/completed`), and any number of other tasks can subscribe to that topic to be triggered when the message arrives. This pattern dramatically increases the system's flexibility and scalability.
 
+To keep the embedded MQTT broker and the client connection in sync, `MessageBusManager.connect()` inspects the `ServiceState` exposed by the `ServiceManager`. When the configuration requests the embedded broker, the manager starts `mqtt_broker` (if needed) and waits for a `global_signals.service_state_changed` notification that the service is `RUNNING`. If the broker does not reach that state within the default timeout, a clear error is logged and the MQTT client connection is skipped to avoid redundant restarts or indefinite blocking.
+
 ---
 
 ## 5. A Complete V2 Module Example
