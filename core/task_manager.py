@@ -581,6 +581,8 @@ class TaskManager:
         Returns:
             bool: True if successful, False otherwise.
         """
+        job = self.apscheduler.get_job(old_name)
+
         if old_name not in self.tasks:
             logger.error(f"Cannot rename: Task '{old_name}' not found.")
             return False
@@ -654,6 +656,30 @@ class TaskManager:
 
             # Ensure the in-memory state follows the renamed task
             self.state_manager.rename_task(old_name, new_name)
+
+            if job:
+                try:
+                    self.apscheduler.remove_job(old_name)
+                    logger.debug("Removed old scheduler job for task '%s' during rename.",
+                                 old_name)
+                except Exception as exc:  # pragma: no cover - defensive
+                    logger.error("Failed to remove old scheduler job for task '%s': %s",
+                                 old_name, exc)
+
+                job_restarted = False
+                config_for_schedule = task_data.get('config_data', {})
+                trigger_type, _ = self._parse_trigger(config_for_schedule)
+
+                if config_for_schedule.get('enabled') and trigger_type in {'cron', 'interval', 'date'}:
+                    if self.start_task(new_name):
+                        job_restarted = True
+                    else:
+                        logger.warning("Failed to restart scheduler job for task '%s' after rename.",
+                                       new_name)
+
+                if not job_restarted:
+                    task_data['status'] = 'stopped'
+                    global_signals.task_status_changed.emit(new_name, 'stopped')
 
             if event_topic:
                 enabled, topic = self._get_event_topic(task_data.get(
