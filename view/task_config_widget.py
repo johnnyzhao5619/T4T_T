@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from contextlib import contextmanager
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLineEdit, QCheckBox,
                              QLabel, QScrollArea, QComboBox, QSpinBox,
@@ -251,6 +252,16 @@ class TaskConfigWidget(QWidget):
 
         return str(fallback_expression)
 
+    def _extract_cron_extras(self, config_section):
+        if not isinstance(config_section, dict):
+            return {}
+
+        return {
+            key: deepcopy(value)
+            for key, value in config_section.items()
+            if key not in {"cron_expression", "expression"}
+        }
+
     def _create_trigger_widget(self, layout, trigger_data, schema):
         # Add a separator and a title for the trigger group
         label_text = schema.get("label", "Trigger")
@@ -279,7 +290,8 @@ class TaskConfigWidget(QWidget):
             "combo": combo,
             "stack": stack,
             "widgets": {},
-            "panels": {}
+            "panels": {},
+            "cron_extras": {}
         }
 
         # Create panels for each trigger type
@@ -326,6 +338,10 @@ class TaskConfigWidget(QWidget):
 
         cron_expression = self._resolve_cron_expression(config)
         self.trigger_widget["widgets"]["cron"].setText(cron_expression)
+        if selected_type == "cron":
+            self.trigger_widget["cron_extras"] = self._extract_cron_extras(config)
+        else:
+            self.trigger_widget["cron_extras"] = {}
 
         if selected_type == "interval":
             interval_fields = {
@@ -667,6 +683,7 @@ class TaskConfigWidget(QWidget):
             config = {}
 
         widgets = self.trigger_widget.get("widgets", {})
+        cron_extras = {}
 
         if selected_type == "cron":
             cron_widget = widgets.get("cron")
@@ -674,6 +691,7 @@ class TaskConfigWidget(QWidget):
                 cron_expression = self._resolve_cron_expression(config)
                 with self._maybe_block_signals(cron_widget, not mark_changed):
                     cron_widget.setText(str(cron_expression))
+            cron_extras = self._extract_cron_extras(config)
         elif selected_type == "interval":
             interval_fields = {
                 "days": "interval_days",
@@ -712,6 +730,11 @@ class TaskConfigWidget(QWidget):
                     topic = trigger_dict.get("topic", "")
                 with self._maybe_block_signals(event_widget, not mark_changed):
                     event_widget.setText(str(topic))
+
+        if selected_type == "cron":
+            self.trigger_widget["cron_extras"] = cron_extras
+        else:
+            self.trigger_widget["cron_extras"] = {}
 
     def _refresh_inputs_widget(self, inputs_data, mark_changed):
         if not self.inputs_widget:
@@ -765,10 +788,12 @@ class TaskConfigWidget(QWidget):
         trigger_config["type"] = current_type
 
         if current_type == "cron":
-            trigger_config["config"] = {
-                "cron_expression":
-                self.trigger_widget["widgets"]["cron"].text()
-            }
+            extras = self.trigger_widget.get("cron_extras")
+            base_config = (deepcopy(extras)
+                           if isinstance(extras, dict) else {})
+            base_config["cron_expression"] = (
+                self.trigger_widget["widgets"]["cron"].text())
+            trigger_config["config"] = base_config
         elif current_type == "interval":
             trigger_config["config"] = {
                 "days":
