@@ -246,7 +246,7 @@ class ConfigManager:
             if not self.config.has_section(resolved_section):
                 self.config.add_section(resolved_section)
         self.config.set(resolved_section, key, value)
-        # 配置被修改后需要使缓存失效，保证后续读取得到最新值。
+        # After modifying the configuration, invalidate caches so subsequent reads see the latest values.
         logger.debug(
             "Updating configuration for section '%s' key '%s'; invalidating cached sections.",
             resolved_section,
