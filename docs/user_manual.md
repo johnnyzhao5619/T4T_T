@@ -79,3 +79,80 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
 
 *   **Q: How can I make two tasks work together?**
     *   **A:** This is the beauty of event-driven design! Have Task A, upon completion, publish a message with its result to a topic (e.g., `tasks/A/result`). Then, create an event-driven Task B and have it subscribe to the `tasks/A/result` topic. This way, whenever A finishes, B will be automatically triggered and receive A's results.
+
+---
+
+## 7. Installation & Deployment
+
+### 7.1. System Requirements
+
+* **Operating System**: Windows 10/11, macOS 12+, or modern Linux distributions with a graphical environment.
+* **Python Runtime**: Python 3.10 or newer (matches the PyQt5 toolchain used by the project).
+* **Message Bus**: An accessible MQTT broker (e.g., Mosquitto). If you enable the embedded broker in `config/config.ini`, ensure no other process occupies the configured port.
+
+### 7.2. Installation Steps
+
+1. **Create Environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\activate
+   ```
+2. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Configure Message Bus**
+   * Edit `config/config.ini` → `[MessageBus]` section, set `host`, `port`, and credentials.
+   * For embedded broker mode, set `embedded_broker.enabled = true` and keep default port (`1883`) unused.
+4. **Launch Application**
+   ```bash
+   python main.py
+   ```
+5. **Optional Packaging**: Refer to the README “打包与运行环境要求” section for PyInstaller steps when distributing to end users.
+
+### 7.3. Deployment Checklist
+
+* Verify the `tasks/` directory contains only intended task instances before packaging。
+* Confirm `logs/` directory has write permissions on the target host。
+* Test at least one scheduled task and one event-driven task end-to-end after deployment。
+
+---
+
+## 8. Common Errors & Troubleshooting
+
+### 8.1. Message Bus Disconnected
+
+* **Symptom**: Status bar icon turns gray or displays “Disconnected”, event tasks remain in `Listening` but never trigger.
+* **Quick Checks**:
+  1. Open the **Settings → Message Bus** page, confirm host/port/user credentials.
+  2. Inspect `logs/t4t.log` for `MQTT connection failed` entries (search for `MessageBusManager`).
+  3. If using the embedded broker, ensure the `ServiceManager` reports `RUNNING` in the application log before connection attempts.
+* **Recovery**:
+  * Click the reconnect button in the status bar or restart the application after confirming the broker is reachable.
+  * For persistent failures, temporarily disable event-driven tasks or switch to an external broker for verification.
+
+### 8.2. Scheduler Not Triggering
+
+* **Symptom**: Scheduled task shows a stale “Next Run Time”.
+* **Quick Checks**:
+  1. Confirm the task is in `Started` state; paused tasks do not reschedule.
+  2. Review the task’s configuration tab — verify cron/interval fields.
+  3. Check system time synchronization; APScheduler relies on local clock accuracy.
+* **Recovery**:
+  * Toggle the task off and on to force APScheduler to rebuild the job.
+  * Restart the application to clear misconfigured jobs if cron expressions were corrected.
+
+### 8.3. UI Not Responding During Task Execution
+
+* Ensure heavy computations are offloaded to worker threads (default behavior). If a custom module performs blocking I/O on the UI thread, refactor logic into the `run` function and use the provided context logger instead of modal dialogs.
+
+---
+
+## 9. UI 操作示例
+
+以下步骤帮助你在没有截图的情况下快速熟悉界面：
+
+1. **任务列表**：左侧面板列出全部任务，可通过右键菜单或工具栏操作状态。
+2. **任务详情标签页**：用于配置任务、查看状态与手动触发事件。
+3. **实时日志**：展示当前选中任务的执行输出与错误日志。
+4. **系统状态栏**：集中显示消息总线连接、线程池状态以及当前主题/语言。
