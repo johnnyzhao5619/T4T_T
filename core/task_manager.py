@@ -23,6 +23,14 @@ from utils.message_bus import message_bus_manager
 logger = logging.getLogger(__name__)
 
 
+SCHEDULED_TRIGGER_TYPES = frozenset({'cron', 'interval', 'date'})
+
+
+def is_scheduled_trigger(trigger_type: str | None) -> bool:
+    """Return True when the trigger type should be handled by APScheduler."""
+    return trigger_type in SCHEDULED_TRIGGER_TYPES
+
+
 class TaskManager:
     """
     Manages task instances, including creation, modification,
@@ -276,7 +284,7 @@ class TaskManager:
 
             trigger_type, trigger_params = self._parse_trigger(config)
 
-            if trigger_type in ['cron', 'interval', 'date']:
+            if is_scheduled_trigger(trigger_type):
                 # For scheduled tasks, use the existing start_task method
                 self.start_task(task_name)
             elif trigger_type == 'event':
@@ -670,7 +678,7 @@ class TaskManager:
                 config_for_schedule = task_data.get('config_data', {})
                 trigger_type, _ = self._parse_trigger(config_for_schedule)
 
-                if config_for_schedule.get('enabled') and trigger_type in {'cron', 'interval', 'date'}:
+                if config_for_schedule.get('enabled') and is_scheduled_trigger(trigger_type):
                     if self.start_task(new_name):
                         job_restarted = True
                     else:
@@ -790,7 +798,7 @@ class TaskManager:
 
             job = self.apscheduler.get_job(final_task_name)
 
-            if trigger_type not in {'cron', 'interval', 'date'} and job is not None:
+            if not is_scheduled_trigger(trigger_type) and job is not None:
                 try:
                     self.apscheduler.remove_job(final_task_name)
                     logger.info(
@@ -801,7 +809,7 @@ class TaskManager:
                         "Failed to clear job for task '%s' when trigger changed: %s",
                         final_task_name, exc)
 
-            if trigger_type in {'cron', 'interval', 'date'}:
+            if is_scheduled_trigger(trigger_type):
                 job_exists = job is not None
                 enabled_now = bool(config_data.get('enabled'))
                 enabled_before = bool(previous_config.get('enabled'))
@@ -934,7 +942,7 @@ class TaskManager:
         config = task_info['config_data']
         trigger_type, trigger_params = self._parse_trigger(config)
 
-        if trigger_type not in ['cron', 'interval', 'date']:
+        if not is_scheduled_trigger(trigger_type):
             if trigger_type == 'event':
                 logger.info(
                     f"Task '{task_name}' is event-driven and does not "
@@ -1127,7 +1135,7 @@ class TaskManager:
 
             trigger_type, trigger_params = self._parse_trigger(config)
 
-            if trigger_type in ['cron', 'interval', 'date']:
+            if is_scheduled_trigger(trigger_type):
                 if self.get_task_status(task_name) != 'running':
                     self.start_task(task_name)
             elif trigger_type == 'event':
