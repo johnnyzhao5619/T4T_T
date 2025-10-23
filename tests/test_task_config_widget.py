@@ -93,6 +93,39 @@ def test_validate_cron_expression(qapp):
         widget.deleteLater()
 
 
+def test_trigger_cron_expression_fallback_on_expression_key(qapp):
+    widget = _create_widget({
+        "trigger": {
+            "type": "cron",
+            "config": {
+                "type": "cron",
+                "expression": "*/5 * * * *"
+            }
+        }
+    })
+    try:
+        cron_widget = widget.trigger_widget["widgets"]["cron"]
+        assert cron_widget.text() == "*/5 * * * *"
+
+        widget.set_config({
+            "trigger": {
+                "type": "cron",
+                "config": {
+                    "type": "cron",
+                    "expression": "0 * * * *"
+                }
+            }
+        }, mark_changed=False)
+
+        assert cron_widget.text() == "0 * * * *"
+
+        saved_config = widget.get_config()
+        assert saved_config["trigger"]["config"]["cron_expression"] == "0 * * * *"
+        assert widget.validate_config()
+    finally:
+        widget.deleteLater()
+
+
 def test_validate_interval_requires_positive_value(qapp):
     widget = _create_widget({
         "trigger": {
