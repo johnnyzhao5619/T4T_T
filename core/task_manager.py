@@ -16,7 +16,7 @@ from apscheduler.triggers.cron import CronTrigger
 from core.module_manager import ModuleManager
 from core.scheduler import SchedulerManager
 from core.state_manager import StateManager
-from utils.config import load_yaml, save_yaml
+from utils.config import ConfigManager, load_yaml, save_yaml
 from utils.signals import global_signals
 from utils.message_bus import message_bus_manager
 
@@ -38,10 +38,13 @@ class TaskManager:
     task creation and TaskScheduler for execution.
     """
 
+    DEFAULT_EVENT_MAX_HOPS = 5
+
     def __init__(self,
                  scheduler_manager: SchedulerManager,
                  tasks_dir='tasks',
-                 modules_dir='modules'):
+                 modules_dir='modules',
+                 config_manager: ConfigManager | None = None):
         """
         Initialize the TaskManager with directories for tasks and modules.
 
@@ -51,6 +54,8 @@ class TaskManager:
             tasks_dir (str): Directory path where task instances are stored.
             modules_dir (str): Directory path where module templates
                 are stored.
+            config_manager (ConfigManager | None): Optional configuration
+                manager used for resolving global task defaults.
         """
         self.tasks_dir = tasks_dir
         resolved_modules_dir = os.path.abspath(modules_dir)
@@ -61,6 +66,7 @@ class TaskManager:
         self.apscheduler = BackgroundScheduler()
         self.tasks = {}
         self._event_task_topics: dict[str, str] = {}
+        self.config_manager = config_manager
 
         try:
             self.apscheduler.start()
@@ -326,7 +332,7 @@ class TaskManager:
 
             # 1. Cycle detection
             hops = payload.get('__hops', 0)
-            max_hops = 5  # Define a reasonable threshold
+            max_hops = self._get_event_max_hops(config)
             if hops > max_hops:
                 logger.error(
                     f"Task '{task_name}' stopped: max hop count ({max_hops}) "
@@ -364,6 +370,52 @@ class TaskManager:
             self._execute_task_logic(task_name, payload_with_defaults)
 
         return wrapper
+
+    @staticmethod
+    def _to_non_negative_int(value: Any) -> int | None:
+        """Safely convert a value to a non-negative integer."""
+        if isinstance(value, bool):
+            return None
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return None
+        return parsed if parsed >= 0 else None
+
+    def _get_event_max_hops(self, config: dict) -> int:
+        """Resolve the max hops threshold for an event payload."""
+
+        trigger_section = config.get('trigger')
+        if isinstance(trigger_section, dict):
+            # Prefer values defined under the event trigger configuration
+            event_conf = trigger_section.get('event')
+            if isinstance(event_conf, dict):
+                candidate = self._to_non_negative_int(event_conf.get('max_hops'))
+                if candidate is not None:
+                    return candidate
+
+            direct_candidate = self._to_non_negative_int(
+                trigger_section.get('max_hops'))
+            if direct_candidate is not None:
+                return direct_candidate
+
+            config_section = trigger_section.get('config')
+            if isinstance(config_section, dict):
+                config_candidate = self._to_non_negative_int(
+                    config_section.get('max_hops'))
+                if config_candidate is not None:
+                    return config_candidate
+
+        config_manager = getattr(self, 'config_manager', None)
+        if config_manager is not None:
+            raw_global = config_manager.get('TaskDefaults',
+                                            'event_max_hops',
+                                            fallback=None)
+            global_candidate = self._to_non_negative_int(raw_global)
+            if global_candidate is not None:
+                return global_candidate
+
+        return self.DEFAULT_EVENT_MAX_HOPS
 
     def _execute_task_logic(self, task_name: str, inputs: dict):
         """

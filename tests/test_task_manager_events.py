@@ -144,6 +144,26 @@ def _create_event_task(tasks_dir: Path, name: str = "EventTask",
     _write_task_files(task_dir, config)
 
 
+def _create_event_task_with_hop_limit(tasks_dir: Path,
+                                      name: str,
+                                      topic: str,
+                                      max_hops: int):
+    task_dir = tasks_dir / name
+    config = {
+        "name": name,
+        "module_type": "test",
+        "enabled": True,
+        "trigger": {
+            "event": {
+                "topic": topic,
+                "max_hops": max_hops,
+            }
+        }
+    }
+
+    _write_task_files(task_dir, config)
+
+
 def _create_interval_task(tasks_dir: Path, name: str = "IntervalTask",
                           seconds: int = 1, enabled: bool = True):
     task_dir = tasks_dir / name
@@ -363,6 +383,35 @@ def test_event_task_removed_after_delete(prepared_manager, monkeypatch):
     assert not calls
 
 
+def test_event_wrapper_uses_custom_max_hops(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    topic = "custom/topic"
+    _create_event_task_with_hop_limit(tasks_dir,
+                                      name="LimitedTask",
+                                      topic=topic,
+                                      max_hops=2)
+
+    manager, fake_bus, _ = _create_manager(monkeypatch, tasks_dir)
+
+    try:
+        calls: list[str] = []
+
+        def fake_execute(self, task_name, inputs):
+            calls.append(task_name)
+
+        monkeypatch.setattr(TaskManager, "_execute_task_logic", fake_execute)
+
+        fake_bus.publish(topic, {"__hops": 3})
+        assert not calls
+
+        fake_bus.publish(topic, {"__hops": 2})
+        assert calls == ["LimitedTask"]
+    finally:
+        manager.shutdown()
+
+
 def test_scheduled_task_deleted_removes_job_and_stops_triggers(
         prepared_schedule_manager):
     manager, dummy_signals = prepared_schedule_manager
@@ -520,6 +569,23 @@ def test_multiple_event_tasks_share_topic(prepared_manager, monkeypatch):
     success, _ = manager.save_task_config("SecondTask", second_config)
     assert success
     assert "test/topic" not in fake_bus.subscriptions
+
+
+def test_event_wrapper_uses_default_max_hops(prepared_manager, monkeypatch):
+    manager, fake_bus, _ = prepared_manager
+
+    calls: list[str] = []
+
+    def fake_execute(self, task_name, inputs):
+        calls.append(task_name)
+
+    monkeypatch.setattr(TaskManager, "_execute_task_logic", fake_execute)
+
+    fake_bus.publish("test/topic", {"__hops": 6})
+    assert not calls
+
+    fake_bus.publish("test/topic", {"__hops": 5})
+    assert calls == ["EventTask"]
 
 
 def test_stop_all_tasks_unsubscribes_event_tasks(prepared_manager, monkeypatch):

@@ -111,7 +111,10 @@ trigger:
   type: event
   config:
     topic: "sensors/temperature/reading" # Subscribe to an MQTT topic
+    max_hops: 5 # Optional safeguard against circular event chains
 ```
+
+> 💡 **Safety Net**: `max_hops` limits how many times an event payload can be forwarded between tasks. If the payload contains `__hops` greater than this threshold, the event is ignored and an error is logged. If you omit `max_hops`, the Task Manager falls back to the global default defined in `config/config.ini` under `[TaskDefaults] event_max_hops` (default: `5`).
 
 ### 3.2. Input Mapping and Validation (`inputs`)
 

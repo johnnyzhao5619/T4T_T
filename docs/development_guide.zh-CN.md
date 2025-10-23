@@ -112,7 +112,10 @@ trigger:
   type: event
   config:
     topic: "sensors/temperature/reading" # 订阅 MQTT 主题
+    max_hops: 5 # 可选，防止事件链路循环触发
 ```
+
+> 💡 **安全提示**：`max_hops` 用于限制事件在任务之间转发的最大跳数。当 payload 中的 `__hops` 大于此阈值时，任务会记录错误并忽略该事件。若未在任务中指定，系统会回退到 `config/config.ini` 中 `[TaskDefaults] event_max_hops` 的全局默认值（默认值：`5`）。
 
 ### 3.2. 输入映射与验证 (`inputs`)
 
