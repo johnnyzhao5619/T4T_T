@@ -799,3 +799,18 @@ def test_rename_persistent_task_preserves_state(tmp_path, monkeypatch):
         assert not dummy_signals.task_status_changed.emitted
     finally:
         manager.shutdown()
+
+
+def test_scheduler_submit_passes_context_keyword(prepared_manager):
+    manager, _, _ = prepared_manager
+
+    payload = {"value": 1}
+    future = manager.scheduler_manager.submit(
+        manager._prepare_and_run_task,
+        "EventTask",
+        payload,
+        context=types.SimpleNamespace(task_name="EventTask"),
+    )
+
+    result = future.result(timeout=3)
+    assert result == payload
