@@ -43,7 +43,11 @@ sys.path.insert(0, project_root)
 
 from core.context import TaskContextFilter
 from core.scheduler import SchedulerManager
-from core.task_manager import TaskManager
+from core.task_manager import (
+    SCHEDULED_TRIGGER_TYPES,
+    TaskManager,
+    is_scheduled_trigger,
+)
 from utils.logger import SignalHandler
 
 
@@ -61,6 +65,14 @@ class DummySignals:
         self.task_manager_updated = DummySignal()
         self.task_renamed = DummySignal()
         self.log_message = DummySignal()
+
+
+def test_is_scheduled_trigger_covers_known_types():
+    for trigger_type in SCHEDULED_TRIGGER_TYPES:
+        assert is_scheduled_trigger(trigger_type)
+
+    assert not is_scheduled_trigger('event')
+    assert not is_scheduled_trigger(None)
 
 
 class FakeBusManager:
