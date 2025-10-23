@@ -342,6 +342,29 @@ def test_start_task_cron_with_timezone_and_options(tmp_path, monkeypatch):
         manager.shutdown()
 
 
+def test_start_task_cron_missing_expression_returns_false(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    _create_cron_task(tasks_dir,
+                      cron_expression=" ",
+                      enabled=False)
+
+    manager, _, dummy_signals = _create_manager(monkeypatch, tasks_dir)
+
+    try:
+        result = manager.start_task("CronTask")
+        assert result is False
+        assert manager.apscheduler.get_job("CronTask") is None
+        assert manager.tasks["CronTask"]["status"] == "stopped"
+        assert len(dummy_signals.task_failed.emitted) == 1
+        args, _ = dummy_signals.task_failed.emitted[-1]
+        assert args[0] == "CronTask"
+        assert "cron" in args[2].lower()
+    finally:
+        manager.shutdown()
+
+
 def test_event_task_disable_unsubscribes(prepared_manager, monkeypatch):
     manager, fake_bus, dummy_signals = prepared_manager
     calls: list[str] = []
