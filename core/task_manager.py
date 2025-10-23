@@ -603,6 +603,15 @@ class TaskManager:
             task_data['config'] = os.path.join(new_path, "config.yaml")
             task_data['script'] = os.path.join(new_path, "main.py")
 
+            config_data = task_data.get('config_data')
+            if isinstance(config_data, dict):
+                config_data['name'] = new_name
+            else:
+                config_data = {'name': new_name}
+                task_data['config_data'] = config_data
+
+            save_yaml(task_data['config'], config_data)
+
             old_logger = task_data.get('logger')
             if isinstance(old_logger, logging.Logger):
                 for existing_filter in list(getattr(old_logger, 'filters', [])):

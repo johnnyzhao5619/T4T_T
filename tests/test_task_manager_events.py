@@ -356,6 +356,34 @@ def test_rename_task_updates_logger_filter(prepared_manager, monkeypatch):
     assert args[0] == "RenamedLoggerTask"
 
 
+def test_rename_task_updates_config_on_disk(prepared_manager):
+    manager, _, _ = prepared_manager
+
+    new_name = "RenamedDiskTask"
+
+    assert manager.rename_task("EventTask", new_name)
+    assert new_name in manager.tasks
+    assert "EventTask" not in manager.tasks
+
+    config_path = Path(manager.tasks[new_name]["config"])
+    with open(config_path, "r", encoding="utf-8") as config_file:
+        stored_config = yaml.safe_load(config_file)
+
+    assert stored_config["name"] == new_name
+
+    reloaded_config = manager.get_task_config(new_name)
+    assert reloaded_config["name"] == new_name
+
+    success, final_name = manager.save_task_config(new_name, reloaded_config)
+    assert success
+    assert final_name == new_name
+
+    with open(config_path, "r", encoding="utf-8") as config_file:
+        persisted_config = yaml.safe_load(config_file)
+
+    assert persisted_config["name"] == new_name
+
+
 def test_start_all_tasks_does_not_duplicate_event_subscription(prepared_manager,
                                                                monkeypatch):
     manager, fake_bus, _ = prepared_manager
