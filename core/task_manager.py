@@ -961,30 +961,63 @@ class TaskManager:
             self._execute_task_logic(task_name, inputs={})
 
         try:
-            # Special handling for cron triggers to support cron_expression
             params = dict(trigger_params)
-            job_kwargs = dict(trigger_params)
-            if trigger_type == 'cron' and 'cron_expression' in params:
-                cron_expr = params.pop('cron_expression')
-                if cron_expr:
-                    trigger = CronTrigger.from_crontab(cron_expr,
-                                                       **params)
-                    job_kwargs = params
-                else:
-                    # If cron_expression is empty, don't schedule the job
+            scheduler_option_keys = {
+                'misfire_grace_time', 'max_instances', 'jitter',
+                'next_run_time', 'jobstore', 'executor',
+                'replace_existing', 'coalesce', 'start_date', 'end_date'
+            }
+
+            job_kwargs = {}
+            for key in list(params):
+                if key in scheduler_option_keys:
+                    job_kwargs[key] = params.pop(key)
+
+            trigger = trigger_type
+            trigger_kwargs_for_add_job = dict(params)
+
+            if trigger_type == 'cron':
+                raw_expression = params.get('cron_expression')
+                if raw_expression is None:
+                    raw_expression = params.get('expression')
+
+                cron_expression = None
+                if isinstance(raw_expression, str):
+                    cron_expression = raw_expression.strip()
+                elif raw_expression is not None:
+                    cron_expression = str(raw_expression)
+
+                used_cron_expression = bool(cron_expression)
+
+                if used_cron_expression:
+                    timezone = params.get('timezone')
+                    if timezone:
+                        trigger = CronTrigger.from_crontab(cron_expression,
+                                                           timezone=timezone)
+                    else:
+                        trigger = CronTrigger.from_crontab(cron_expression)
+                    trigger_kwargs_for_add_job.clear()
+                elif raw_expression is not None:
                     logger.warning(
                         f"Task '{task_name}' has an empty cron_expression and "
                         "will not be scheduled.")
                     return True
-            else:
-                trigger = trigger_type
 
-            # Add job to APScheduler
+                trigger_kwargs_for_add_job.pop('cron_expression', None)
+                trigger_kwargs_for_add_job.pop('expression', None)
+                if used_cron_expression:
+                    trigger_kwargs_for_add_job.pop('timezone', None)
+            else:
+                trigger_kwargs_for_add_job.pop('cron_expression', None)
+                trigger_kwargs_for_add_job.pop('expression', None)
+
+            add_job_kwargs = {**trigger_kwargs_for_add_job, **job_kwargs}
+
             self.apscheduler.add_job(job_wrapper,
                                      id=task_name,
                                      name=task_name,
                                      trigger=trigger,
-                                     **job_kwargs)
+                                     **add_job_kwargs)
             self.tasks[task_name]['status'] = 'running'
             logger.info(
                 f"Task '{task_name}' scheduled with trigger type '{trigger_type}' "
