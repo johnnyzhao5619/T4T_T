@@ -384,6 +384,28 @@ def test_rename_task_updates_config_on_disk(prepared_manager):
     assert persisted_config["name"] == new_name
 
 
+def test_rename_task_rebuilds_scheduler_job(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    _create_interval_task(tasks_dir)
+
+    manager, _, _ = _create_manager(monkeypatch, tasks_dir)
+
+    try:
+        assert manager.apscheduler.get_job("IntervalTask") is not None
+
+        new_name = "RenamedIntervalTask"
+        assert manager.rename_task("IntervalTask", new_name)
+
+        assert manager.apscheduler.get_job("IntervalTask") is None
+        new_job = manager.apscheduler.get_job(new_name)
+        assert new_job is not None
+        assert manager.tasks[new_name]['status'] == 'running'
+    finally:
+        manager.shutdown()
+
+
 def test_start_all_tasks_does_not_duplicate_event_subscription(prepared_manager,
                                                                monkeypatch):
     manager, fake_bus, _ = prepared_manager
