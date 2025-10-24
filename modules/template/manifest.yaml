@@ -13,6 +13,20 @@ enabled: true
 # debug: Enables verbose logging by default when set to true.
 debug: false
 
+# retry: Configure automatic retries for recoverable failures.
+retry:
+  # max_attempts: Total execution attempts including the first run.
+  max_attempts: 3
+  # backoff_strategy: 'fixed' keeps the interval constant, 'exponential'
+  # multiplies the interval by backoff_multiplier after each failure.
+  backoff_strategy: exponential
+  # backoff_interval_seconds: Base delay before retrying a failed attempt.
+  backoff_interval_seconds: 5
+  # backoff_multiplier: Growth factor when using exponential backoff.
+  backoff_multiplier: 2
+  # backoff_max_interval_seconds: Optional cap for the retry delay.
+  backoff_max_interval_seconds: 60
+
 # trigger: Defines how the task is triggered.
 # The trigger can be 'schedule' (time-based) or 'event' (event-driven).
 trigger:

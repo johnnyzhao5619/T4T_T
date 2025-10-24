@@ -3,6 +3,12 @@ module_type: counter
 enabled: true
 debug: false
 persist_state: false
+retry:
+  max_attempts: 3
+  backoff_strategy: exponential
+  backoff_interval_seconds: 5
+  backoff_multiplier: 2
+  backoff_max_interval_seconds: 60
 trigger:
   type: schedule
   config:

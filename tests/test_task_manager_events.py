@@ -170,6 +170,7 @@ from core.context import TaskContextFilter
 from core.scheduler import SchedulerManager
 from core.task_manager import (
     SCHEDULED_TRIGGER_TYPES,
+    TaskExecutionError,
     TaskManager,
     is_scheduled_trigger,
 )
@@ -243,7 +244,8 @@ class FakeBusManager:
 _SCRIPT_CONTENT = "def run(context, inputs):\n    return inputs\n"
 
 
-def _write_task_files(task_dir: Path, config: dict) -> None:
+def _write_task_files(task_dir: Path, config: dict,
+                      script_content: str | None = None) -> None:
     task_dir.mkdir()
 
     import yaml
@@ -254,8 +256,9 @@ def _write_task_files(task_dir: Path, config: dict) -> None:
                       allow_unicode=True,
                       sort_keys=False)
 
+    content = script_content if script_content is not None else _SCRIPT_CONTENT
     with open(task_dir / "main.py", "w", encoding="utf-8") as script_file:
-        script_file.write(_SCRIPT_CONTENT)
+        script_file.write(content)
 
 
 def _create_module_template(modules_dir: Path,
@@ -598,6 +601,125 @@ def test_start_task_event_subscription_failure_reports_error(tmp_path, monkeypat
         assert args[0] == "EventTask"
         assert "subscription failed" in args[2]
         assert not dummy_signals.task_status_changed.emitted
+    finally:
+        manager.shutdown()
+
+
+def test_run_task_retries_until_success(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    task_dir = tasks_dir / "RetryTask"
+    config = {
+        "name": "RetryTask",
+        "module_type": "test",
+        "enabled": False,
+        "debug": False,
+        "persist_state": False,
+        "retry": {
+            "max_attempts": 3,
+            "backoff_strategy": "exponential",
+            "backoff_interval_seconds": 0.05,
+            "backoff_multiplier": 2,
+            "backoff_max_interval_seconds": 0.2,
+        },
+        "trigger": {
+            "type": "schedule",
+            "config": {
+                "type": "interval",
+                "seconds": 60,
+            },
+        },
+    }
+
+    retry_script = (
+        "from core.task_manager import TaskExecutionError\n\n"
+        "def run(context, inputs):\n"
+        "    attempt = context.get_state(\"attempt\", 0) + 1\n"
+        "    context.update_state(\"attempt\", attempt)\n"
+        "    fail_until = inputs.get(\"fail_until\", 0)\n"
+        "    if attempt <= fail_until:\n"
+        "        raise TaskExecutionError(f\"transient failure {attempt}\")\n"
+        "    return attempt\n"
+    )
+
+    _write_task_files(task_dir, config, script_content=retry_script)
+
+    manager, _, dummy_signals = _create_manager(monkeypatch, tasks_dir)
+
+    sleep_calls: list[float] = []
+
+    def fake_sleep(seconds: float) -> None:
+        sleep_calls.append(seconds)
+
+    monkeypatch.setattr(TaskManager, "_sleep", staticmethod(fake_sleep))
+
+    try:
+        result = manager.run_task("RetryTask", {"fail_until": 2}, use_executor=False)
+        assert result == 3
+        assert sleep_calls == pytest.approx([0.05, 0.1])
+        assert dummy_signals.task_succeeded.emitted
+        assert not dummy_signals.task_failed.emitted
+        assert manager.state_manager.get_state("RetryTask", "attempt") == 3
+    finally:
+        manager.shutdown()
+
+
+def test_async_retry_emits_failure_after_max_attempts(tmp_path, monkeypatch):
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir()
+
+    task_dir = tasks_dir / "AlwaysFail"
+    config = {
+        "name": "AlwaysFail",
+        "module_type": "test",
+        "enabled": False,
+        "debug": False,
+        "persist_state": False,
+        "retry": {
+            "max_attempts": 2,
+            "backoff_strategy": "fixed",
+            "backoff_interval_seconds": 0.01,
+            "backoff_multiplier": 2,
+            "backoff_max_interval_seconds": 0.5,
+        },
+        "trigger": {
+            "type": "schedule",
+            "config": {
+                "type": "interval",
+                "seconds": 60,
+            },
+        },
+    }
+
+    failure_script = (
+        "from core.task_manager import TaskExecutionError\n\n"
+        "def run(context, inputs):\n"
+        "    raise TaskExecutionError(\"permanent failure\")\n"
+    )
+
+    _write_task_files(task_dir, config, script_content=failure_script)
+
+    manager, _, dummy_signals = _create_manager(monkeypatch, tasks_dir)
+
+    sleep_calls: list[float] = []
+
+    def fake_sleep(seconds: float) -> None:
+        sleep_calls.append(seconds)
+
+    monkeypatch.setattr(TaskManager, "_sleep", staticmethod(fake_sleep))
+
+    try:
+        future = manager.run_task("AlwaysFail", use_executor=True)
+        with pytest.raises(TaskExecutionError):
+            future.result(timeout=1)
+
+        assert dummy_signals.task_failed.emitted
+        assert not dummy_signals.task_succeeded.emitted
+        args, _ = dummy_signals.task_failed.emitted[-1]
+        assert args[0] == "AlwaysFail"
+        assert "failed after 2 attempts" in args[2]
+        assert sleep_calls == pytest.approx([0.01])
     finally:
         manager.shutdown()
 
