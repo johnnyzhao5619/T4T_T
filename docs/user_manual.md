@@ -120,6 +120,11 @@ Click the "Settings" icon (usually a gear) on the main toolbar to open the globa
 * Confirm the `logs/` directory has write permissions on the target host.
 * Test at least one scheduled task and one event-driven task end-to-end after deployment.
 
+### 7.4. License & Notices
+
+* Include the repository’s [LICENSE](../LICENSE) file with every installer or archive—PyInstaller builds should already copy it when the README command is followed.
+* Review [docs/licenses.md](./licenses.md) for the up-to-date dependency inventory and document the chosen compliance posture for PyQt5 (GPL source release or commercial entitlement).
+
 ---
 
 ## 8. Common Errors & Troubleshooting

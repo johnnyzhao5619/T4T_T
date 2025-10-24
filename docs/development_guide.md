@@ -310,14 +310,5 @@ This example demonstrates how to leverage the features of the v1.0 architecture�
   * publish the full source code and comply with GPL reciprocity, or
   * obtain a commercial license from Riverbank Computing.
   Record the chosen approach in deployment notes so downstream operators understand their responsibilities.
-* **Third-party overview**: The current runtime dependencies and their licenses are:
-  * psutil – BSD 3-Clause
-  * PyYAML – MIT
-  * paho-mqtt – Eclipse Distribution License 1.0
-  * APScheduler – MIT
-  * qtawesome – MIT
-  * amqtt – MIT
-  * pyqtgraph – MIT
-  * PyAutoGUI – BSD 3-Clause
-  * Markdown 3.4.4 – BSD 3-Clause
-  These are all compatible with MIT distribution. Re-run this audit when adding dependencies.
+* **Third-party inventory**: Maintain [docs/licenses.md](./licenses.md) as the single source of truth for dependency licenses. The release checklist must include a manual review step to confirm the document aligns with `requirements.txt` before publishing.
+* **CI guardrail**: The `compliance` GitHub Actions workflow exercises the PyInstaller command and fails the build if the generated `dist/T4T` folder omits `LICENSE`. Treat any failure as a release blocker.
