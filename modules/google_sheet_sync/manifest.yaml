@@ -1,0 +1,30 @@
+# Google Sheet Sync module manifest
+name: Google_Sheet_Sync
+module_type: google_sheet_sync
+enabled: false
+debug: false
+persist_state: true
+
+trigger:
+  type: schedule
+  config:
+    type: cron
+    cron_expression: "*/10 * * * *"
+
+inputs:
+  values:
+    description: "二维数组，按行写入 Google Sheet；为空时仅同步读取"
+    required: false
+
+settings:
+  spreadsheet_id: ""
+  read_range: "Sheet1!A1:B10"
+  write_range: "Sheet1!A1"
+  value_input_option: "RAW"
+
+oauth:
+  credentials_file: "oauth/client_secret.json"
+  credentials_template: "oauth/client_secret.sample.json"
+  token_file: "oauth/token.json"
+  scopes:
+    - https://www.googleapis.com/auth/spreadsheets
