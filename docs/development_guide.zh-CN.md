@@ -157,6 +157,33 @@ inputs:
     required: false # 这个字段是可选的
 ```
 
+### 3.3. UI 表单描述（`schema`）
+
+`schema` 是一个可选的元数据段，用来告诉任务管理器如何渲染模块的配置表单。每个条目都对应一个配置键（使用点号表示嵌套路径），并可以声明标签、描述信息以及所属分组等属性。
+
+```yaml
+schema:
+  name:
+    label: "任务名称"
+    description: "在控制台中展示的名称。"
+    group: "基础信息"
+  trigger:
+    label: "执行计划"
+    group: "调度"
+  settings.increment_by:
+    type: integer
+    label: "自增步长"
+    min: 1
+    group: "计数器设置"
+```
+
+编写 `schema` 时请注意：
+
+* **点号路径** 可精准指向嵌套字典（例如 `settings.increment_by`）。
+* **`group` 字段** 用于控制字段在 UI 中的分组，只要分组名称相同就会自动聚合并生成一个标题。
+* **特殊区块**（如 `trigger` 与 `inputs`）依然会渲染专属的交互组件，同时尊重在 schema 中声明的分组与标签。
+* **兼容策略**：未在 schema 中声明的字段会根据配置结构自动归组；旧版依赖 `properties` 嵌套的 schema 仍然受支持，无需强制迁移。
+
 ---
 
 ## 4. 核心概念详解

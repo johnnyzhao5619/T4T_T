@@ -26,3 +26,28 @@ settings:
   # increment_by is a configurable default value
   increment_by: 1
   # Note: 'current_count' was removed because it is managed through context.get_state/update_state
+
+schema:
+  name:
+    label: "Task Name"
+    description: "Display name shown in the dashboard."
+    group: "General"
+  enabled:
+    type: boolean
+    label: "Enabled by Default"
+    group: "General"
+  persist_state:
+    type: boolean
+    label: "Persist State"
+    group: "General"
+  trigger:
+    label: "Execution Schedule"
+    group: "Scheduling"
+  inputs:
+    label: "Input Contract"
+    group: "Payload"
+  settings.increment_by:
+    type: integer
+    label: "Increment Amount"
+    min: 1
+    group: "Counter Settings"

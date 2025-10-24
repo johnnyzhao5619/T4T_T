@@ -7,7 +7,7 @@ import pytest
 
 try:
     from PyQt5.QtCore import Qt
-    from PyQt5.QtWidgets import QApplication, QTableWidgetItem
+    from PyQt5.QtWidgets import QApplication, QLabel, QTableWidgetItem, QSpinBox
 except ImportError as exc:  # pragma: no cover - handled via pytest skip
     pytest.skip(
         f"PyQt5 is required for TaskConfigWidget tests: {exc}",
@@ -37,8 +37,8 @@ def qapp():
     yield app
 
 
-def _create_widget(config):
-    manager = _DummyTaskManager()
+def _create_widget(config, schema=None):
+    manager = _DummyTaskManager(schema=schema)
     widget = TaskConfigWidget("demo", manager)
     widget._populate_form(config)
     return widget
@@ -209,6 +209,91 @@ def test_validate_interval_requires_positive_value(qapp):
         assert widget.validate_config()
         assert "trigger.interval.panel" not in widget.get_errors()
         assert interval_panel.styleSheet() == ""
+    finally:
+        widget.deleteLater()
+
+
+def test_flat_schema_grouping_and_change_tracking(qapp):
+    schema = {
+        "name": {
+            "label": "Task Name",
+            "group": "General"
+        },
+        "settings.increment_by": {
+            "type": "integer",
+            "label": "Increment By",
+            "group": "Counter Settings",
+            "min": 1
+        },
+        "trigger": {
+            "label": "Trigger Settings",
+            "group": "Scheduling"
+        }
+    }
+
+    config = {
+        "name": "Counter Task",
+        "module_type": "counter",
+        "enabled": True,
+        "settings": {
+            "increment_by": 2
+        },
+        "trigger": {
+            "type": "cron",
+            "config": {
+                "cron_expression": "*/5 * * * *"
+            }
+        }
+    }
+
+    widget = _create_widget(config, schema)
+
+    try:
+        assert "name" in widget.widgets
+        assert widget.widgets["name"].text() == "Counter Task"
+
+        increment_widget = widget.widgets["settings.increment_by"]
+        assert isinstance(increment_widget, QSpinBox)
+        assert increment_widget.value() == 2
+
+        assert widget.findChild(QLabel, "group_label_General") is not None
+        assert widget.findChild(QLabel, "group_label_Counter_Settings") is not None
+        assert widget.findChild(QLabel, "group_label_Scheduling") is not None
+
+        widget.widgets["name"].setText("Updated Task")
+        assert "name" in widget.changed_widgets
+    finally:
+        widget.deleteLater()
+
+
+def test_legacy_schema_remains_supported(qapp):
+    schema = {
+        "settings": {
+            "label": "Settings",
+            "properties": {
+                "increment_by": {
+                    "type": "integer",
+                    "label": "Increment"
+                }
+            }
+        }
+    }
+
+    config = {
+        "settings": {
+            "increment_by": 4
+        }
+    }
+
+    widget = _create_widget(config, schema)
+
+    try:
+        increment_widget = widget.widgets["settings.increment_by"]
+        assert isinstance(increment_widget, QSpinBox)
+        assert increment_widget.value() == 4
+
+        increment_widget.setValue(6)
+        assert "settings.increment_by" in widget.changed_widgets
     finally:
         widget.deleteLater()
 

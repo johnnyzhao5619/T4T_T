@@ -1,4 +1,5 @@
 import logging
+import re
 from copy import deepcopy
 from contextlib import contextmanager
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLineEdit, QCheckBox,
@@ -22,24 +23,10 @@ class TaskConfigWidget(QWidget):
     Supports various input types, validation, change tracking, a dynamic
     trigger UI, and a table-based inputs editor.
 
-    TODO (Schema Simplification): The current schema-driven UI generation
-    relies on a nested structure (e.g., schema -> group -> properties).
-    A potential future optimization is to flatten this structure.
-    Instead of nesting, parameters could be defined at the top level of the
-    schema, with an optional 'group' key to assign them to a UI group.
-    This would simplify the manifest.yaml files.
-    Example:
-    schema:
-      debug:
-        type: "boolean"
-        label: "Debug Mode"
-        group: "Execution"
-      increment_by:
-        type: "integer"
-        label: "Increment By"
-        group: "Settings"
-    This change would require refactoring _populate_form to handle the
-    flattened structure and create groups based on the 'group' key.
+    The widget understands both legacy nested schemas (group -> properties)
+    and the new flattened schema where each field is declared at the top
+    level with an optional ``group`` key. Group metadata is used to organise
+    fields visually without requiring nested dictionaries in the manifest.
     """
     config_changed = pyqtSignal()
     config_reloaded = pyqtSignal(str)
@@ -52,6 +39,7 @@ class TaskConfigWidget(QWidget):
         self.changed_widgets = set()
         self.error_widgets = {}
         self._aux_widgets = {}
+        self._group_layouts = {}
         self._suspend_change_notifications = False
 
         # Widgets for special sections
@@ -117,6 +105,7 @@ class TaskConfigWidget(QWidget):
         self._aux_widgets.clear()
         self.trigger_widget = None
         self.inputs_widget = None
+        self._group_layouts = {}
 
     def _create_title_bar(self):
         title_bar = QWidget()
@@ -158,7 +147,217 @@ class TaskConfigWidget(QWidget):
             k: v
             for k, v in config_data.items() if k != 'debug'
         }
-        self._recursive_populate(self.form_layout, standard_config, schema)
+        schema_info = self._parse_schema(schema)
+
+        if schema_info["mode"] == "flat":
+            self._populate_flat_form(standard_config, schema_info)
+        else:
+            self._recursive_populate(self.form_layout, standard_config,
+                                     schema)
+
+    def _parse_schema(self, schema):
+        info = {
+            "mode": "legacy",
+            "fields": {},
+            "groups": {},
+            "group_order": [],
+            "group_titles": {}
+        }
+
+        if not isinstance(schema, dict):
+            info["mode"] = "flat"
+            info["groups"] = {None: []}
+            return info
+
+        has_legacy_properties = any(
+            isinstance(value, dict) and "properties" in value
+            for value in schema.values())
+
+        if has_legacy_properties:
+            info["legacy_schema"] = schema
+            return info
+
+        fields = {}
+        groups = {}
+        group_order = []
+        group_titles = {}
+
+        for raw_key, raw_details in schema.items():
+            key = str(raw_key)
+            details = raw_details if isinstance(raw_details, dict) else {}
+            fields[key] = details
+            group_name = details.get("group")
+            groups.setdefault(group_name, []).append(key)
+            if group_name is not None and group_name not in group_order:
+                group_order.append(group_name)
+            if group_name is not None and group_name not in group_titles:
+                group_titles[group_name] = details.get("group_label",
+                                                       group_name)
+
+        info.update({
+            "mode": "flat",
+            "fields": fields,
+            "groups": groups or {None: []},
+            "group_order": group_order,
+            "group_titles": group_titles
+        })
+        return info
+
+    def _populate_flat_form(self, config_data, schema_info):
+        flat_values, auto_groups, auto_group_order = (
+            self._flatten_config_data(config_data))
+
+        group_titles = dict(schema_info.get("group_titles", {}))
+        group_order = list(schema_info.get("group_order", []))
+
+        for group_name in auto_group_order:
+            if group_name not in group_titles:
+                group_titles[group_name] = group_name
+            if group_name not in group_order and group_name is not None:
+                group_order.append(group_name)
+
+        ordered_paths = []
+        groups = schema_info.get("groups", {})
+
+        for group_name in group_order:
+            for path in groups.get(group_name, []):
+                if path not in {"trigger", "inputs"}:
+                    ordered_paths.append(path)
+
+        for path in groups.get(None, []):
+            if path not in {"trigger", "inputs"}:
+                ordered_paths.append(path)
+
+        for path in flat_values.keys():
+            if path not in ordered_paths and path not in {"trigger", "inputs"}:
+                ordered_paths.append(path)
+
+        for path in schema_info.get("fields", {}).keys():
+            if path not in ordered_paths and path not in {"trigger", "inputs"}:
+                ordered_paths.append(path)
+
+        trigger_schema = schema_info.get("fields", {}).get("trigger", {})
+        inputs_schema = schema_info.get("fields", {}).get("inputs", {})
+
+        if "trigger" in config_data:
+            group_name = trigger_schema.get("group")
+            layout = self._get_group_layout(
+                group_name, group_titles.get(group_name, group_name))
+            self._create_trigger_widget(
+                layout,
+                config_data["trigger"],
+                trigger_schema,
+                within_group=bool(group_name))
+
+        if "inputs" in config_data:
+            group_name = inputs_schema.get("group")
+            layout = self._get_group_layout(
+                group_name, group_titles.get(group_name, group_name))
+            self._create_inputs_widget(
+                layout,
+                config_data["inputs"],
+                inputs_schema,
+                within_group=bool(group_name))
+
+        for path in ordered_paths:
+            value = self._lookup_config_value(config_data, path)
+            schema_meta = schema_info["fields"].get(path, {})
+            if value is self._MISSING:
+                value = self._default_value_for_type(schema_meta)
+            group_name = schema_meta.get("group")
+            if group_name is None:
+                group_name = auto_groups.get(path)
+            layout = self._get_group_layout(
+                group_name, group_titles.get(group_name, group_name))
+
+            label_widget = self._create_label_with_help(schema_meta,
+                                                        path.split('.')[-1])
+            input_type = schema_meta.get("type", self._infer_type(value))
+            input_widget = self._create_input_widget(path, value, input_type,
+                                                     schema_meta)
+            layout.addRow(label_widget, input_widget)
+            self.widgets[path] = input_widget
+
+    _MISSING = object()
+
+    def _lookup_config_value(self, config_data, path):
+        keys = path.split('.') if path else []
+        current = config_data
+        for key in keys:
+            if not isinstance(current, dict) or key not in current:
+                return self._MISSING
+            current = current[key]
+        return current
+
+    def _default_value_for_type(self, schema_meta):
+        if not isinstance(schema_meta, dict):
+            return ""
+
+        if "default" in schema_meta:
+            return schema_meta["default"]
+
+        input_type = schema_meta.get("type")
+        if input_type == "boolean":
+            return False
+        if input_type == "integer":
+            return 0
+        return ""
+
+    def _flatten_config_data(self, config_data):
+        flat_values = {}
+        auto_groups = {}
+        auto_group_order = []
+
+        def walk(data, prefix=""):
+            if not isinstance(data, dict):
+                return
+            for key, value in data.items():
+                if not prefix and key in {"trigger", "inputs", "debug"}:
+                    continue
+                full_key = f"{prefix}.{key}" if prefix else key
+                if isinstance(value, dict):
+                    walk(value, full_key)
+                else:
+                    flat_values[full_key] = value
+                    if '.' in full_key:
+                        root_key = full_key.split('.')[0]
+                        group_name = root_key.replace('_', ' ').title()
+                        auto_groups.setdefault(full_key, group_name)
+                        if group_name not in auto_group_order:
+                            auto_group_order.append(group_name)
+
+        walk(config_data)
+        return flat_values, auto_groups, auto_group_order
+
+    def _get_group_layout(self, group_name, display_name=None):
+        if not group_name:
+            return self.form_layout
+
+        if group_name in self._group_layouts:
+            return self._group_layouts[group_name]
+
+        label_text = display_name or group_name
+        separator = Separator()
+        self.form_layout.addRow(separator)
+
+        group_label = QLabel(label_text)
+        object_name = re.sub(r"\W+", "_", str(group_name)).strip("_")
+        group_label.setObjectName(f"group_label_{object_name or 'group'}")
+        group_label.setStyleSheet("""
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        """)
+        self.form_layout.addRow(group_label)
+
+        group_content_widget = QWidget()
+        group_layout = QFormLayout(group_content_widget)
+        group_layout.setContentsMargins(0, 5, 0, 5)
+        group_layout.setSpacing(10)
+        self.form_layout.addRow(group_content_widget)
+
+        self._group_layouts[group_name] = group_layout
+        return group_layout
 
     def _recursive_populate(self, layout, config_data, schema, base_key=""):
         for key, value in config_data.items():
@@ -262,18 +461,28 @@ class TaskConfigWidget(QWidget):
             if key not in {"cron_expression", "expression"}
         }
 
-    def _create_trigger_widget(self, layout, trigger_data, schema):
-        # Add a separator and a title for the trigger group
+    def _create_trigger_widget(self,
+                               layout,
+                               trigger_data,
+                               schema,
+                               *,
+                               within_group=False):
+        target_layout = layout or self.form_layout
+
         label_text = schema.get("label", "Trigger")
         group_label = QLabel(label_text)
         group_label.setObjectName("group_label_trigger")
         group_label.setStyleSheet("""
-            font-size: 16px; 
-            font-weight: bold; 
+            font-size: {size}px;
+            font-weight: bold;
             margin-top: 10px;
-        """)
-        layout.addRow(Separator())
-        layout.addRow(group_label)
+        """.format(size=14 if within_group else 16))
+
+        if within_group:
+            target_layout.addRow(group_label)
+        else:
+            target_layout.addRow(Separator())
+            target_layout.addRow(group_label)
 
         # Create a widget to hold the trigger configuration
         trigger_content_widget = QWidget()
@@ -305,7 +514,7 @@ class TaskConfigWidget(QWidget):
 
         trigger_layout.addWidget(combo)
         trigger_layout.addWidget(stack)
-        layout.addRow(trigger_content_widget)
+        target_layout.addRow(trigger_content_widget)
 
         # Set initial values
         raw_type = str(trigger_data.get("type", "cron")).lower()
@@ -435,18 +644,28 @@ class TaskConfigWidget(QWidget):
         topic_widget.textChanged.connect(self._emit_config_changed)
         self._register_aux_widget("trigger.event.topic", topic_widget)
 
-    def _create_inputs_widget(self, layout, inputs_data, schema):
-        # Add a separator and a title for the inputs group
+    def _create_inputs_widget(self,
+                               layout,
+                               inputs_data,
+                               schema,
+                               *,
+                               within_group=False):
+        target_layout = layout or self.form_layout
+
         label_text = schema.get("label", "Inputs")
         group_label = QLabel(label_text)
         group_label.setObjectName("group_label_inputs")
         group_label.setStyleSheet("""
-            font-size: 16px; 
-            font-weight: bold; 
+            font-size: {size}px;
+            font-weight: bold;
             margin-top: 10px;
-        """)
-        layout.addRow(Separator())
-        layout.addRow(group_label)
+        """.format(size=14 if within_group else 16))
+
+        if within_group:
+            target_layout.addRow(group_label)
+        else:
+            target_layout.addRow(Separator())
+            target_layout.addRow(group_label)
 
         # Create a widget to hold the inputs table and buttons
         inputs_content_widget = QWidget()
@@ -468,7 +687,7 @@ class TaskConfigWidget(QWidget):
         inputs_layout.addWidget(table)
         self._create_add_remove_buttons(inputs_layout, table)
 
-        layout.addRow(inputs_content_widget)
+        target_layout.addRow(inputs_content_widget)
         self.inputs_widget = table
         table.itemChanged.connect(self._emit_config_changed)
         self._register_aux_widget("inputs.table", table)
