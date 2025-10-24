@@ -6,6 +6,14 @@ enabled: false
 debug: false
 persist_state: false
 
+# Retry: default transient failure handling
+retry:
+  max_attempts: 3
+  backoff_strategy: exponential
+  backoff_interval_seconds: 5
+  backoff_multiplier: 2
+  backoff_max_interval_seconds: 60
+
 # Trigger: Execute every 5 seconds to check mouse activity frequently
 trigger:
   type: schedule

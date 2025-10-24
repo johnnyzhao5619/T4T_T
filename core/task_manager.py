@@ -2,6 +2,7 @@ import os
 import logging
 import shutil
 import importlib.util
+import time
 from copy import deepcopy
 from typing import Any, Callable
 from datetime import datetime
@@ -55,6 +56,13 @@ class TaskManager:
     """
 
     DEFAULT_EVENT_MAX_HOPS = 5
+    DEFAULT_RETRY_POLICY = {
+        'max_attempts': 1,
+        'strategy': 'fixed',
+        'interval': 0.0,
+        'max_interval': None,
+        'multiplier': 2.0,
+    }
 
     def __init__(self,
                  scheduler_manager: SchedulerManager,
@@ -403,6 +411,17 @@ class TaskManager:
             return None
         return parsed if parsed >= 0 else None
 
+    @staticmethod
+    def _to_non_negative_number(value: Any) -> float | None:
+        """Safely convert a value to a non-negative float."""
+        if isinstance(value, bool):
+            return None
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError):
+            return None
+        return parsed if parsed >= 0 else None
+
     def _get_event_max_hops(self, config: dict) -> int:
         """Resolve the max hops threshold for an event payload."""
 
@@ -442,6 +461,9 @@ class TaskManager:
                               task_name: str,
                               inputs: dict | None = None,
                               *,
+                              attempt: int = 1,
+                              total_attempts: int = 1,
+                              retry_policy: dict | None = None,
                               log_emitter: Callable[[str], None] | None = None,
                               context=None):
         """Load the task script, construct the context, and execute it."""
@@ -463,17 +485,246 @@ class TaskManager:
             logger=task_logger,
             config=task_info['config_data'],
             task_path=task_info['path'],
-            state_manager=self.state_manager
+            state_manager=self.state_manager,
+            attempt=attempt,
+            total_attempts=total_attempts,
+            retry_policy=retry_policy,
+            log_emitter=log_emitter,
+            parent_context=context
         )
 
-        if log_emitter is not None:
-            task_context.log_emitter = log_emitter
-
-        if context is not None:
-            task_context.parent_context = context
-
         prepared_inputs = inputs if inputs is not None else {}
-        return executable_func(context=task_context, inputs=prepared_inputs)
+        task_context.log_progress("开始执行任务")
+
+        try:
+            result = executable_func(context=task_context, inputs=prepared_inputs)
+        except TaskExecutionError as exc:
+            task_context.log_progress(f"任务执行失败: {exc}", logging.WARNING)
+            raise
+        except Exception as exc:
+            task_context.log_progress(f"任务执行异常: {exc}", logging.ERROR)
+            raise
+
+        if isinstance(result, TaskExecutionError):
+            task_context.log_progress(f"任务返回失败结果: {result}", logging.WARNING)
+        else:
+            task_context.log_progress("任务执行成功", logging.INFO)
+
+        return result
+
+    def _resolve_retry_policy(self, config: dict) -> dict[str, Any]:
+        """Merge retry configuration with global defaults."""
+        policy = dict(self.DEFAULT_RETRY_POLICY)
+        retry_section = config.get('retry')
+
+        if isinstance(retry_section, dict):
+            max_attempts = self._to_non_negative_int(
+                retry_section.get('max_attempts'))
+            if max_attempts is not None and max_attempts >= 1:
+                policy['max_attempts'] = max_attempts
+
+            strategy_value = retry_section.get('backoff_strategy')
+            if isinstance(strategy_value, str):
+                normalized_strategy = strategy_value.strip().lower()
+                if normalized_strategy in {'fixed', 'exponential'}:
+                    policy['strategy'] = normalized_strategy
+
+            interval = self._to_non_negative_number(
+                retry_section.get('backoff_interval_seconds'))
+            if interval is not None:
+                policy['interval'] = interval
+
+            max_interval = self._to_non_negative_number(
+                retry_section.get('backoff_max_interval_seconds'))
+            if max_interval is not None:
+                policy['max_interval'] = max_interval
+
+            multiplier = self._to_non_negative_number(
+                retry_section.get('backoff_multiplier'))
+            if multiplier is not None and multiplier >= 1:
+                policy['multiplier'] = multiplier
+
+        config_manager = getattr(self, 'config_manager', None)
+        if config_manager is not None:
+            if policy['max_attempts'] == self.DEFAULT_RETRY_POLICY['max_attempts']:
+                raw_max = config_manager.get('TaskDefaults',
+                                             'retry_max_attempts',
+                                             fallback=None)
+                parsed_max = self._to_non_negative_int(raw_max)
+                if parsed_max is not None and parsed_max >= 1:
+                    policy['max_attempts'] = parsed_max
+
+            if policy['strategy'] == self.DEFAULT_RETRY_POLICY['strategy']:
+                raw_strategy = config_manager.get('TaskDefaults',
+                                                  'retry_backoff_strategy',
+                                                  fallback=None)
+                if isinstance(raw_strategy, str):
+                    normalized_strategy = raw_strategy.strip().lower()
+                    if normalized_strategy in {'fixed', 'exponential'}:
+                        policy['strategy'] = normalized_strategy
+
+            if policy['interval'] == self.DEFAULT_RETRY_POLICY['interval']:
+                raw_interval = config_manager.get(
+                    'TaskDefaults', 'retry_backoff_interval_seconds',
+                    fallback=None)
+                parsed_interval = self._to_non_negative_number(raw_interval)
+                if parsed_interval is not None:
+                    policy['interval'] = parsed_interval
+
+            if policy['max_interval'] == self.DEFAULT_RETRY_POLICY['max_interval']:
+                raw_max_interval = config_manager.get(
+                    'TaskDefaults', 'retry_backoff_max_interval_seconds',
+                    fallback=None)
+                parsed_max_interval = self._to_non_negative_number(
+                    raw_max_interval)
+                if parsed_max_interval is not None:
+                    policy['max_interval'] = parsed_max_interval
+
+            if policy['multiplier'] == self.DEFAULT_RETRY_POLICY['multiplier']:
+                raw_multiplier = config_manager.get(
+                    'TaskDefaults', 'retry_backoff_multiplier',
+                    fallback=None)
+                parsed_multiplier = self._to_non_negative_number(
+                    raw_multiplier)
+                if parsed_multiplier is not None and parsed_multiplier >= 1:
+                    policy['multiplier'] = parsed_multiplier
+
+        max_interval = policy['max_interval']
+        if max_interval is not None and max_interval < policy['interval']:
+            policy['max_interval'] = policy['interval']
+
+        return policy
+
+    def _compute_retry_delay(self, retry_policy: dict, attempt: int) -> float:
+        """Compute backoff delay for the next attempt."""
+        base_interval = float(retry_policy.get('interval', 0.0) or 0.0)
+        strategy = retry_policy.get('strategy', 'fixed')
+
+        if strategy == 'exponential':
+            multiplier = retry_policy.get('multiplier',
+                                          self.DEFAULT_RETRY_POLICY['multiplier'])
+            if multiplier < 1:
+                multiplier = self.DEFAULT_RETRY_POLICY['multiplier']
+            delay = base_interval * (multiplier ** (attempt - 1))
+        else:
+            delay = base_interval
+
+        max_interval = retry_policy.get('max_interval')
+        if isinstance(max_interval, (int, float)):
+            delay = min(delay, max_interval)
+
+        return delay if delay >= 0 else 0.0
+
+    def _log_retry_schedule(self,
+                            task_name: str,
+                            attempt: int,
+                            total_attempts: int,
+                            delay: float,
+                            error: Exception,
+                            log_emitter: Callable[[str], None] | None) -> None:
+        task_logger = self.tasks.get(task_name, {}).get('logger', logger)
+        next_attempt = min(attempt + 1, total_attempts)
+        if delay <= 0:
+            message = (f"[attempt {attempt}/{total_attempts}] 任务失败，将立即重试第 "
+                       f"{next_attempt} 次。原因: {error}")
+        else:
+            message = (f"[attempt {attempt}/{total_attempts}] 任务失败，将在 {delay:.2f} 秒后"
+                       f"重试第 {next_attempt} 次。原因: {error}")
+        task_logger.warning(message)
+        if log_emitter is not None:
+            log_emitter(message)
+
+    def _log_final_failure(self,
+                           task_name: str,
+                           attempt: int,
+                           total_attempts: int,
+                           error: Exception,
+                           log_emitter: Callable[[str], None] | None) -> None:
+        task_logger = self.tasks.get(task_name, {}).get('logger', logger)
+        message = (f"[attempt {attempt}/{total_attempts}] 任务在达到最大重试次数后失败: {error}")
+        task_logger.error(message)
+        if log_emitter is not None:
+            log_emitter(message)
+
+    def _execute_with_retries(self,
+                              task_name: str,
+                              base_inputs: dict | None,
+                              *,
+                              log_emitter: Callable[[str], None] | None = None,
+                              retry_policy: dict | None = None,
+                              context=None):
+        """Execute a task with retry semantics."""
+        policy = retry_policy or self._resolve_retry_policy(
+            self.tasks.get(task_name, {}).get('config_data', {}))
+        total_attempts = max(int(policy.get('max_attempts', 1)), 1)
+        normalized_inputs = base_inputs if isinstance(base_inputs, dict) else {}
+        last_error: TaskExecutionError | None = None
+
+        for attempt in range(1, total_attempts + 1):
+            attempt_inputs = deepcopy(normalized_inputs)
+            try:
+                result = self._prepare_and_run_task(
+                    task_name,
+                    attempt_inputs,
+                    attempt=attempt,
+                    total_attempts=total_attempts,
+                    retry_policy=policy,
+                    log_emitter=log_emitter,
+                    context=context)
+            except TaskExecutionError as exc:
+                last_error = exc
+                if attempt < total_attempts:
+                    delay = self._compute_retry_delay(policy, attempt)
+                    self._log_retry_schedule(task_name, attempt, total_attempts,
+                                             delay, exc, log_emitter)
+                    if delay > 0:
+                        self._sleep(delay)
+                    continue
+
+                final_error = TaskExecutionError(
+                    f"Task '{task_name}' failed after {total_attempts} attempts. "
+                    f"Last error: {exc}")
+                self._log_final_failure(task_name, attempt, total_attempts,
+                                        final_error, log_emitter)
+                raise final_error from exc
+            except Exception:
+                raise
+
+            if isinstance(result, TaskExecutionError):
+                last_error = result
+                if attempt < total_attempts:
+                    delay = self._compute_retry_delay(policy, attempt)
+                    self._log_retry_schedule(task_name, attempt, total_attempts,
+                                             delay, result, log_emitter)
+                    if delay > 0:
+                        self._sleep(delay)
+                    continue
+
+                final_error = TaskExecutionError(
+                    f"Task '{task_name}' failed after {total_attempts} attempts. "
+                    f"Last error: {result}")
+                self._log_final_failure(task_name, attempt, total_attempts,
+                                        final_error, log_emitter)
+                raise final_error
+
+            return result
+
+        if last_error is not None:
+            final_error = TaskExecutionError(
+                f"Task '{task_name}' failed after {total_attempts} attempts. "
+                f"Last error: {last_error}")
+            self._log_final_failure(task_name, total_attempts, total_attempts,
+                                    final_error, log_emitter)
+            raise final_error
+
+        raise TaskExecutionError(
+            f"Task '{task_name}' failed after {total_attempts} attempts.")
+
+    @staticmethod
+    def _sleep(seconds: float) -> None:
+        if seconds <= 0:
+            return
+        time.sleep(seconds)
 
     def _execute_task_logic(self,
                             task_name: str,
@@ -484,11 +735,18 @@ class TaskManager:
         completion signals when it finishes.
         """
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        task_info = self.tasks[task_name]
+        retry_policy = self._resolve_retry_policy(
+            task_info.get('config_data', {}))
+        normalized_inputs = inputs if isinstance(inputs, dict) else {}
+        base_inputs = deepcopy(normalized_inputs)
+
         try:
             future = self.scheduler_manager.submit(
-                self._prepare_and_run_task,
+                self._execute_with_retries,
                 task_name,
-                inputs,
+                base_inputs,
+                retry_policy=retry_policy,
                 log_emitter=log_emitter,
                 context=SimpleNamespace(task_name=task_name)
             )
@@ -539,7 +797,8 @@ class TaskManager:
             logger.error(f"Task '{task_name}' not found.")
             return None
 
-        prepared_inputs = inputs if inputs is not None else {}
+        normalized_inputs = inputs if isinstance(inputs, dict) else {}
+        prepared_inputs = deepcopy(normalized_inputs)
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         if use_executor:
@@ -549,9 +808,14 @@ class TaskManager:
             return self._execute_task_logic(task_name, prepared_inputs)
 
         try:
-            result = self._prepare_and_run_task(task_name,
-                                                prepared_inputs,
-                                                log_emitter=log_emitter)
+            retry_policy = self._resolve_retry_policy(
+                self.tasks[task_name].get('config_data', {}))
+            result = self._execute_with_retries(
+                task_name,
+                prepared_inputs,
+                retry_policy=retry_policy,
+                log_emitter=log_emitter,
+                context=SimpleNamespace(task_name=task_name))
         except TaskExecutionError as exc:
             error_msg = str(exc)
             global_signals.task_failed.emit(task_name, timestamp, error_msg)

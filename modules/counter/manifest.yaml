@@ -6,6 +6,14 @@ enabled: true
 debug: false
 persist_state: false
 
+# Retry: configure automatic retries for transient failures
+retry:
+  max_attempts: 3
+  backoff_strategy: exponential
+  backoff_interval_seconds: 5
+  backoff_multiplier: 2
+  backoff_max_interval_seconds: 60
+
 # Trigger: execute once per minute
 trigger:
   type: schedule
