@@ -23,5 +23,9 @@ logs/*.txt
 # Ignore Documentation files
 SRS/
 
-# Ignore test directories
-tests/
+# Ignore generated artifacts in test directories but keep test sources tracked
+tests/__pycache__/
+tests/tmp/
+!tests/*.py
+!tests/**/*.py
+
