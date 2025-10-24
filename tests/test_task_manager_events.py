@@ -1185,6 +1185,17 @@ def test_task_manager_rejects_task_name_with_separator(temp_task_manager, caplog
     assert os.listdir(manager.tasks_dir) == []
 
 
+def test_task_manager_rejects_empty_task_name(temp_task_manager, caplog):
+    manager, module_type = temp_task_manager
+
+    with caplog.at_level(logging.WARNING):
+        assert not manager.create_task("", module_type)
+
+    assert "cannot be empty" in caplog.text
+    assert manager.get_task_count() == 0
+    assert os.listdir(manager.tasks_dir) == []
+
+
 def test_task_manager_rejects_task_name_outside_directory(temp_task_manager,
                                                           caplog):
     manager, module_type = temp_task_manager

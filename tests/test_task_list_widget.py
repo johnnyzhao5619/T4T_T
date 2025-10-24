@@ -7,16 +7,19 @@ import pytest
 import yaml
 
 try:
-    from PyQt5.QtWidgets import QApplication
+    from PyQt5.QtCore import Qt
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtWidgets import QApplication, QMessageBox
 except ImportError as exc:  # pragma: no cover - handled via pytest skip
     pytest.skip(
         f"PyQt5 is required for TaskListWidget tests: {exc}",
         allow_module_level=True,
     )
 
+from core.module_manager import ModuleManager
 from core.task_manager import TaskExecutableNotFoundError, TaskManager
 from core.scheduler import SchedulerManager
-from utils.i18n import _
+from utils.i18n import _, language_manager
 from utils.signals import global_signals
 from view.task_list_widget import TaskListWidget
 
@@ -174,3 +177,52 @@ def test_task_list_widget_updates_on_task_failure(tmp_path):
         widget.deleteLater()
         QApplication.processEvents()
         manager.shutdown()
+
+
+@pytest.mark.usefixtures('qapp')
+def test_new_task_widget_warns_on_invalid_name_via_gui(qapp, tmp_path, monkeypatch):
+    modules_dir = tmp_path / "modules"
+    tasks_dir = tmp_path / "tasks"
+
+    module_manager_instance = ModuleManager()
+    default_modules_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "modules"))
+    original_module_path = getattr(module_manager_instance, "module_path", default_modules_dir)
+
+    manager = TaskManager(scheduler_manager=SchedulerManager(),
+                          tasks_dir=str(tasks_dir),
+                          modules_dir=str(modules_dir))
+
+    from view.new_task_widget import NewTaskWidget
+
+    widget = None
+    try:
+        assert language_manager.load_language('en')
+
+        widget = NewTaskWidget(manager)
+        widget.show()
+        qapp.processEvents()
+
+        captured_warnings: list[tuple[str, str]] = []
+
+        def record_warning(parent, title, message):
+            captured_warnings.append((title, message))
+            return QMessageBox.Ok
+
+        monkeypatch.setattr(QMessageBox, "warning", staticmethod(record_warning))
+
+        widget.task_name_input.clear()
+        QTest.keyClicks(widget.task_name_input, f"bad{os.sep}name")
+        qapp.processEvents()
+        QTest.mouseClick(widget.create_button, Qt.LeftButton)
+        qapp.processEvents()
+
+        assert captured_warnings, "Expected a validation warning for invalid task name."
+        warning_message = captured_warnings[-1][1]
+        assert warning_message == _("task_name_separator_error")
+    finally:
+        if widget is not None:
+            widget.deleteLater()
+            qapp.processEvents()
+
+        manager.shutdown(wait=False)
+        module_manager_instance.set_module_path(original_module_path)
