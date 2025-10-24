@@ -144,6 +144,8 @@ class TaskManager:
                 if os.path.exists(script_file) and os.path.exists(config_file):
                     try:
                         config_data = load_yaml(config_file)
+                        config_data = self._prepare_loaded_task_config(
+                            task_path, config_data)
 
                         # Create a dedicated logger for the task
                         task_logger = logging.getLogger(f"task.{task_name}")
@@ -977,6 +979,7 @@ class TaskManager:
 
             config_data['name'] = task_name
             config_data['module_type'] = module_type
+            config_data = self._prepare_module_config(module_type, config_data)
 
             save_yaml(config_dest, config_data)
 
@@ -1044,6 +1047,9 @@ class TaskManager:
                         relative_path, task_name, copy_error)
                     raise
 
+            self._post_process_module_creation(module_type, module_dir,
+                                               task_path, config_data)
+
             logger.info(f"Task '{task_name}' created successfully"
                         f" from module '{module_type}'.")
             self.load_tasks()  # Refresh task list
@@ -1054,6 +1060,106 @@ class TaskManager:
             if os.path.exists(task_path):
                 shutil.rmtree(task_path)  # Cleanup
             return False
+
+    def _prepare_module_config(self, module_type: str,
+                               config_data: dict) -> dict:
+        if module_type == 'google_sheet_sync':
+            return self._normalize_google_sheet_config(config_data)
+        return config_data
+
+    def _post_process_module_creation(self, module_type: str,
+                                       module_dir: str,
+                                       task_path: str,
+                                       config_data: dict) -> None:
+        if module_type == 'google_sheet_sync':
+            self._ensure_google_sheet_oauth_assets(module_dir, task_path,
+                                                   config_data)
+
+    def _normalize_google_sheet_config(self, config_data: dict) -> dict:
+        oauth_section = config_data.get('oauth', {})
+        if not isinstance(oauth_section, dict):
+            raise ValueError("Google Sheet 模块的 manifest 缺少 oauth 配置。")
+
+        scopes = oauth_section.get('scopes')
+        if isinstance(scopes, str):
+            normalized_scopes = [scopes.strip()] if scopes.strip() else []
+        elif isinstance(scopes, (list, tuple, set)):
+            normalized_scopes = []
+            for scope in scopes:
+                scope_str = str(scope).strip()
+                if scope_str and scope_str not in normalized_scopes:
+                    normalized_scopes.append(scope_str)
+        else:
+            raise ValueError("Google Sheet 模块的 oauth.scopes 必须为字符串或列表。")
+
+        if not normalized_scopes:
+            raise ValueError("Google Sheet 模块的 oauth.scopes 不能为空。")
+
+        oauth_section['scopes'] = normalized_scopes
+        for field in ('credentials_file', 'token_file', 'credentials_template'):
+            value = oauth_section.get(field)
+            if not value or not isinstance(value, str):
+                raise ValueError(
+                    f"Google Sheet 模块的 oauth.{field} 必须为非空字符串。")
+
+        config_data['oauth'] = oauth_section
+        return config_data
+
+    def _ensure_google_sheet_oauth_assets(self, module_dir: str,
+                                          task_path: str,
+                                          config_data: dict) -> None:
+        oauth_section = config_data.get('oauth', {})
+        credentials_template = oauth_section.get('credentials_template')
+        credentials_file = oauth_section.get('credentials_file')
+        token_file = oauth_section.get('token_file')
+
+        if not all(isinstance(value, str) and value.strip()
+                   for value in (credentials_template,
+                                 credentials_file,
+                                 token_file)):
+            raise ValueError("Google Sheet 模块的 oauth 配置缺少必填字段。")
+
+        template_source = os.path.join(module_dir, credentials_template)
+        if not os.path.exists(template_source):
+            raise FileNotFoundError(
+                f"无法在模块目录中找到 OAuth 样板文件: {template_source}")
+
+        template_destination = os.path.join(task_path, credentials_template)
+        os.makedirs(os.path.dirname(template_destination), exist_ok=True)
+        if not os.path.exists(template_destination):
+            shutil.copy2(template_source, template_destination)
+        else:
+            logger.debug("OAuth 样板文件已存在，跳过复制: %s",
+                         template_destination)
+
+        credentials_destination = os.path.join(task_path, credentials_file)
+        os.makedirs(os.path.dirname(credentials_destination), exist_ok=True)
+        if not os.path.exists(credentials_destination):
+            shutil.copy2(template_source, credentials_destination)
+            logger.info("已生成默认 OAuth 凭据占位文件: %s",
+                        credentials_destination)
+
+        token_destination = os.path.join(task_path, token_file)
+        os.makedirs(os.path.dirname(token_destination), exist_ok=True)
+
+    def _prepare_loaded_task_config(self, task_path: str,
+                                    config_data: dict | None) -> dict:
+        if not isinstance(config_data, dict):
+            return {}
+
+        module_type = config_data.get('module_type')
+        if not module_type:
+            return config_data
+
+        if module_type == 'google_sheet_sync':
+            config_data = self._normalize_google_sheet_config(config_data)
+            templates = self.module_manager.get_module_templates(module_type)
+            if templates:
+                module_dir = os.path.dirname(templates['py_template'])
+                self._ensure_google_sheet_oauth_assets(
+                    module_dir, task_path, config_data)
+
+        return config_data
 
     def delete_task(self, task_name):
         """
