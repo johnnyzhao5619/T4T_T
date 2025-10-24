@@ -192,6 +192,33 @@ assets:
 > ✅ **Best practice**: As modules evolve, keep `version` synced with the `CHANGELOG` and note compatible topics or scenarios in `description` to aid future maintenance.
 > 📌 **Field validation**: Write unit tests for `manifest.yaml` loaders so required fields are asserted during parsing and schema mistakes are caught early.
 
+### 3.5. UI Schema (`schema`)
+
+`schema` is an optional section that describes how the Task Manager should render the configuration form for your module. Each entry maps a configuration key (using dot notation for nested values) to metadata such as labels, descriptions, and grouping hints.
+
+```yaml
+schema:
+  name:
+    label: "Task Name"
+    description: "Display name shown in the dashboard."
+    group: "General"
+  trigger:
+    label: "Execution Schedule"
+    group: "Scheduling"
+  settings.increment_by:
+    type: integer
+    label: "Increment Amount"
+    min: 1
+    group: "Counter Settings"
+```
+
+Key points for authors:
+
+* **Dot notation** targets nested dictionaries (for example, `settings.increment_by`).
+* **`group`** controls where the field appears in the UI. Fields that share the same group name are rendered together with a single heading.
+* **Special sections** such as `trigger` and `inputs` keep their dedicated widgets while still honouring the configured group and label.
+* **Defaults**: If the schema omits a field, the UI falls back to automatic grouping based on the configuration structure. Older manifests that use the legacy `properties` nesting remain fully supported.
+
 ---
 
 ## 4. Core Concepts Explained
