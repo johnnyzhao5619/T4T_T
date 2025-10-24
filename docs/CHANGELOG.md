@@ -1,5 +1,14 @@
 # T4T Change Log
 
+## v1.1.0 - Unreleased
+
+### Added
+- Introduced a `docs/licenses.md` inventory summarizing runtime dependency licenses and their compatibility with MIT distribution.
+- Created the `compliance` GitHub Actions workflow to verify PyInstaller bundles retain the top-level `LICENSE` file.
+
+### Changed
+- Updated packaging, documentation, and release checklists to emphasize license inclusion and manual review of third-party notices.
+
 ## v1.0.0 - 2024-06-01
 
 ### Added

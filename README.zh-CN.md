@@ -94,21 +94,8 @@
 
 ---
 
-## 📄 许可与第三方说明
+## 📜 许可证与合规
 
-本项目遵循 [MIT 许可](LICENSE)，发布任何源代码或二进制版本时，都必须随附根目录下的 `LICENSE` 文件。
+本项目基于 [MIT 许可证](LICENSE) 发布。请确保所有交付的源代码或二进制包均附带该文件——“打包指南”中的 PyInstaller 命令已经通过 `--add-data "LICENSE:."` 显式包含它。
 
-| 依赖 | 许可证 | 备注 |
-| --- | --- | --- |
-| PyQt5 | GPL v3 / 商业授权 | 在 MIT 许可下重新分发并捆绑 PyQt5 时，需确保拥有 Riverbank 的商业许可，或依据 GPL 要求开放完整源代码。 |
-| psutil | BSD 3-Clause | 与 MIT 兼容。 |
-| PyYAML | MIT | 与 MIT 兼容。 |
-| paho-mqtt | Eclipse Distribution License 1.0 | 与 MIT 兼容。 |
-| APScheduler | MIT | 与 MIT 兼容。 |
-| qtawesome | MIT | 与 MIT 兼容。 |
-| amqtt | MIT | 与 MIT 兼容。 |
-| pyqtgraph | MIT | 与 MIT 兼容。 |
-| PyAutoGUI | BSD 3-Clause | 与 MIT 兼容。 |
-| Markdown 3.4.4 | BSD 3-Clause | 与 MIT 兼容。 |
-
-请在发行说明或部署文档中记录你针对 PyQt5 采取的合规策略（例如使用 GPL 模式开放源码或购买商业许可），以便用户了解授权边界。
+第三方依赖的许可证详情和与 MIT 的兼容性说明已汇总在 [docs/licenses.md](./docs/licenses.md)。每次发布之前，请重新审核该清单，并明确记录 PyQt5 的合规策略（遵循 GPL v3 条款或持有 Riverbank 的商业授权）。

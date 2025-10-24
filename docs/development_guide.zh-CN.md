@@ -286,14 +286,5 @@ def run(context, inputs):
   * 按 GPL 要求公开全部源代码并满足传染性条款，或
   * 从 Riverbank Computing 获取商业许可。
   请在部署说明中记录所采用的策略，方便下游使用者理解授权边界。
-* **第三方依赖概览**：当前运行时依赖及其许可证如下：
-  * psutil – BSD 3-Clause
-  * PyYAML – MIT
-  * paho-mqtt – Eclipse Distribution License 1.0
-  * APScheduler – MIT
-  * qtawesome – MIT
-  * amqtt – MIT
-  * pyqtgraph – MIT
-  * PyAutoGUI – BSD 3-Clause
-  * Markdown 3.4.4 – BSD 3-Clause
-  这些许可证与 MIT 兼容，但在新增依赖时应重新审查。
+* **第三方依赖清单**：将 [docs/licenses.md](./licenses.md) 作为唯一可信的许可证清单来源。在发布前的检查表中加入人工复核步骤，确认该文件与 `requirements.txt` 完全一致。
+* **CI 保护**：`compliance` GitHub Actions 工作流会执行 PyInstaller 打包命令，并在打包后的 `dist/T4T` 缺少 `LICENSE` 时直接失败。任何失败都必须在发布前解决。

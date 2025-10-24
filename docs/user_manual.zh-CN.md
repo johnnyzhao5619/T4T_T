@@ -80,3 +80,10 @@ T4T V2 的核心是**消息总线**（通常是一个 MQTT 服务器），它允
 
 *   **问：如何让两个任务协同工作？**
     *   **答：** 这正是事件驱动的魅力所在！让任务 A 在完成工作后，向一个主题（如 `tasks/A/result`）发布一条包含其结果的消息。然后，创建一个事件驱动的任务 B，让它订阅 `tasks/A/result` 主题。这样，每当 A 完成时，B 就会自动被触发并接收到 A 的结果。
+
+---
+
+## 7. 许可证与合规
+
+*   请在任何发布包中附带仓库根目录的 [LICENSE](../LICENSE) 文件；按照 README 中的 PyInstaller 命令打包时，`--add-data "LICENSE:."` 会自动完成复制。
+*   在发布前检查 [docs/licenses.md](./licenses.md) 是否仍与 `requirements.txt` 保持一致，并记录 PyQt5 的合规策略（遵循 GPL v3 或使用商业授权）。

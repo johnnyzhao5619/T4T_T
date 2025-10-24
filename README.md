@@ -160,21 +160,8 @@ Contributions of any kind are welcome! Whether it's bug reports, feature suggest
 
 ---
 
-## 📄 License and Third-Party Notices
+## 📜 License & Compliance
 
-T4T is distributed under the [MIT License](./LICENSE). Always bundle this license file with any source archive or binary package that you ship.
+T4T is distributed under the [MIT License](./LICENSE). Package deliverables with this file included—PyInstaller builds can rely on the command in the “Packaging Guide” section, which already adds `LICENSE` to the bundle via `--add-data "LICENSE:."`.
 
-| Dependency | License | Notes |
-| --- | --- | --- |
-| PyQt5 | GPL v3 / Commercial | Bundling PyQt5 under MIT requires either holding a commercial license from Riverbank Computing or complying with the GPL's reciprocal terms. |
-| psutil | BSD 3-Clause | Compatible with MIT distribution. |
-| PyYAML | MIT | Compatible with MIT distribution. |
-| paho-mqtt | Eclipse Distribution License 1.0 | Compatible with MIT distribution. |
-| APScheduler | MIT | Compatible with MIT distribution. |
-| qtawesome | MIT | Compatible with MIT distribution. |
-| amqtt | MIT | Compatible with MIT distribution. |
-| pyqtgraph | MIT | Compatible with MIT distribution. |
-| PyAutoGUI | BSD 3-Clause | Compatible with MIT distribution. |
-| Markdown 3.4.4 | BSD 3-Clause | Compatible with MIT distribution. |
-
-Record the licensing position you take for PyQt5 (GPL-compliant source distribution or commercial entitlement) in downstream deployment documentation to maintain clarity for operators.
+Third-party dependency details and their compatibility assessment live in [docs/licenses.md](./docs/licenses.md). Review and update that inventory before every release, especially when PyQt5 distribution terms require documenting whether you satisfy GPL v3 obligations or hold a commercial license from Riverbank Computing.
